@@ -44,8 +44,26 @@ try {
     $parent = Split-Path -Parent $Output
     if (-not (Test-Path -LiteralPath $parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
     if (Test-Path -LiteralPath $Output) { Remove-Item -LiteralPath $Output -Force }
-    $items = Get-ChildItem -LiteralPath $temporary -Force | Select-Object -ExpandProperty FullName
-    Compress-Archive -Path $items -DestinationPath $Output -CompressionLevel Optimal
+    # Passing individual file paths to Compress-Archive FLATTENS nested directories.
+    # ZipFile.CreateFromDirectory retains _Updater/ and _Internal/Updater/ in the archive.
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [IO.Compression.ZipFile]::CreateFromDirectory($temporary, $Output, [IO.Compression.CompressionLevel]::Optimal, $false)
+    $archive = [IO.Compression.ZipFile]::OpenRead($Output)
+    try {
+        $names = @($archive.Entries | Where-Object { $_.Name } | ForEach-Object { $_.FullName })
+        $required = @($files.Keys | ForEach-Object { $_.Replace('\', '/') })
+        foreach ($requiredName in $required) {
+            if ($requiredName -cnotin $names) {
+                throw "Installer ZIP missing correct path: $requiredName"
+            }
+        }
+        if ($names.Count -ne $required.Count) {
+            throw "Installer ZIP has unexpected or duplicate files: $($names -join ', ')"
+        }
+    } finally {
+        $archive.Dispose()
+    }
     if (-not (Test-Path -LiteralPath $Output -PathType Leaf)) { throw 'Installation ZIP not produced.' }
     Write-Host "First-install ZIP: $Output"
 } finally {
