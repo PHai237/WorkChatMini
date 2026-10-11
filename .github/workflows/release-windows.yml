@@ -53,9 +53,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY *> $null
-          if ($LASTEXITCODE -eq 0) {
+          $releaseUrl = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/tags/$env:RELEASE_TAG"
+          $response = Invoke-WebRequest -Method GET -Uri $releaseUrl -Headers @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept = "application/vnd.github+json"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          } -SkipHttpErrorCheck
+          if ($response.StatusCode -eq 200) {
             throw "Release $env:RELEASE_TAG already exists. Bump VERSION.txt; do not overwrite published binaries."
+          } elseif ($response.StatusCode -eq 404) {
+            Write-Host "Release $env:RELEASE_TAG does not exist; proceeding."
+          } else {
+            throw "GitHub release lookup failed: HTTP $($response.StatusCode)"
           }
       - name: Static source check
         shell: pwsh
