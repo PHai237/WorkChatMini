@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon>Assets\workchat.ico</ApplicationIcon>
+    <AssemblyName>WorkChatMini</AssemblyName>
+    <RootNamespace>WorkChatMini</RootNamespace>
+    <Platforms>AnyCPU;x64</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>false</PublishSingleFile>
+    <Version>2.30.0-preview23</Version>
+    <FileVersion>2.30.0.230</FileVersion>
+    <AssemblyVersion>2.30.0.230</AssemblyVersion>
+    <InformationalVersion>2.30.0-preview23-release-bridge</InformationalVersion>
+  </PropertyGroup>
+
+  <!-- When built by GitHub Actions this becomes the stable GitHub Pages feed. -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>WorkChatUpdateFeedUrl</_Parameter1>
+      <_Parameter2>$(WorkChatUpdateFeedUrl)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+  <!-- Updater bundled into every single-file EXE. New releases can repair or replace
+       the installed helper without changing the legacy 2-file binary ZIP format. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\Updater\Apply-WorkChatUpdate.ps1" LogicalName="WorkChatMini.Updater.Apply-WorkChatUpdate.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\workchat.ico" />
+    <Resource Include="Assets\Icons\*.png" />
+  </ItemGroup>
+</Project>

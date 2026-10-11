@@ -1,0 +1,975 @@
+<Window x:Class="WorkChatMini.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        xmlns:local="clr-namespace:WorkChatMini"
+        mc:Ignorable="d"
+        Title="WorkChat Mini · Messenger"
+        Icon="Assets/workchat.ico"
+        Width="960"
+        Height="540"
+        ResizeMode="CanResize" MinWidth="330" MinHeight="220"
+        WindowStartupLocation="Manual"
+        Background="#0D0F14"
+        FontFamily="Segoe UI"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        StateChanged="Window_StateChanged"
+        SizeChanged="Window_SizeChanged">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="BrowserStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        <SolidColorBrush x:Key="ToolbarBrush" Color="#12151B"/>
+        <SolidColorBrush x:Key="ToolbarBorderBrush" Color="#2A303A"/>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#101319"/>
+        <SolidColorBrush x:Key="SurfaceAltBrush" Color="#1A1F28"/>
+        <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#252C38"/>
+        <SolidColorBrush x:Key="AccentBorderBrush" Color="#8AA8FF"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F7F8FA"/>
+        <SolidColorBrush x:Key="TextMutedBrush" Color="#AEB6C5"/>
+        <LinearGradientBrush x:Key="MessengerBrandBrush" StartPoint="0,1" EndPoint="1,0">
+            <GradientStop Color="#168BFF" Offset="0"/>
+            <GradientStop Color="#7A3CFF" Offset="0.48"/>
+            <GradientStop Color="#FF35A8" Offset="1"/>
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="FacebookBrandBrush" Color="#1877F2"/>
+        <SolidColorBrush x:Key="YouTubeBrandBrush" Color="#FF0033"/>
+        <SolidColorBrush x:Key="DiscordBrandBrush" Color="#5865F2"/>
+        <SolidColorBrush x:Key="ZaloBrandBrush" Color="#0068FF"/>
+        <SolidColorBrush x:Key="WebBrandBrush" Color="#10B977"/>
+        <SolidColorBrush x:Key="StoryBrandBrush" Color="#9A6A2E"/>
+        <!-- Pixel app icons are embedded WPF resources. Nearest-neighbor scaling is used at render time. -->
+        <BitmapImage x:Key="MessengerPixelIcon" UriSource="Assets/Icons/messenger.png"/>
+        <BitmapImage x:Key="FacebookPixelIcon" UriSource="Assets/Icons/facebook.png"/>
+        <BitmapImage x:Key="YouTubePixelIcon" UriSource="Assets/Icons/youtube.png"/>
+        <BitmapImage x:Key="DiscordPixelIcon" UriSource="Assets/Icons/discord.png"/>
+        <BitmapImage x:Key="ZaloPixelIcon" UriSource="Assets/Icons/zalo.png"/>
+        <BitmapImage x:Key="WebPixelIcon" UriSource="Assets/Icons/web.png"/>
+        <BitmapImage x:Key="StoryPixelIcon" UriSource="Assets/Icons/story.png"/>
+        <Style x:Key="AppIconButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#141922"/>
+            <Setter Property="BorderBrush" Value="#273044"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Opacity" Value="0.90"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="1"/>
+                                <Setter TargetName="Root" Property="Background" Value="#1D2430"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#60708E"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Opacity" Value="0.75"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Active">
+                                <Setter Property="Opacity" Value="1"/>
+                                <Setter TargetName="Root" Property="Background" Value="#1A2130"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#AFC2FF"/>
+                                <Setter TargetName="Root" Property="BorderThickness" Value="1.5"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Sleeping">
+                                <Setter Property="Opacity" Value="0.34"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#202636"/>
+                                <Setter TargetName="Root" Property="BorderThickness" Value="1"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Hibernated">
+                                <Setter Property="Opacity" Value="0.18"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#171B27"/>
+                                <Setter TargetName="Root" Property="BorderThickness" Value="1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DropdownButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+            <Setter Property="BorderBrush" Value="#34415C"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter Margin="10,0" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#6E7F9F"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#26314A"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PanelActionButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Background" Value="#202738"/>
+            <Setter Property="BorderBrush" Value="#37435C"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#273149"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#6E7F9F"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#313D5B"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DarkContextMenuStyle" TargetType="ContextMenu">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="#3B4863"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer CanContentScroll="True"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
+                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DarkMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="ItemRoot" Background="{TemplateBinding Background}" CornerRadius="8">
+                            <Grid MinWidth="92">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="CheckGlyph"
+                                           Grid.Column="0"
+                                           Text="•"
+                                           Foreground="#8EAAFF"
+                                           FontSize="18"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Center"
+                                           Visibility="Collapsed"/>
+                                <ContentPresenter Grid.Column="1"
+                                                  Margin="4,0,8,0"
+                                                  VerticalAlignment="Center"
+                                                  ContentSource="Header"
+                                                  RecognizesAccessKey="True"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="ItemRoot" Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckGlyph" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="ItemRoot" Property="Background" Value="#202A42"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ToolTip">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Background" Value="#20252E"/>
+            <Setter Property="BorderBrush" Value="#3A424F"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="FontSize" Value="11.5"/>
+        </Style>
+        <Style x:Key="UtilityIconButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+            <Setter Property="Background" Value="#161B28"/>
+            <Setter Property="BorderBrush" Value="#34415C"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#6E7F9F"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Active">
+                                <Setter TargetName="Root" Property="Background" Value="#294B99"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#7EA0FF"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ToolbarToggleButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+            <Setter Property="Background" Value="#12151B"/>
+            <Setter Property="BorderBrush" Value="#34415C"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="0,0,8,8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#6E7F9F"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="AlwaysOnTopCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border x:Name="Box"
+                                    Width="17" Height="17"
+                                    CornerRadius="5"
+                                    Background="#11151F"
+                                    BorderBrush="#4C5A78"
+                                    BorderThickness="1"
+                                    VerticalAlignment="Center">
+                                <Path x:Name="Tick"
+                                      Visibility="Collapsed"
+                                      Data="M 3 8 L 7 12 L 14 4"
+                                      Stroke="White"
+                                      StrokeThickness="2"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"/>
+                            </Border>
+                            <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Box" Property="Background" Value="#4F7DFF"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#86A4FF"/>
+                                <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#86A4FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid Background="#0D0F14">
+        <Grid x:Name="ExpandedShellGrid" Background="#0D0F14">
+        <Grid.RowDefinitions>
+            <RowDefinition x:Name="ToolbarRow" Height="54" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="18" />
+            <RowDefinition Height="4" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border x:Name="ToolbarBorder" Grid.Row="0" Panel.ZIndex="20" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource ToolbarBorderBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="9,7">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- App strip. The responsive controller switches between the full icon strip
+                     and the tiny current-app + Apps menu layout. -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel x:Name="AppSwitcherExpandedPanel" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="MessengerButton"
+                                Style="{StaticResource AppIconButtonStyle}"
+                                Click="MessengerButton_Click"
+                                ToolTip="Messenger">
+                            <Grid Width="24" Height="24">
+                                <Image Source="{StaticResource MessengerPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"/>
+                            </Grid>
+                        </Button>
+
+                        <Button x:Name="FacebookButton"
+                                Style="{StaticResource AppIconButtonStyle}"
+                                Click="FacebookButton_Click"
+                                ToolTip="Facebook">
+                            <Grid Width="24" Height="24">
+                                <Image Source="{StaticResource FacebookPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"/>
+                            </Grid>
+                        </Button>
+
+                        <Button x:Name="YouTubeButton"
+                                Style="{StaticResource AppIconButtonStyle}"
+                                Click="YouTubeButton_Click"
+                                ToolTip="YouTube">
+                            <Grid Width="24" Height="24">
+                                <Image Source="{StaticResource YouTubePixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"/>
+                            </Grid>
+                        </Button>
+
+                        <Button x:Name="DiscordButton"
+                                Style="{StaticResource AppIconButtonStyle}"
+                                Click="DiscordButton_Click"
+                                ToolTip="Discord">
+                            <Grid Width="24" Height="24">
+                                <Image Source="{StaticResource DiscordPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"/>
+                            </Grid>
+                        </Button>
+
+                        <Button x:Name="ZaloButton"
+                                Style="{StaticResource AppIconButtonStyle}"
+                                Click="ZaloButton_Click"
+                                ToolTip="Zalo">
+                            <Grid Width="24" Height="24">
+                                <Image Source="{StaticResource ZaloPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"/>
+                            </Grid>
+                        </Button>
+                        <Button x:Name="WebButton"
+                                Style="{StaticResource AppIconButtonStyle}"
+                                Click="WebButton_Click"
+                                ToolTip="Web browser">
+                            <Grid Width="24" Height="24">
+                                <Image Source="{StaticResource WebPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"/>
+                            </Grid>
+                        </Button>
+                        <Button x:Name="StoryButton" Style="{StaticResource AppIconButtonStyle}" Click="StoryButton_Click" ToolTip="Story Companion">
+                            <Image Source="{StaticResource StoryPixelIcon}" Width="24" Height="24" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"/>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel x:Name="TinyAppSwitcherPanel" Orientation="Horizontal" Visibility="Collapsed" VerticalAlignment="Center">
+                        <Button x:Name="CurrentAppButton"
+                                Style="{StaticResource AppIconButtonStyle}"
+                                Width="34" Height="34"
+                                IsHitTestVisible="False"
+                                ToolTip="Current app">
+                            <Grid Width="24" Height="24">
+                                <Image x:Name="CurrentAppIconImage" Source="{StaticResource MessengerPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"/>
+                            </Grid>
+                        </Button>
+                        <Button x:Name="AppsMenuButton"
+                                Style="{StaticResource DropdownButtonStyle}"
+                                Width="76" Height="36"
+                                Margin="0,0,5,0"
+                                ToolTip="Switch app"
+                                Click="AppsMenuButton_Click">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Apps" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Path Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center"
+                                      Data="M 0 0 L 3.5 3.5 L 7 0" Stroke="{StaticResource TextMutedBrush}"
+                                      StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            </Grid>
+                            <Button.ContextMenu>
+                                <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Bottom">
+                                    <MenuItem x:Name="AppsMessengerMenuItem" Header="Messenger" Tag="Messenger" Style="{StaticResource DarkMenuItemStyle}" Click="MessengerButton_Click"><MenuItem.Icon><Image Source="{StaticResource MessengerPixelIcon}" Width="18" Height="18" RenderOptions.BitmapScalingMode="NearestNeighbor"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsFacebookMenuItem" Header="Facebook" Tag="Facebook" Style="{StaticResource DarkMenuItemStyle}" Click="FacebookButton_Click"><MenuItem.Icon><Image Source="{StaticResource FacebookPixelIcon}" Width="18" Height="18" RenderOptions.BitmapScalingMode="NearestNeighbor"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsYouTubeMenuItem" Header="YouTube" Tag="YouTube" Style="{StaticResource DarkMenuItemStyle}" Click="YouTubeButton_Click"><MenuItem.Icon><Image Source="{StaticResource YouTubePixelIcon}" Width="18" Height="18" RenderOptions.BitmapScalingMode="NearestNeighbor"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsDiscordMenuItem" Header="Discord" Tag="Discord" Style="{StaticResource DarkMenuItemStyle}" Click="DiscordButton_Click"><MenuItem.Icon><Image Source="{StaticResource DiscordPixelIcon}" Width="18" Height="18" RenderOptions.BitmapScalingMode="NearestNeighbor"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsZaloMenuItem" Header="Zalo" Tag="Zalo" Style="{StaticResource DarkMenuItemStyle}" Click="ZaloButton_Click"><MenuItem.Icon><Image Source="{StaticResource ZaloPixelIcon}" Width="18" Height="18" RenderOptions.BitmapScalingMode="NearestNeighbor"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsWebMenuItem" Header="Web" Tag="Web" Style="{StaticResource DarkMenuItemStyle}" Click="WebButton_Click"><MenuItem.Icon><Image Source="{StaticResource WebPixelIcon}" Width="18" Height="18" RenderOptions.BitmapScalingMode="NearestNeighbor"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsStoryMenuItem" Header="Story" Tag="Story" Style="{StaticResource DarkMenuItemStyle}" Click="StoryButton_Click"><MenuItem.Icon><Image Source="{StaticResource StoryPixelIcon}" Width="18" Height="18" RenderOptions.BitmapScalingMode="NearestNeighbor"/></MenuItem.Icon></MenuItem>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="BackgroundAudioButton"
+                            Style="{StaticResource UtilityIconButtonStyle}"
+                            ToolTip="Background audio: Off"
+                            Click="BackgroundAudioButton_Click">
+                        <Viewbox Width="18" Height="18">
+                            <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Fill="Transparent"
+                                  StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                  Data="M3,9 L7,9 L12,5 L12,19 L7,15 L3,15 Z M15,9 C17,11 17,13 15,15 M17.5,6.5 C21,9.5 21,14.5 17.5,17.5"/>
+                        </Viewbox>
+                    </Button>
+
+                    <CheckBox x:Name="AlwaysOnTopCheckBox"
+                              Style="{StaticResource AlwaysOnTopCheckBoxStyle}"
+                              Width="38"
+                              Content=""
+                              Margin="0,0,8,0"
+                              ToolTip="Always on top"
+                              Checked="AlwaysOnTopCheckBox_Changed"
+                              Unchecked="AlwaysOnTopCheckBox_Changed"/>
+
+                    <Button x:Name="MoreMenuButton"
+                            Style="{StaticResource UtilityIconButtonStyle}"
+                            Width="36" Height="36" Margin="0"
+                            ToolTip="More"
+                            Click="MoreMenuButton_Click">
+                        <TextBlock Text="•••" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Button.ContextMenu>
+                            <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Bottom">
+                                <MenuItem x:Name="MoreZoomMenuItem" Header="Zoom · Auto" Style="{StaticResource DarkMenuItemStyle}" Click="MoreZoomMenuItem_Click"/>
+                                <Separator/>
+                                <MenuItem x:Name="MoreAdBlockMenuItem" Header="Ad blocker settings" Style="{StaticResource DarkMenuItemStyle}" Click="AdBlockButton_Click"/>
+                                <MenuItem x:Name="MoreVpnMenuItem" Header="VPN · checking" Style="{StaticResource DarkMenuItemStyle}" Click="VpnMenuItem_Click"/>
+                                <MenuItem x:Name="MoreHealthMenuItem" Header="Session health" Style="{StaticResource DarkMenuItemStyle}" Click="SessionHealthButton_Click"/>
+                                <MenuItem Header="Updates…" Style="{StaticResource DarkMenuItemStyle}" Click="UpdatesMenuItem_Click"/>
+                                <MenuItem x:Name="MoreResourcePolicyMenuItem" Header="Resource policy · Balanced" Style="{StaticResource DarkMenuItemStyle}">
+                                    <MenuItem x:Name="ResourceKeepAliveMenuItem" IsCheckable="True" Header="Keep alive" Tag="KeepAlive" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
+                                    <MenuItem x:Name="ResourceBalancedMenuItem" IsCheckable="True" Header="Balanced" Tag="Balanced" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
+                                    <MenuItem x:Name="ResourceAggressiveMenuItem" IsCheckable="True" Header="Aggressive" Tag="Aggressive" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
+                                </MenuItem>
+                                <Separator/>
+                                <MenuItem x:Name="MoreSizeMenuItem" Header="Window size · 1/4" Style="{StaticResource DarkMenuItemStyle}" Click="MoreSizeMenuItem_Click"/>
+                                <MenuItem x:Name="MorePositionMenuItem" Header="Position · Bottom right" Style="{StaticResource DarkMenuItemStyle}" Click="MorePositionMenuItem_Click"/>
+                                <MenuItem x:Name="MoreBackgroundAudioMenuItem" Header="Background audio" Style="{StaticResource DarkMenuItemStyle}" IsCheckable="True" Click="BackgroundAudioButton_Click"/>
+                                <MenuItem x:Name="MoreAlwaysOnTopMenuItem" Header="Always on top" Style="{StaticResource DarkMenuItemStyle}" IsCheckable="True" Click="MoreAlwaysOnTopMenuItem_Click"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+
+                    <!-- Hidden command hosts preserve the existing submenus and their stateful items.
+                         The More menu opens these menus using itself as the placement target. -->
+                    <StackPanel Visibility="Collapsed">
+                        <Button x:Name="ZoomMenuButton" Click="ZoomMenuButton_Click">
+                            <TextBlock x:Name="ZoomMenuText" Text="Auto"/>
+                            <Button.ContextMenu>
+                                <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Bottom">
+                                    <MenuItem x:Name="ZoomAutoMenuItem" Header="Auto" Tag="0" Style="{StaticResource DarkMenuItemStyle}" Click="ZoomMenuItem_Click"/>
+                                    <MenuItem x:Name="Zoom50MenuItem" Header="50%" Tag="0.5" Style="{StaticResource DarkMenuItemStyle}" Click="ZoomMenuItem_Click"/>
+                                    <MenuItem x:Name="Zoom67MenuItem" Header="67%" Tag="0.67" Style="{StaticResource DarkMenuItemStyle}" Click="ZoomMenuItem_Click"/>
+                                    <MenuItem x:Name="Zoom80MenuItem" Header="80%" Tag="0.8" Style="{StaticResource DarkMenuItemStyle}" Click="ZoomMenuItem_Click"/>
+                                    <MenuItem x:Name="Zoom90MenuItem" Header="90%" Tag="0.9" Style="{StaticResource DarkMenuItemStyle}" Click="ZoomMenuItem_Click"/>
+                                    <MenuItem x:Name="Zoom100MenuItem" Header="100%" Tag="1.0" Style="{StaticResource DarkMenuItemStyle}" Click="ZoomMenuItem_Click"/>
+                                    <MenuItem x:Name="Zoom110MenuItem" Header="110%" Tag="1.1" Style="{StaticResource DarkMenuItemStyle}" Click="ZoomMenuItem_Click"/>
+                                    <MenuItem x:Name="Zoom125MenuItem" Header="125%" Tag="1.25" Style="{StaticResource DarkMenuItemStyle}" Click="ZoomMenuItem_Click"/>
+                                    <MenuItem x:Name="Zoom150MenuItem" Header="150%" Tag="1.5" Style="{StaticResource DarkMenuItemStyle}" Click="ZoomMenuItem_Click"/>
+                                    <MenuItem x:Name="Zoom175MenuItem" Header="175%" Tag="1.75" Style="{StaticResource DarkMenuItemStyle}" Click="ZoomMenuItem_Click"/>
+                                    <MenuItem x:Name="Zoom200MenuItem" Header="200%" Tag="2.0" Style="{StaticResource DarkMenuItemStyle}" Click="ZoomMenuItem_Click"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+
+                        <Button x:Name="SizeMenuButton" Click="SizeMenuButton_Click">
+                            <TextBlock x:Name="SizeMenuText" Text="1/4"/>
+                            <Button.ContextMenu>
+                                <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Bottom">
+                                    <MenuItem x:Name="Size1MenuItem" Header="1" Tag="1" Style="{StaticResource DarkMenuItemStyle}" Click="SizeMenuItem_Click"/>
+                                    <MenuItem x:Name="Size12MenuItem" Header="1/2" Tag="1/2" Style="{StaticResource DarkMenuItemStyle}" Click="SizeMenuItem_Click"/>
+                                    <MenuItem x:Name="Size14MenuItem" Header="1/4" Tag="1/4" Style="{StaticResource DarkMenuItemStyle}" Click="SizeMenuItem_Click"/>
+                                    <MenuItem x:Name="Size18MenuItem" Header="1/8" Tag="1/8" Style="{StaticResource DarkMenuItemStyle}" Click="SizeMenuItem_Click"/>
+                                    <MenuItem x:Name="Size116MenuItem" Header="1/16" Tag="1/16" Style="{StaticResource DarkMenuItemStyle}" Click="SizeMenuItem_Click"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+
+                        <Button x:Name="PositionMenuButton" Click="PositionMenuButton_Click">
+                            <TextBlock x:Name="PositionMenuText" Text="Bottom right"/>
+                            <Button.ContextMenu>
+                                <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Bottom">
+                                    <MenuItem x:Name="TopLeftMenuItem" Header="Top left" Tag="TopLeft" Style="{StaticResource DarkMenuItemStyle}" Click="PositionMenuItem_Click"/>
+                                    <MenuItem x:Name="TopRightMenuItem" Header="Top right" Tag="TopRight" Style="{StaticResource DarkMenuItemStyle}" Click="PositionMenuItem_Click"/>
+                                    <MenuItem x:Name="BottomLeftMenuItem" Header="Bottom left" Tag="BottomLeft" Style="{StaticResource DarkMenuItemStyle}" Click="PositionMenuItem_Click"/>
+                                    <MenuItem x:Name="BottomRightMenuItem" Header="Bottom right" Tag="BottomRight" Style="{StaticResource DarkMenuItemStyle}" Click="PositionMenuItem_Click"/>
+                                    <MenuItem x:Name="CenterMenuItem" Header="Center" Tag="Center" Style="{StaticResource DarkMenuItemStyle}" Click="PositionMenuItem_Click"/>
+                                    <MenuItem x:Name="CustomMenuItem" Header="Custom" Tag="Custom" Style="{StaticResource DarkMenuItemStyle}" Click="PositionMenuItem_Click"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+
+                        <Button x:Name="AdBlockButton" Click="AdBlockButton_Click"/>
+                        <Button x:Name="SessionHealthButton" Click="SessionHealthButton_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Compact ad-blocker settings. Technical diagnostics stay in the log instead of occupying UI. -->
+        <Border x:Name="DiagnosticsPanel"
+                Grid.Row="1"
+                Panel.ZIndex="20"
+                Visibility="Collapsed"
+                Margin="10,6,10,4"
+                Background="#171C28"
+                BorderBrush="#2E394F"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="12,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock x:Name="DiagnosticsTitleText" Text="Ad blocker" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" FontSize="13.5"/>
+                        <TextBlock x:Name="DiagnosticsSummaryText" Text="Preparing blockers..." Foreground="{StaticResource TextMutedBrush}" FontSize="10.8" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Style="{StaticResource UtilityIconButtonStyle}" Width="30" Height="28" Margin="8,0,0,0" ToolTip="Close" Click="CloseDiagnosticsButton_Click">
+                        <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Fill="Transparent" StrokeThickness="1.8" StrokeStartLineCap="Round" Data="M6,6 L18,18 M18,6 L6,18"/>
+                    </Button>
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="0,9,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button x:Name="AdBlockerMenuButton"
+                            Grid.Column="0"
+                            Style="{StaticResource DropdownButtonStyle}"
+                            Height="34"
+                            HorizontalAlignment="Stretch"
+                            ToolTip="Choose the active ad blocker"
+                            Click="AdBlockerMenuButton_Click">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock x:Name="AdBlockerMenuText" Grid.Column="0" Text="AdBlock" HorizontalAlignment="Left" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <Path Grid.Column="1" Margin="10,0,2,0" VerticalAlignment="Center"
+                                  Data="M 0 0 L 3.5 3.5 L 7 0" Stroke="{StaticResource TextMutedBrush}"
+                                  StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                        </Grid>
+                        <Button.ContextMenu>
+                            <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Bottom"/>
+                        </Button.ContextMenu>
+                    </Button>
+
+                    <Button x:Name="RescanAdBlockersButton"
+                            Grid.Column="1"
+                            Style="{StaticResource UtilityIconButtonStyle}"
+                            Width="34" Height="34" Margin="8,0,0,0"
+                            ToolTip="Rescan blockers installed in your browsers"
+                            Click="RescanAdBlockersButton_Click">
+                        <Path Width="15" Height="15"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              Fill="Transparent" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M11,3 A5,5 0 1 0 13,9 M11,3 H15 V7"/>
+                    </Button>
+
+                    <Border x:Name="DiagnosticsStatusBorder" Grid.Column="2" Margin="8,0,0,0" Background="#14251F" BorderBrush="#315F50" BorderThickness="1" CornerRadius="10" Padding="9,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Ellipse x:Name="DiagnosticsStatusDot" Width="7" Height="7" Fill="#54D39A" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                            <TextBlock x:Name="DiagnosticsMetaText" Text="Ready" Foreground="#CFEBDD" FontSize="10.8" VerticalAlignment="Center" MaxWidth="220" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <ProgressBar x:Name="DiagnosticsProgressBar" Grid.Row="2" Height="2" Margin="0,8,0,0" IsIndeterminate="True" Visibility="Collapsed"/>
+
+                <!-- Kept as hidden state sinks so detailed information is logged, not displayed. -->
+                <TextBlock x:Name="DiagnosticsLastScanText" Visibility="Collapsed"/>
+                <TextBlock x:Name="DiagnosticsDetailsText" Visibility="Collapsed"/>
+            </Grid>
+        </Border>
+
+        <Border x:Name="VpnPanel"
+                Grid.Row="1"
+                Panel.ZIndex="21"
+                Visibility="Collapsed"
+                Margin="10,6,10,4"
+                Background="#171C28"
+                BorderBrush="#2E394F"
+                BorderThickness="1"
+                CornerRadius="14"
+                Padding="14,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Width="34" Height="34" CornerRadius="10" Background="#242A35" BorderBrush="#54606F" BorderThickness="1">
+                        <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path Stroke="#F3A846" Fill="Transparent" StrokeThickness="1.8" StrokeLineJoin="Round" Data="M12,2 L20,5 V11 C20,16 16.7,20.2 12,22 C7.3,20.2 4,16 4,11 V5 Z M8.5,12 L11,14.5 L16,9.5"/>
+                        </Viewbox>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="11,0,12,0" VerticalAlignment="Center">
+                        <TextBlock Text="Cloudflare WARP" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" FontSize="14"/>
+                        <TextBlock x:Name="VpnStatusText" Text="Checking installation..." Foreground="{StaticResource TextMutedBrush}" FontSize="11.3" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <Button Grid.Column="2" Style="{StaticResource UtilityIconButtonStyle}" Width="32" Height="30" Margin="0" ToolTip="Close" Click="CloseVpnPanelButton_Click">
+                        <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Fill="Transparent" StrokeThickness="1.8" StrokeStartLineCap="Round" Data="M6,6 L18,18 M18,6 L6,18"/>
+                    </Button>
+                </Grid>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="45,10,0,0">
+                    <Button x:Name="VpnToggleButton" Style="{StaticResource PanelActionButtonStyle}" Margin="0,0,8,0" Click="VpnToggleButton_Click">
+                        <TextBlock x:Name="VpnToggleButtonText" Text="Connect"/>
+                    </Button>
+                    <Button x:Name="VpnInstallButton" Style="{StaticResource PanelActionButtonStyle}" Margin="0,0,8,0" Click="VpnInstallButton_Click" Visibility="Collapsed">
+                        <TextBlock Text="Install WARP"/>
+                    </Button>
+                    <Button x:Name="VpnOpenAppButton" Style="{StaticResource PanelActionButtonStyle}" Click="VpnOpenAppButton_Click" Visibility="Collapsed">
+                        <TextBlock Text="Open WARP"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border x:Name="SessionHealthPanel"
+                Grid.Row="1"
+                Panel.ZIndex="21"
+                Visibility="Collapsed"
+                Margin="10,6,10,4"
+                Background="#171C28"
+                BorderBrush="#2E394F"
+                BorderThickness="1"
+                CornerRadius="14"
+                Padding="14,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Width="34" Height="34" CornerRadius="10" Background="#1E3140" BorderBrush="#3E6A7A" BorderThickness="1" VerticalAlignment="Center">
+                        <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path Stroke="#7BD9D0" Fill="Transparent" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Data="M2,12 H6 L8.5,7 L12,17 L15,10 L18,12 H22"/>
+                        </Viewbox>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="11,0,12,0" VerticalAlignment="Center">
+                        <TextBlock Text="Session health" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" FontSize="14"/>
+                        <TextBlock x:Name="HealthSummaryText" Text="Checking app surfaces..." Foreground="{StaticResource TextMutedBrush}" FontSize="11.5" Margin="0,2,0,0"/>
+                        <TextBlock x:Name="HealthResourceText" Text="Memory: measuring..." Foreground="#8792A7" FontSize="10.8" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <Button Grid.Column="2" Style="{StaticResource UtilityIconButtonStyle}" Width="32" Height="30" Margin="0" ToolTip="Close" Click="CloseSessionHealthButton_Click">
+                        <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Fill="Transparent" StrokeThickness="1.8" StrokeStartLineCap="Round" Data="M6,6 L18,18 M18,6 L6,18"/>
+                    </Button>
+                </Grid>
+
+                <Border Grid.Row="1" Margin="0,11,0,0" Background="#111620" BorderBrush="#283349" BorderThickness="1" CornerRadius="11" Padding="12,6">
+                    <StackPanel>
+                        <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="Messenger" Foreground="#F5F7FB" FontWeight="SemiBold"/><Ellipse x:Name="HealthMessengerDot" Grid.Column="1" Width="7" Height="7" Margin="0,0,9,0" VerticalAlignment="Center" Fill="#6F788A"/><TextBlock x:Name="HealthMessengerText" Grid.Column="2" Foreground="#BFC7D7" Text="Not opened" TextTrimming="CharacterEllipsis"/></Grid>
+                        <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="Facebook" Foreground="#F5F7FB" FontWeight="SemiBold"/><Ellipse x:Name="HealthFacebookDot" Grid.Column="1" Width="7" Height="7" Margin="0,0,9,0" VerticalAlignment="Center" Fill="#6F788A"/><TextBlock x:Name="HealthFacebookText" Grid.Column="2" Foreground="#BFC7D7" Text="Not opened" TextTrimming="CharacterEllipsis"/></Grid>
+                        <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="YouTube" Foreground="#F5F7FB" FontWeight="SemiBold"/><Ellipse x:Name="HealthYouTubeDot" Grid.Column="1" Width="7" Height="7" Margin="0,0,9,0" VerticalAlignment="Center" Fill="#6F788A"/><TextBlock x:Name="HealthYouTubeText" Grid.Column="2" Foreground="#BFC7D7" Text="Not opened" TextTrimming="CharacterEllipsis"/></Grid>
+                        <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="Discord" Foreground="#F5F7FB" FontWeight="SemiBold"/><Ellipse x:Name="HealthDiscordDot" Grid.Column="1" Width="7" Height="7" Margin="0,0,9,0" VerticalAlignment="Center" Fill="#6F788A"/><TextBlock x:Name="HealthDiscordText" Grid.Column="2" Foreground="#BFC7D7" Text="Not opened" TextTrimming="CharacterEllipsis"/></Grid>
+                        <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="Zalo" Foreground="#F5F7FB" FontWeight="SemiBold"/><Ellipse x:Name="HealthZaloDot" Grid.Column="1" Width="7" Height="7" Margin="0,0,9,0" VerticalAlignment="Center" Fill="#6F788A"/><TextBlock x:Name="HealthZaloText" Grid.Column="2" Foreground="#BFC7D7" Text="Not opened" TextTrimming="CharacterEllipsis"/></Grid>
+                        <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="Web" Foreground="#F5F7FB" FontWeight="SemiBold"/><Ellipse x:Name="HealthWebDot" Grid.Column="1" Width="7" Height="7" Margin="0,0,9,0" VerticalAlignment="Center" Fill="#6F788A"/><TextBlock x:Name="HealthWebText" Grid.Column="2" Foreground="#BFC7D7" Text="Not opened" TextTrimming="CharacterEllipsis"/></Grid>
+                    </StackPanel>
+                </Border>
+
+                <Grid Grid.Row="2" Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Style="{StaticResource PanelActionButtonStyle}" Margin="0,0,8,0" Click="ReloadActiveHealthButton_Click" ToolTip="Reload the current app">
+                        <TextBlock Text="Reload active"/>
+                    </Button>
+                    <Button Grid.Column="1" Style="{StaticResource PanelActionButtonStyle}" Click="OpenHealthLogsButton_Click" ToolTip="Open WorkChat logs">
+                        <TextBlock Text="Open logs"/>
+                    </Button>
+                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#7F899C" FontSize="10.8" Text="Ready = page loaded; sign-in is not guaranteed."/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- This dedicated handle row remains visible even when the toolbar is collapsed. -->
+        <Grid Grid.Row="2" Panel.ZIndex="20" Background="#0D0F14">
+            <Button x:Name="ToolbarToggleButton"
+                    Style="{StaticResource ToolbarToggleButtonStyle}"
+                    Width="38" Height="18"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Click="ToolbarToggleButton_Click"
+                    ToolTip="Hide toolbar">
+                <TextBlock x:Name="ToolbarToggleGlyph" Text="▲" FontSize="10"/>
+            </Button>
+        </Grid>
+
+        <!-- Airspace safety band: WebView2 is an HwndHost and must not touch/overlap WPF chrome. -->
+        <Border Grid.Row="3" Background="#0D0F14" Panel.ZIndex="20" IsHitTestVisible="False" />
+
+        <Grid x:Name="WebViewHostGrid" Grid.Row="4" Panel.ZIndex="0" ClipToBounds="True" Background="#0D0F14">
+            <wv2:WebView2 x:Name="MessengerWebView" Visibility="Visible" />
+            <wv2:WebView2 x:Name="FacebookWebView" Visibility="Collapsed" />
+            <wv2:WebView2 x:Name="YouTubeWebView" Visibility="Collapsed" />
+            <wv2:WebView2 x:Name="DiscordWebView" Visibility="Collapsed" />
+            <wv2:WebView2 x:Name="ZaloWebView" Visibility="Collapsed" />
+
+            <Grid x:Name="BrowserSurfaceGrid" Visibility="Collapsed" Background="#0F1217">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="36"/>
+                    <RowDefinition Height="44"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Compact modern tab strip. Tabs sit above the address bar like a browser,
+                     while the + action stays with the tab group instead of in navigation. -->
+                <Border Grid.Row="0" Background="#0F1217" BorderBrush="#292F39" BorderThickness="0,0,0,1" Padding="7,3,7,2">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ScrollViewer Grid.Column="0"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="BrowserTabsPanel" Orientation="Horizontal" VerticalAlignment="Center"/>
+                        </ScrollViewer>
+                        <Button x:Name="BrowserNewTabButton"
+                                Grid.Column="1"
+                                Style="{StaticResource BrowserChromeButtonStyle}"
+                                Width="30"
+                                Height="30"
+                                Margin="4,0,0,0"
+                                ToolTip="New tab (max 5)"
+                                Click="BrowserNewTabButton_Click">
+                            <TextBlock Text="+" FontSize="18" Margin="0,-1,0,0"/>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- Navigation bar: subtle icon buttons, one dominant rounded address field,
+                     and a compact app launcher. -->
+                <Border Grid.Row="1" Background="#151920" BorderBrush="#2B323D" BorderThickness="0,0,0,1" Padding="8,6">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="BrowserBackButton" Grid.Column="0" Style="{StaticResource BrowserChromeButtonStyle}" Margin="0,0,2,0" ToolTip="Back" Click="BrowserBackButton_Click">
+                            <TextBlock Text="←" FontSize="16"/>
+                        </Button>
+                        <Button x:Name="BrowserForwardButton" Grid.Column="1" Style="{StaticResource BrowserChromeButtonStyle}" Margin="0,0,2,0" ToolTip="Forward" Click="BrowserForwardButton_Click">
+                            <TextBlock Text="→" FontSize="16"/>
+                        </Button>
+                        <Button x:Name="BrowserReloadButton" Grid.Column="2" Style="{StaticResource BrowserChromeButtonStyle}" Margin="0,0,5,0" ToolTip="Reload" Click="BrowserReloadButton_Click">
+                            <TextBlock Text="↻" FontSize="15"/>
+                        </Button>
+
+                        <Border Grid.Column="3" Height="32" BorderThickness="1" CornerRadius="12" Margin="0,0,5,0" Style="{StaticResource BrowserAddressBorderStyle}">
+                            <Grid>
+                                <TextBlock x:Name="BrowserAddressPlaceholder"
+                                           Text="Search or enter an address"
+                                           Foreground="#7F899B"
+                                           FontSize="12.5"
+                                           Margin="12,0"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False"/>
+                                <TextBox x:Name="BrowserAddressBox"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Foreground="#F7F8FA"
+                                         CaretBrush="#AFC2FF"
+                                         FontSize="12.5"
+                                         Padding="11,5"
+                                         VerticalContentAlignment="Center"
+                                         TextChanged="BrowserAddressBox_TextChanged"
+                                         GotKeyboardFocus="BrowserAddressBox_GotKeyboardFocus"
+                                         KeyDown="BrowserAddressBox_KeyDown"
+                                         ToolTip="Search or enter an address"/>
+                            </Grid>
+                        </Border>
+
+                        <Button x:Name="BrowserQuickButton"
+                                Grid.Column="4"
+                                Style="{StaticResource BrowserChromeButtonStyle}"
+                                Width="34"
+                                Height="32"
+                                Margin="0"
+                                ToolTip="Web tools"
+                                Click="BrowserQuickButton_Click">
+                            <Grid Width="14" Height="14">
+                                <Ellipse Width="4" Height="4" Fill="#B9C5D8" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                                <Ellipse Width="4" Height="4" Fill="#B9C5D8" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                                <Ellipse Width="4" Height="4" Fill="#B9C5D8" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                                <Ellipse Width="4" Height="4" Fill="#B9C5D8" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                            </Grid>
+                            <Button.ContextMenu>
+                                <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Bottom">
+                                    <MenuItem Header="ChatGPT" Tag="https://chatgpt.com/" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserQuickLink_Click"/>
+                                    <MenuItem Header="Gemini" Tag="https://gemini.google.com/" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserQuickLink_Click"/>
+                                    <MenuItem Header="Gmail" Tag="https://mail.google.com/" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserQuickLink_Click"/>
+                                    <MenuItem Header="GitHub" Tag="https://github.com/" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserQuickLink_Click"/>
+                                    <MenuItem Header="Figma" Tag="https://www.figma.com/" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserQuickLink_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="Find on page" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserFindMenuItem_Click"/>
+                                    <MenuItem Header="Downloads" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserDownloadsMenuItem_Click"/>
+                                    <MenuItem Header="Clear browsing data…" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserClearDataMenuItem_Click"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <Grid x:Name="BrowserWebViewHost" Grid.Row="2" Background="#11141B" ClipToBounds="True">
+                    <wv2:WebView2 x:Name="BrowserFallbackWebView" Visibility="Collapsed"/>
+
+                    <!-- Blank tabs do not initialize WebView2 at all. This lightweight WPF view
+                         keeps a new tab instant and leaves the address field genuinely empty. -->
+                    <Border x:Name="BrowserNewTabOverlay" Background="#0F1217" Panel.ZIndex="30" Visibility="Collapsed">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="620" Margin="24">
+                            <Border Width="48" Height="48" Background="#1D4F91" CornerRadius="14" HorizontalAlignment="Center" Margin="0,0,0,14">
+                                <TextBlock Text="W" Foreground="White" FontSize="21" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="WorkChat Web" Foreground="#F4F7FC" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Search above or open a shortcut" Foreground="#8994A7" FontSize="12.5" HorizontalAlignment="Center" Margin="0,6,0,16"/>
+                            <WrapPanel HorizontalAlignment="Center">
+                                <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="ChatGPT" Tag="https://chatgpt.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Gemini" Tag="https://gemini.google.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Gmail" Tag="https://mail.google.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="GitHub" Tag="https://github.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Figma" Tag="https://www.figma.com/" Click="BrowserNewTabQuickLink_Click"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="StorySurfaceGrid" Visibility="Collapsed" Background="#0F0E0D">
+                <local:StoryPanel x:Name="StoryPanel"/>
+            </Grid>
+
+            <Border x:Name="LoadingOverlay" Background="#0D0F14" Visibility="Visible">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="250">
+                    <ProgressBar IsIndeterminate="True" Height="4" Margin="0,0,0,14" />
+                    <TextBlock x:Name="LoadingText"
+                               Text="Opening Messenger..."
+                               Foreground="White"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Grid>
+        </Grid>
+    </Grid>
+
+</Window>
