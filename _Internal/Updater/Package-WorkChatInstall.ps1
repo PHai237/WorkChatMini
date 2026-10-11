@@ -1,33 +1,52 @@
-# Create a standalone first-install ZIP. Users do NOT need source or .NET SDK.
+# WorkChat Mini - standalone first-install package (deterministic ZIP entry paths).
+# Deliberately use ZipArchive.CreateEntryFromFile with explicit POSIX entry names:
+# Windows PowerShell 5.1 and GitHub runners must produce IDENTICAL ZIP paths.
 param(
     [Parameter(Mandatory=$true)][string]$SourceRoot,
     [Parameter(Mandatory=$true)][string]$Version,
     [Parameter(Mandatory=$true)][string]$Output
 )
 $ErrorActionPreference = 'Stop'
-if ($Version -notmatch '^\d+\.\d+\.\d+(?:-preview\d+(?:\.\d+)?)?$') { throw 'Invalid version.' }
+if ($Version -notmatch '^\d+\.\d+\.\d+(?:-preview\d+(?:\.\d+)?)?$') {
+    throw 'Invalid release version.'
+}
 $root = [IO.Path]::GetFullPath($SourceRoot)
-$files = [ordered]@{
-    'WorkChatMini.exe' = '_Internal\Build\WorkChatMini.exe'
-    'INSTALL-APP.bat' = 'INSTALL-APP.bat'
-    'RESTORE-PREVIOUS.bat' = 'RESTORE-PREVIOUS.bat'
-    'TEST-APP.bat' = '_Internal\Updater\TEST-APP.bat'
-    '_Updater\Apply-WorkChatUpdate.ps1' = '_Internal\Updater\Apply-WorkChatUpdate.ps1'
-    '_Internal\Updater\Install-WorkChatApp.ps1' = '_Internal\Updater\Install-WorkChatApp.ps1'
-    '_Internal\Updater\Restore-Previous.ps1' = '_Internal\Updater\Restore-Previous.ps1'
-    '_Updater\Run-WorkChatSelfTest.ps1' = '_Internal\Updater\Run-WorkChatSelfTest.ps1'
+if (-not (Test-Path -LiteralPath $root -PathType Container)) { throw "Source root not found: $root" }
+$outputPath = [IO.Path]::GetFullPath($Output)
+if (-not (Test-Path -LiteralPath (Split-Path -Parent $outputPath))) {
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $outputPath) | Out-Null
 }
-foreach ($destinationName in @($files.Keys)) {
-    $path = Join-Path $root $files[$destinationName]
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Installer file missing: $path" }
-}
-$temporary = Join-Path ([IO.Path]::GetTempPath()) ('WorkChatInstall-' + [guid]::NewGuid().ToString('N'))
-try {
-    foreach ($destinationName in @($files.Keys)) {
-        $destination = Join-Path $temporary $destinationName
-        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
-        Copy-Item -LiteralPath (Join-Path $root $files[$destinationName]) -Destination $destination
+
+# The left side is an exact ZIP entry name, NOT an OS path. Never put \\ in it.
+$files = @(
+    @{ Entry = 'WorkChatMini.exe';                                  Source = '_Internal/Build/WorkChatMini.exe' }
+    @{ Entry = 'INSTALL-APP.bat';                                  Source = 'INSTALL-APP.bat' }
+    @{ Entry = 'RESTORE-PREVIOUS.bat';                              Source = 'RESTORE-PREVIOUS.bat' }
+    @{ Entry = 'TEST-APP.bat';                                     Source = '_Internal/Updater/TEST-APP.bat' }
+    @{ Entry = '_Updater/Apply-WorkChatUpdate.ps1';                Source = '_Internal/Updater/Apply-WorkChatUpdate.ps1' }
+    @{ Entry = '_Internal/Updater/Install-WorkChatApp.ps1';        Source = '_Internal/Updater/Install-WorkChatApp.ps1' }
+    @{ Entry = '_Internal/Updater/Restore-Previous.ps1';          Source = '_Internal/Updater/Restore-Previous.ps1' }
+    @{ Entry = '_Updater/Run-WorkChatSelfTest.ps1';               Source = '_Internal/Updater/Run-WorkChatSelfTest.ps1' }
+)
+
+foreach ($item in $files) {
+    if ($item.Entry -notmatch '^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$') {
+        throw "Unsafe ZIP entry name: $($item.Entry)"
     }
+    $item['SourceFile'] = Join-Path $root ($item.Source.Replace('/', [IO.Path]::DirectorySeparatorChar))
+    if (-not (Test-Path -LiteralPath $item.SourceFile -PathType Leaf)) {
+        throw "Installer source file missing: $($item.SourceFile)"
+    }
+}
+
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+$working = Join-Path ([IO.Path]::GetTempPath()) ('WorkChatInstall-' + [Guid]::NewGuid().ToString('N'))
+$pending = Join-Path $working 'pending-install.zip'
+try {
+    New-Item -ItemType Directory -Force -Path $working | Out-Null
+    $readmePath = Join-Path $working 'FIRST-INSTALL.txt'
     $readme = @(
         'WorkChat Mini - first installation',
         '',
@@ -40,32 +59,53 @@ try {
         'Do not delete %LOCALAPPDATA%\WorkChatMini.',
         'Use only releases from your trusted repository.'
     ) -join "`r`n"
-    [IO.File]::WriteAllText((Join-Path $temporary 'FIRST-INSTALL.txt'), $readme, [Text.UTF8Encoding]::new($false))
-    $parent = Split-Path -Parent $Output
-    if (-not (Test-Path -LiteralPath $parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
-    if (Test-Path -LiteralPath $Output) { Remove-Item -LiteralPath $Output -Force }
-    # Passing individual file paths to Compress-Archive FLATTENS nested directories.
-    # ZipFile.CreateFromDirectory retains _Updater/ and _Internal/Updater/ in the archive.
-    Add-Type -AssemblyName System.IO.Compression
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [IO.Compression.ZipFile]::CreateFromDirectory($temporary, $Output, [IO.Compression.CompressionLevel]::Optimal, $false)
-    $archive = [IO.Compression.ZipFile]::OpenRead($Output)
+    [IO.File]::WriteAllText($readmePath, $readme, [Text.UTF8Encoding]::new($false))
+
+    $zip = [IO.Compression.ZipFile]::Open($pending, [IO.Compression.ZipArchiveMode]::Create)
     try {
-        $names = @($archive.Entries | Where-Object { $_.Name } | ForEach-Object { $_.FullName })
-        $required = @($files.Keys | ForEach-Object { $_.Replace('\', '/') })
-        foreach ($requiredName in $required) {
-            if ($requiredName -cnotin $names) {
-                throw "Installer ZIP missing correct path: $requiredName"
+        foreach ($item in $files) {
+            [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+                $zip, [string]$item.SourceFile, [string]$item.Entry,
+                [IO.Compression.CompressionLevel]::Optimal
+            )
+        }
+        [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+            $zip, $readmePath, 'FIRST-INSTALL.txt', [IO.Compression.CompressionLevel]::Optimal
+        )
+    } finally {
+        $zip.Dispose()
+    }
+
+    # Fail before publishing any output if names are wrong, missing, extra or duplicated.
+    $zip = [IO.Compression.ZipFile]::OpenRead($pending)
+    try {
+        $actual = @($zip.Entries | ForEach-Object { $_.FullName })
+        $expected = @($files | ForEach-Object { [string]$_.Entry }) + @('FIRST-INSTALL.txt')
+        if ($actual.Count -ne $expected.Count) {
+            throw "Installer ZIP entry count mismatch: $($actual.Count) != $($expected.Count)"
+        }
+        foreach ($name in $expected) {
+            if (@($actual | Where-Object { $_ -ceq $name }).Count -ne 1) {
+                throw "Installer ZIP missing or duplicate exact path: $name; actual: $($actual -join ', ')"
             }
         }
-        if ($names.Count -ne $required.Count) {
-            throw "Installer ZIP has unexpected or duplicate files: $($names -join ', ')"
+        foreach ($name in $actual) {
+            if ($name -cnotin $expected) { throw "Unexpected installer ZIP entry: $name" }
+        }
+        $exeEntry = $zip.GetEntry('WorkChatMini.exe')
+        if ($null -eq $exeEntry -or $exeEntry.Length -ne (Get-Item -LiteralPath $files[0].SourceFile).Length) {
+            throw 'Installer ZIP executable length mismatch.'
         }
     } finally {
-        $archive.Dispose()
+        $zip.Dispose()
     }
-    if (-not (Test-Path -LiteralPath $Output -PathType Leaf)) { throw 'Installation ZIP not produced.' }
-    Write-Host "First-install ZIP: $Output"
+
+    # Keep the previously produced asset untouched until the replacement passes validation.
+    if (Test-Path -LiteralPath $outputPath -PathType Leaf) {
+        Remove-Item -LiteralPath $outputPath -Force
+    }
+    Move-Item -LiteralPath $pending -Destination $outputPath
+    Write-Host "First-install ZIP: $outputPath"
 } finally {
-    Remove-Item -LiteralPath $temporary -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $working -Recurse -Force -ErrorAction SilentlyContinue
 }
