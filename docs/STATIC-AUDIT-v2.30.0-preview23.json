@@ -1,0 +1,31 @@
+{
+  "version": "2.30.0-preview23",
+  "source_files": 204,
+  "xml_parsed": 6,
+  "longest_source": "_Internal/Source/MainWindow.SelfTest.cs",
+  "longest_source_lines": 976,
+  "batch_files": 9,
+  "package_files": 333,
+  "changed_files": [
+    ".gitignore",
+    "README.md",
+    "FIRST-AND-LAST-LOCAL-BUILD.bat",
+    "SOURCE-CHECK.bat",
+    "PUBLISH-GITHUB-ONCE.bat",
+    "BUILD.bat",
+    "docs/RELEASE-v2.30.0-preview23.md",
+    "docs/RELEASE-BRIDGE-START-HERE.md",
+    "_Internal/VERSION.txt",
+    ".github/workflows/release-windows.yml",
+    "_Internal/Source/AppUpdatePackage.cs",
+    "_Internal/Source/AppUpdateSelfTest.cs",
+    "_Internal/Source/WorkChatMini.csproj",
+    "_Internal/Tools/SOURCE-CHECK.ps1",
+    "_Internal/Tools/Publish-To-GitHub-Once.ps1",
+    "_Internal/Updater/Apply-WorkChatUpdate.ps1",
+    "_Internal/Updater/Install-WorkChatApp.ps1",
+    "_Internal/Installer/WorkChatMini.iss"
+  ],
+  "static_errors": [],
+  "verified": "Static/XML/YAML/ZIP only; no Windows BUILD/Quick/Stress, no remote GitHub release."
+}

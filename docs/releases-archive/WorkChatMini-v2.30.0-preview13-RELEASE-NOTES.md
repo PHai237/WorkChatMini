@@ -1,0 +1,18 @@
+# WorkChat Mini v2.30.0-preview13 — Crash Recovery & Story Operation Serialization
+
+**Source base:** full `v2.30.0-preview12` ZIP; all features from previews7–12 retained. **Windows-tested baseline:** preview6 (Quick/Stress both 22 PASS / 0 FAIL / 0 WARN). **preview13 has not been compiled or run on Windows yet.**
+
+## Changes
+
+1. **Per-Story backend operation gate.** A small shared asynchronous `StoryOperationGate` serializes branch creation/rename/archive/restore/switch/recovery and checkpoint rollback/commit begin/finalize/abort/recovery across different store instances within the running process. This closes the check-then-act race where two asynchronous operations could each see no pending journal and then both mutate `branch-index.json` or the live Story. Different Stories retain independent locks. Waiting supports cancellation; each completed operation releases its lock even on failure. The gate is an in-process safety mechanism, not a cross-process file lock.
+2. **Crash-safe aborted-commit cleanup.** A backwards-compatible optional `Aborting` flag is written to `pending-commit.json` only **after** the rollback restore journal has been durably published. If the app terminates after restoration completes but before the commit journal is deleted, startup removes the remaining abort marker without rolling the Story back again. If a restore journal still exists, it is replayed first. A completed (Committed) journal cannot also be Aborting; contradictory data blocks editing rather than being silently trusted.
+3. **Don't borrow unrelated restore journals.** `AbortCommitAsync` now verifies any existing `pending-restore.json` actually targets the checkpoint being aborted. A mismatching journal produces a failure, leaving both journals for recovery rather than restoring an unrelated version.
+4. **Validate completed commit before discarding last recovery evidence.** On restart, a `Committed=true` journal is not simply deleted. The existing persisted-manuscript guard rechecks the chapter added relative to the pre-commit checkpoint and requires a matching committed assistant narrative message. If persisted files no longer agree, the journal is kept and Story activation fails closed for investigation; no automatic retcon or overwrite.
+5. **Additional tests in existing Story groups.** Self-test now checks per-Story gate exclusion across differently cased IDs, independent Story operations, cancellation of queued waits, two simultaneous branch renames via different store instances, resumable post-abort marker cleanup, contradictory journal rejection and refusal to adopt an unrelated restore journal. The top-level test suite remains 22 tests; these new assertions still need Windows execution.
+
+## Compatibility and safety
+
+- Story Memory remains schema v6; checkpoint/backup format and provider calls unchanged. Older commit journals lacking `Aborting` deserialize with the default `false` value.
+- Source changes are localized to the Story stores and Story regression fixtures; no changes to browser, Discord call guard, AdBlock, notification policy or Gemini/OpenAI providers.
+- The operation gate is **process-local**: never run two copies of the app against the same `%LOCALAPPDATA%/WorkChatMini` Story at once. Filesystem mutations by external software, abrupt power cuts, and cross-process races are not proven safe.
+- **Static audit is not Windows compilation.** At the grouped test milestone run `BUILD.bat`, `AUTO-TEST.bat` Quick+Stress, then manually exercise branch switch, rollback, backup import and recovery in a disposable Story. Do not delete user Story data or replace the validated installation solely on the basis of source inspection.

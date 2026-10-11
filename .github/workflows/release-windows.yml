@@ -1,0 +1,222 @@
+# Push a protected version tag, or use Actions > Run workflow, to build on Windows.
+# Publishes a standalone installer ZIP, an in-app binary update ZIP, and a stable HTTPS
+# latest.json feed via GitHub Pages. No .NET SDK is required on the user's machine.
+name: WorkChat Mini - Build and Publish Windows App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# Never let an older release overwrite the current Pages feed while another deploy runs.
+concurrency:
+  group: workchat-release-publish
+  cancel-in-progress: false
+
+jobs:
+  build-test-release:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Validate version and configure embedded update feed
+        shell: pwsh
+        run: |
+          $version = (Get-Content '_Internal/VERSION.txt' -Raw).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+(?:-preview\d+(?:\.\d+)?)?$') { throw 'Invalid VERSION.txt' }
+          $tag = "v$version"
+          $defaultBranch = '${{ github.event.repository.default_branch }}'
+          if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch' -and $env:GITHUB_REF_NAME -ne $defaultBranch) {
+            throw "Run manual releases from the default branch ($defaultBranch) only."
+          }
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne $tag) {
+            throw "Git tag $env:GITHUB_REF_NAME must match VERSION.txt ($tag)"
+          }
+          $repoParts = $env:GITHUB_REPOSITORY.Split('/')
+          $owner = $repoParts[0].ToLowerInvariant()
+          # The hostname is case-insensitive; the GitHub Pages project path is NOT.
+          $repo = $repoParts[1]
+          $path = if ($repo -ieq "$owner.github.io") { '' } else { "/$repo" }
+          $feedUrl = "https://$owner.github.io$path/latest.json"
+          "WorkChatUpdateFeedUrl=$feedUrl" >> $env:GITHUB_ENV
+          "RELEASE_VERSION=$version" >> $env:GITHUB_ENV
+          "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
+          Write-Host "Embedding feed: $feedUrl"
+      - name: Prevent publishing the same release twice
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "Release $env:RELEASE_TAG already exists. Bump VERSION.txt; do not overwrite published binaries."
+          }
+      - name: Static source check
+        shell: pwsh
+        run: |
+          & .\SOURCE-CHECK.bat --nopause
+          if ($LASTEXITCODE -ne 0) { throw 'Source check failed' }
+      - name: Build self-contained Windows EXE and both release ZIPs
+        shell: cmd
+        run: call BUILD.bat --nopause
+      - name: Check installer and update packages
+        shell: pwsh
+        run: |
+          $version = $env:RELEASE_VERSION
+          $updateZip = "_Internal/Releases/WorkChatMini-update-v$version.zip"
+          $installZip = "_Internal/Releases/WorkChatMini-install-v$version.zip"
+          foreach ($path in @($updateZip, $installZip)) {
+            if (!(Test-Path -LiteralPath $path -PathType Leaf)) { throw "Missing release asset: $path" }
+          }
+          Add-Type -AssemblyName System.IO.Compression
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $updateZip))
+          try {
+            $names = @($zip.Entries | ForEach-Object { $_.FullName })
+            if ($names.Count -ne 2 -or
+                @($names | Where-Object { $_ -cne 'WorkChatMini.exe' -and $_ -cne 'update.json' }).Count -ne 0 -or
+                @($names | Where-Object { $_ -ceq 'WorkChatMini.exe' }).Count -ne 1 -or
+                @($names | Where-Object { $_ -ceq 'update.json' }).Count -ne 1) {
+              throw "Incorrect binary update entries: $($names -join ', ')"
+            }
+            $manifestEntry = $zip.GetEntry('update.json')
+            $reader = [IO.StreamReader]::new($manifestEntry.Open())
+            try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json }
+            finally { $reader.Dispose() }
+            if ($manifest.version -ne $version -or $manifest.file -ne 'WorkChatMini.exe') {
+              throw 'Incorrect binary update manifest version/file'
+            }
+            if ($manifest.sha256 -ine (Get-FileHash _Internal/Build/WorkChatMini.exe -Algorithm SHA256).Hash) {
+              throw 'Binary update EXE hash mismatch'
+            }
+            if ([long]$manifest.size -ne (Get-Item _Internal/Build/WorkChatMini.exe).Length) {
+              throw 'Binary update EXE length mismatch'
+            }
+            $exeEntry = $zip.GetEntry('WorkChatMini.exe')
+            if ([long]$manifest.size -ne $exeEntry.Length) { throw 'ZIP executable length mismatch' }
+            $exeStream = $exeEntry.Open()
+            try {
+              $sha = [Security.Cryptography.SHA256]::Create()
+              try { $zipExeHash = [Convert]::ToHexString($sha.ComputeHash($exeStream)) }
+              finally { $sha.Dispose() }
+            } finally { $exeStream.Dispose() }
+            if ($zipExeHash -ine $manifest.sha256) { throw 'ZIP executable checksum mismatch' }
+          } finally { $zip.Dispose() }
+          $zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $installZip))
+          try {
+            $names = @($zip.Entries | ForEach-Object { $_.FullName })
+            foreach ($expected in @('WorkChatMini.exe', 'INSTALL-APP.bat', '_Updater/Apply-WorkChatUpdate.ps1', '_Internal/Updater/Install-WorkChatApp.ps1')) {
+              if ($expected -notin $names) { throw "Installer missing: $expected" }
+            }
+          } finally { $zip.Dispose() }
+      - name: Quick and Stress on the BUILT EXE (release gate; no second BUILD)
+        shell: cmd
+        timeout-minutes: 25
+        run: call AUTO-TEST.bat --built --nopause
+      - name: Create one-click Windows Setup EXE (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path -LiteralPath $iscc)) {
+            choco install innosetup -y --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
+          }
+          if (-not (Test-Path -LiteralPath $iscc)) { throw 'ISCC.exe not found' }
+          & $iscc "/DAppVersion=$env:RELEASE_VERSION" '_Internal/Installer/WorkChatMini.iss'
+          if ($LASTEXITCODE -ne 0) { throw 'Windows Setup EXE build failed' }
+          $installer = "_Internal/Releases/WorkChatMini-Setup-v$env:RELEASE_VERSION.exe"
+          if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "Installer missing: $installer" }
+      - name: Preserve Windows test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workchat-windows-test-reports
+          path: |
+            _Internal/Reports/
+            ~/AppData/Local/WorkChatMini-SelfTest/Logs/
+          if-no-files-found: ignore
+      - name: Generate HTTPS feed and release checksums
+        shell: pwsh
+        run: |
+          $version = $env:RELEASE_VERSION
+          $tag = $env:RELEASE_TAG
+          $update = "WorkChatMini-update-v$version.zip"
+          $install = "WorkChatMini-install-v$version.zip"
+          $setup = "WorkChatMini-Setup-v$version.exe"
+          $setupPath = Join-Path '_Internal/Releases' $setup
+          $updatePath = Join-Path '_Internal/Releases' $update
+          $installPath = Join-Path '_Internal/Releases' $install
+          $updateHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $updatePath).Hash
+          $installHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installPath).Hash
+          $setupHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $setupPath).Hash
+          $feed = [ordered]@{
+            version = $version
+            packageUrl = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$tag/$update"
+            packageSha256 = $updateHash
+          }
+          New-Item -ItemType Directory -Force -Path 'release-feed' | Out-Null
+          [IO.File]::WriteAllText('release-feed/latest.json', ($feed | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
+          $links = @(
+            '<!doctype html><html lang="en"><meta charset="utf-8"><title>WorkChat Mini Releases</title>',
+            '<h1>WorkChat Mini</h1><p>Latest version: ' + $version + '</p>',
+            '<p><a href="https://github.com/' + $env:GITHUB_REPOSITORY + '/releases/download/' + $tag + '/' + $setup + '">Download Windows Setup EXE</a></p>',
+            '<p><a href="https://github.com/' + $env:GITHUB_REPOSITORY + '/releases">All releases</a></p>',
+            '</html>'
+          ) -join "`n"
+          [IO.File]::WriteAllText('release-feed/index.html', $links, [Text.UTF8Encoding]::new($false))
+          [IO.File]::WriteAllText('checksums-sha256.txt', "$updateHash  $update`n$installHash  $install`n$setupHash  $setup`n", [Text.UTF8Encoding]::new($false))
+          Copy-Item 'release-feed/latest.json' 'latest.json'
+      - name: Upload stable feed for deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: workchat-release-feed
+          path: release-feed/
+          if-no-files-found: error
+      - name: Publish GitHub Release assets (after tests)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = $env:RELEASE_VERSION
+          $tag = $env:RELEASE_TAG
+          $assets = @(
+            "_Internal/Releases/WorkChatMini-update-v$version.zip",
+            "_Internal/Releases/WorkChatMini-install-v$version.zip",
+            "_Internal/Releases/WorkChatMini-Setup-v$version.exe",
+            'latest.json', 'checksums-sha256.txt'
+          )
+          $flags = @()
+          if ($version -like '*-preview*') { $flags += '--prerelease' }
+          # Immutable once published: never overwrite or replace an existing tag.
+          gh release create $tag $assets --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "WorkChat Mini $version" --generate-notes @flags
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publication failed' }
+
+  publish-latest-feed:
+    needs: build-test-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: workchat-release-feed
+          path: site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - name: Publish stable latest.json and download page
+        id: pages
+        uses: actions/deploy-pages@v4

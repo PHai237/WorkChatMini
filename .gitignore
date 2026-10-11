@@ -1,0 +1,39 @@
+# Generated EXE, release files and .NET intermediates. Never commit user profiles.
+WorkChatMini.exe
+_Internal/Releases/
+_Updater/
+_Internal/Build/
+_Internal/Build/
+_Internal/Reports/
+**/bin/
+**/obj/
+*.pdb
+*.user
+*.suo
+.vs/
+# OS/editor temporary content
+.DS_Store
+Thumbs.db
+*.tmp
+# Real user data is outside this source tree; never copy it into source.
+WorkChatMini-Data/
+WorkChatMini-SelfTest/
+
+# Never publish local credentials or developer-only settings.
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.p12
+*.key
+*.secrets.*
+*secret*.json
+*credentials*.json
+*.log
+*.zip
+*.exe
+*.dll
+*.bak
+**/Logs/
+**/CrashReports/
