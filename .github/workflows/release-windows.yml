@@ -141,14 +141,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows Setup EXE build failed' }
           $installer = "_Internal/Releases/WorkChatMini-Setup-v$env:RELEASE_VERSION.exe"
           if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "Installer missing: $installer" }
-      - name: Preserve Windows test reports
+      - name: Preserve Windows test reports (repository workspace)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: workchat-windows-test-reports
-          path: |
-            _Internal/Reports/
-            ~/AppData/Local/WorkChatMini-SelfTest/Logs/
+          path: _Internal/Reports/
+          if-no-files-found: ignore
+      - name: Preserve Windows SelfTest logs (runner AppData)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workchat-windows-selftest-logs
+          path: ~/AppData/Local/WorkChatMini-SelfTest/Logs/
           if-no-files-found: ignore
       - name: Generate HTTPS feed and release checksums
         shell: pwsh
