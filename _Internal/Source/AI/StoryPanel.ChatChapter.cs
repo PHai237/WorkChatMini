@@ -30,7 +30,7 @@ public partial class StoryPanel
             Tag = message,
             Padding = new Thickness(10, 5, 10, 5),
             Margin = new Thickness(0, 10, 0, 0),
-            HorizontalAlignment = HorizontalAlignment.Left,
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
             Style = (Style)FindResource("StoryButton"),
             ToolTip = "Only for an actual chapter written in Chat. Will store the full chapter and extract confirmed characters, locations and events when Auto-bookkeeping is on."
         };

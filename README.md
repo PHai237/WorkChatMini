@@ -17,7 +17,7 @@ After GitHub Actions releases `v2.40.2`, open **More → Updates → Check** in 
 
 **New Windows install:** download `WorkChat-Setup.exe` from Releases. No .NET SDK required.
 
-**Publish new source (developer):** extract `WorkChat.zip` to an empty folder and run `PUSH.bat` (GitHub CLI must be logged in). It pushes versioned source to the existing repo and runs GitHub Actions; it does **not** build on your laptop. Confirm the release and Pages job are green before relying on auto-updates.
+**Publish new source (developer):** extract `WorkChat.zip` to an empty folder and run `PUSH.bat` (GitHub CLI must be logged in). After one `YES` confirmation, it pushes only to a temporary validation branch first, waits for a REAL Windows WPF Release compile, and **only on PASS** advances `main` and requests the release workflow. If compile fails, it prints the failing job log and leaves `main` untouched. It does **not** build on your laptop. A successful preflight proves compilation, **not** Quick/Stress or a working installer; wait for the full release workflow and Pages job before updating.
 
 ## AI Story reliability and chat UI — 2.40.2
 
@@ -86,6 +86,6 @@ The closed-book Story icon remains, without nested gold backgrounds in the Story
 - `_Internal/Updater/`, `_Internal/Installer/`, `_Internal/Tools/` — packaging and maintenance
 - `docs/` — release notes and historical reports
 - `BUILD.bat`, `AUTO-TEST.bat`, `SOURCE-CHECK.bat` — CI/developer commands (not required to use the installed app)
-- `PUSH.bat` — GitHub publishing helper
+- `PUSH.bat` — protected GitHub publishing helper (Windows compile preflight before main)
 
 Keep all user profiles, local API keys, build outputs, and test logs **out** of the GitHub repository.

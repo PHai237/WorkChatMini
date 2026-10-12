@@ -4,7 +4,8 @@ cd /d "%~dp0"
 echo =============================================
 echo         WorkChat - GitHub Publish
  echo =============================================
-echo This uploads source and requests a GitHub Windows build.
+echo Validates C# WPF compile on GitHub BEFORE publishing to main.
+echo One confirmation runs preflight, then builds the release if it passes.
 echo It does NOT rebuild or change your installed app.
 echo.
 echo [1/2] Source preflight check...
@@ -15,7 +16,7 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-echo [2/2] Publish verified source...
+echo [2/2] Windows compile preflight, then publish on PASS...
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0_Internal\Tools\Ship-GitHub.ps1" -SourceRoot "%~dp0."
 if errorlevel 1 (
     echo.
