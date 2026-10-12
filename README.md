@@ -56,6 +56,13 @@ The closed-book Story icon remains, without nested gold backgrounds in the Story
 
 `Scene Compass`, Story Director, Memory v6, manuscript review/commit, checkpoints and backup remain intact. Test on a separate story before trusting long-running manuscripts. App data remains outside the application installation directory.
 
+### GitHub BUILD fix and update UI (2.40.0 release candidate)
+
+- Fixed WPF compilation failure `CS0104 Brushes` in `StoryPanel.xaml.cs` by explicitly selecting `System.Windows.Media.Brushes.Transparent`.
+- `PUSH.bat` now runs `SOURCE-CHECK.bat --nopause` before publishing; the static checker also recognizes this regression. **A real Windows BUILD is still required.**
+- More -> Updates now checks the official GitHub Pages `latest.json` automatically. The manual `WorkChat-Update.zip` option is under **Advanced** as a fallback. `WorkChat.zip` is source and is **not** an in-app update package.
+- Official update flow: **Check GitHub -> Download & verify -> Restart & install**. No automatic restart or install.
+
 ## Repository layout
 
 - `.github/` — release workflow

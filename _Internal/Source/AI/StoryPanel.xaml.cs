@@ -737,7 +737,7 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
                 CornerRadius = new CornerRadius(8),
                 // The closed-book pixel icon already includes its own tile.
                 // Avoid placing a second brass square underneath it.
-                Background = Brushes.Transparent,
+                Background = System.Windows.Media.Brushes.Transparent,
                 BorderThickness = new Thickness(0),
                 Margin = new Thickness(0, 2, 12, 0),
                 VerticalAlignment = VerticalAlignment.Top,

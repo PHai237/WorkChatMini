@@ -14,7 +14,7 @@ public partial class MainWindow
             _updateWindow.Activate();
             return;
         }
-        _updateWindow = new AppUpdateWindow(_settings, ExitApplication, GetUpdateBlocker) { Owner = this };
+        _updateWindow = new AppUpdateWindow(ExitApplication, GetUpdateBlocker) { Owner = this };
         _updateWindow.Closed += (_, _) => _updateWindow = null;
         _updateWindow.Show();
     }

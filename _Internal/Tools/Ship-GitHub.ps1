@@ -3,6 +3,11 @@
 param([Parameter(Mandatory=$true)][string]$SourceRoot)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+# This BAT runs in an interactive terminal. Never launch Git/gh's `less`
+# pager: it shows `(END)` and blocks the publish confirmation prompt.
+$env:GIT_PAGER = 'cat'
+$env:GH_PAGER = 'cat'
+$env:PAGER = 'cat'
 $root = [IO.Path]::GetFullPath($SourceRoot)
 $repository = 'PHai237/WorkChatMini'
 $version = (Get-Content -LiteralPath (Join-Path $root '_Internal/VERSION.txt') -Raw).Trim()
@@ -57,23 +62,29 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'git add failed' }
     $staged = @(& git -C $repoWork diff --cached --name-only)
     if ($staged.Count -eq 0) {
-        $remoteVersion = (& git -C $repoWork show 'HEAD:_Internal/VERSION.txt').Trim()
-        if ($remoteVersion -ne $version) {
-            throw "No staged files, but GitHub clone has version $remoteVersion (package expects $version). Check .gitignore / source files."
+        $checkedOutVersion = (& git -C $repoWork show 'HEAD:_Internal/VERSION.txt').Trim()
+        if ($LASTEXITCODE -ne 0 -or $checkedOutVersion -ne $version) {
+            throw "No staged changes but GitHub checkout version is $checkedOutVersion (expected $version)."
         }
-        throw "Nothing new to publish: GitHub main already contains $version. No new release workflow was started."
+        Write-Host "GitHub already contains the $version source. Skipping commit; you can still request the release workflow." -ForegroundColor Green
     }
     $unsafe = @($staged | Where-Object { $_ -match '(?i)(^|/)(\.env(?:\.|$)|[^/]+\.(exe|dll|zip|pfx|pem|key)|[^/]+\.secrets\.json$|Logs|CrashReports)(/|$)' })
     if ($unsafe.Count -gt 0) { throw ('Refusing sensitive/generated files: ' + ($unsafe -join ', ')) }
     Write-Host "Version: $version | Staged changes: $($staged.Count)" -ForegroundColor Cyan
-    & git -C $repoWork diff --cached --stat
-    Write-Host 'This will update the existing PUBLIC source repository and request a Windows GitHub build.' -ForegroundColor Yellow
-    $ok = (Read-Host 'Type YES to publish').Trim()
-    if ($ok -cne 'YES') { throw 'Publishing cancelled: you must type YES in capitals. Nothing was pushed.' }
-    & git -C $repoWork commit -m "WorkChat $version - literary craft and scene editing"
-    if ($LASTEXITCODE -ne 0) { throw 'Git commit failed. Set git user.name/email once if needed.' }
-    & git -C $repoWork push origin main
-    if ($LASTEXITCODE -ne 0) { throw 'Git push failed. Existing release and installed WorkChat are unchanged.' }
+    if ($staged.Count -gt 0) {
+        Write-Host 'Changes to publish (pager disabled):' -ForegroundColor Cyan
+        & git --no-pager -C $repoWork diff --cached --stat
+        if ($LASTEXITCODE -ne 0) { throw 'Could not summarize staged changes.' }
+    }
+    Write-Host 'This will publish pending source changes (if any) and request a Windows GitHub build.' -ForegroundColor Yellow
+    $ok = (Read-Host 'Type YES to continue').Trim()
+    if ($ok -cne 'YES') { throw 'Cancelled. You must type YES in capitals. No new workflow was started.' }
+    if ($staged.Count -gt 0) {
+        & git -C $repoWork commit -m "WorkChat $version - publish source"
+        if ($LASTEXITCODE -ne 0) { throw 'Git commit failed. Set git user.name/email once if needed.' }
+        & git -C $repoWork push origin main
+        if ($LASTEXITCODE -ne 0) { throw 'Git push failed. Existing release and installed WorkChat are unchanged.' }
+    }
     # Verify the *remote* branch points at the newly pushed commit. Do not
     # mistake a successful local commit / queued workflow for published source.
     $localSha = (& git -C $repoWork rev-parse HEAD).Trim()
@@ -87,7 +98,10 @@ try {
     # Confirm the actual version file hosted by GitHub, not merely the local copy.
     $encoded = (& gh api "repos/$repository/contents/_Internal/VERSION.txt?ref=main" --jq '.content')
     if ($LASTEXITCODE -ne 0 -or !$encoded) { throw 'GitHub version file cannot be read after push.' }
-    $remoteVersion = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($encoded -join '') -replace '\s', '')).Trim()
+    # PowerShell binds -replace inside a method argument list as an extra argument.
+    # Compute the cleaned Base64 string separately: FromBase64String takes ONE string.
+    $cleanBase64 = (($encoded -join '') -replace '\s', '')
+    $remoteVersion = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($cleanBase64)).Trim()
     if ($remoteVersion -ne $version) {
         throw "GitHub still serves $remoteVersion but this package is $version. Publish verification FAILED."
     }

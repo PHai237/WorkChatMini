@@ -30,6 +30,12 @@ foreach ($f in $sourceFiles) {
         [regex]::IsMatch($body, '(?<![\w.])Orientation\s*=\s*Orientation\.')) {
         $errors.Add("Ambiguous Orientation enum in $($f.Name): qualify System.Windows.Controls.Orientation")
     }
+    # WPF+WinForms makes Brushes ambiguous via System.Drawing/System.Windows.Media.
+    # Regression gate for the CS0104 found in StoryPanel.xaml.cs of v2.40.0.
+    if ($f.Extension -eq '.cs' -and $f.FullName -match '[\\/]AI[\\/]StoryPanel\.' -and
+        [regex]::IsMatch($body, '(?<![\w.])Brushes\.')) {
+        $errors.Add("Ambiguous Brushes in $($f.Name): qualify System.Windows.Media.Brushes")
+    }
     # WPF Point and System.Drawing.Point are both in scope in this WinForms+WPF project.
     # Catch unqualified constructor use in StoryPanel UI (preview16 CS0104 regression).
     if ($f.Extension -eq '.cs' -and $f.FullName -match '[\\/]AI[\\/]StoryPanel\.' -and

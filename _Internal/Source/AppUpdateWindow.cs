@@ -6,7 +6,6 @@ using System.Windows.Controls;
 using System.Windows.Media;
 // Avoid WPF / WinForms / System.Drawing ambiguities (UseWindowsForms=true).
 using Button = System.Windows.Controls.Button;
-using TextBox = System.Windows.Controls.TextBox;
 using Brush = System.Windows.Media.Brush;
 using FontFamily = System.Windows.Media.FontFamily;
 using BrushConverter = System.Windows.Media.BrushConverter;
@@ -21,10 +20,9 @@ internal sealed class AppUpdateWindow : Window
     private static readonly Brush TextBrush = Brush("#E7EDF5");
     private static readonly Brush MutedBrush = Brush("#A9B8CB");
     private static readonly Brush AccentBrush = Brush("#79B6F3");
-    private readonly AppSettings _settings;
+    private const string OfficialFeedUrl = "https://phai237.github.io/WorkChatMini/latest.json";
     private readonly Action _exitApp;
     private readonly Func<string?> _updateBlocker;
-    private readonly TextBox _feedText = new();
     private readonly TextBlock _status = new();
     private readonly TextBlock _packageLabel = new();
     private readonly Button _checkButton;
@@ -44,9 +42,8 @@ internal sealed class AppUpdateWindow : Window
     private static string InstalledVersion => Regex.Match(AppRuntime.BuildText,
         @"^\d+\.\d+\.\d+(?:-preview\d+(?:\.\d+)?)?", RegexOptions.IgnoreCase).Value;
 
-    internal AppUpdateWindow(AppSettings settings, Action exitApp, Func<string?> updateBlocker)
+    internal AppUpdateWindow(Action exitApp, Func<string?> updateBlocker)
     {
-        _settings = settings;
         _exitApp = exitApp;
         _updateBlocker = updateBlocker;
         Title = "WorkChat Mini · Updates";
@@ -65,35 +62,41 @@ internal sealed class AppUpdateWindow : Window
         var heading = Label("Keep WorkChat up to date", 20, TextBrush, FontWeights.SemiBold);
         content.Children.Add(heading);
         content.Children.Add(Label($"Installed: {InstalledVersion}  ·  In-place updates preserve your Story, WebView2 profile and settings.", 12, MutedBrush));
-        content.Children.Add(Label("Check online automatically when this window opens, or choose a binary update ZIP.", 12, MutedBrush));
+        content.Children.Add(Label("Updates check the official GitHub release feed automatically. Installation always requires your confirmation.", 12, MutedBrush));
 
-        content.Children.Add(Label("Update from a local ZIP", 13, AccentBrush, FontWeights.SemiBold, top: 17));
+        content.Children.Add(Label("GitHub updates · Recommended", 13, AccentBrush, FontWeights.SemiBold, top: 18));
+        var officialSource = Label("Source: PHai237/WorkChatMini · GitHub Pages", 12, MutedBrush);
+        officialSource.ToolTip = OfficialFeedUrl;
+        content.Children.Add(officialSource);
+        _checkButton = MakeButton("Check GitHub");
+        _checkButton.Margin = new Thickness(0, 9, 0, 0);
+        _checkButton.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+        content.Children.Add(_checkButton);
+
+        // A local binary ZIP is a fallback for offline/failed-feed installs, not a
+        // competing everyday update method. Keep it out of the normal visual flow.
+        var manualSection = new Expander
+        {
+            Header = "Advanced · Update from a local binary ZIP",
+            Foreground = MutedBrush,
+            Margin = new Thickness(0, 17, 0, 0),
+            IsExpanded = false
+        };
+        var manualContent = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
+        manualContent.Children.Add(Label("Only choose WorkChat-Update.zip from a release you trust; WorkChat.zip is source code and cannot be installed here.", 11, MutedBrush));
         var chooseRow = new DockPanel { Margin = new Thickness(0, 7, 0, 2) };
         _chooseButton = MakeButton("Choose ZIP…");
         DockPanel.SetDock(_chooseButton, Dock.Right);
         chooseRow.Children.Add(_chooseButton);
-        _packageLabel.Text = "No update ZIP selected";
+        _packageLabel.Text = "No local update ZIP selected";
         _packageLabel.TextTrimming = TextTrimming.CharacterEllipsis;
         _packageLabel.Foreground = MutedBrush;
         _packageLabel.VerticalAlignment = VerticalAlignment.Center;
         _packageLabel.Margin = new Thickness(0, 0, 10, 0);
         chooseRow.Children.Add(_packageLabel);
-        content.Children.Add(chooseRow);
-
-        content.Children.Add(Label("HTTPS update feed (optional)", 13, AccentBrush, FontWeights.SemiBold, top: 16));
-        _feedText.Text = !string.IsNullOrWhiteSpace(settings.UpdateFeedUrl)
-            ? settings.UpdateFeedUrl : AppRuntime.DefaultUpdateFeedUrl;
-        _feedText.ToolTip = "Link to a JSON feed with version, packageUrl and packageSha256. No automatic install.";
-        _feedText.Padding = new Thickness(9, 8, 9, 8);
-        _feedText.Background = PanelBrush;
-        _feedText.Foreground = TextBrush;
-        _feedText.BorderBrush = Brush("#41546C");
-        _feedText.CaretBrush = TextBrush;
-        content.Children.Add(_feedText);
-        _checkButton = MakeButton("Check for updates");
-        _checkButton.Margin = new Thickness(0, 8, 0, 0);
-        _checkButton.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
-        content.Children.Add(_checkButton);
+        manualContent.Children.Add(chooseRow);
+        manualSection.Content = manualContent;
+        content.Children.Add(manualSection);
 
         var statusPanel = new Border
         {
@@ -110,7 +113,8 @@ internal sealed class AppUpdateWindow : Window
 
         var actions = new WrapPanel { HorizontalAlignment = System.Windows.HorizontalAlignment.Right };
         _cancelButton = MakeButton("Close");
-        _installButton = MakeButton("Verify update");
+        _installButton = MakeButton("Download & verify");
+        _installButton.IsEnabled = false;
         _restartButton = MakeButton("Restart & install");
         _restartButton.Background = Brush("#255D88");
         _restartButton.IsEnabled = false;
@@ -118,7 +122,7 @@ internal sealed class AppUpdateWindow : Window
         actions.Children.Add(_installButton);
         actions.Children.Add(_restartButton);
         content.Children.Add(actions);
-        content.Children.Add(Label("Security: HTTPS + SHA-256 verification; packages are not yet code-signed. Only use a feed you trust.", 11, MutedBrush, top: 13));
+        content.Children.Add(Label("Security: Official HTTPS feed + SHA-256 validation. Binaries are not yet code-signed; use only trusted releases.", 11, MutedBrush, top: 13));
 
         var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = content };
         Content = scroll;
@@ -138,7 +142,7 @@ internal sealed class AppUpdateWindow : Window
         // Only an opened Updates window fetches the release feed; never installs silently.
         Loaded += (_, _) =>
         {
-            if (AppUpdateFeed.IsHttps(_feedText.Text) && !_working)
+            if (AppUpdateFeed.IsHttps(OfficialFeedUrl) && !_working)
                 Check_Click(this, new RoutedEventArgs());
         };
     }
@@ -182,9 +186,8 @@ internal sealed class AppUpdateWindow : Window
         _working = value;
         _chooseButton.IsEnabled = !value;
         _checkButton.IsEnabled = !value;
-        _installButton.IsEnabled = !value;
+        _installButton.IsEnabled = !value && (_remote is not null || !string.IsNullOrWhiteSpace(_package));
         _restartButton.IsEnabled = !value && _ready is not null;
-        _feedText.IsEnabled = !value;
         _cancelButton.Content = value ? "Cancel" : "Close";
     }
 
@@ -206,15 +209,19 @@ internal sealed class AppUpdateWindow : Window
         _remote = null;
         _ready = null;
         _restartButton.IsEnabled = false;
-        _status.Text = "Package selected. Select Verify update to check version, ZIP contents and SHA-256 before installing.";
+        _installButton.Content = "Verify ZIP";
+        _installButton.IsEnabled = true;
+        _status.Text = "Local binary ZIP selected. Verify it before installing. Only use trusted release packages.";
     }
 
     private async void Check_Click(object sender, RoutedEventArgs e)
     {
-        string url = _feedText.Text.Trim();
-        if (!AppUpdateFeed.IsHttps(url)) { _status.Text = "Enter a valid HTTPS feed URL. Empty or HTTP links are not accepted."; return; }
-        _settings.UpdateFeedUrl = url;
-        _settings.Save();
+        string url = OfficialFeedUrl;
+        // Clear any previously selected manual/online source before a new check.
+        _remote = null;
+        _package = null;
+        _packageLabel.Text = "No local update ZIP selected";
+        _installButton.Content = "Download & verify";
         DiscardUninstalledUpdate();
         _restartButton.IsEnabled = false;
         _operation = new CancellationTokenSource();
@@ -226,7 +233,7 @@ internal sealed class AppUpdateWindow : Window
             if (!AppUpdatePackage.IsNewerVersion(feed.Version, InstalledVersion))
             {
                 _remote = null;
-                _status.Text = $"Installed version {InstalledVersion} is up to date (feed: {feed.Version}).";
+                _status.Text = $"Installed version {InstalledVersion} is up to date (GitHub release: {feed.Version}).";
             }
             else
             {
@@ -234,7 +241,7 @@ internal sealed class AppUpdateWindow : Window
                 _package = null;
                 _ready = null;
                 _packageLabel.Text = $"Online update: {feed.Version}";
-                _status.Text = $"Version {feed.Version} is available. Select Verify update to download, validate and stage it.";
+                _status.Text = $"Version {feed.Version} is available from GitHub. Select Download & verify; installation still requires your confirmation.";
             }
         }
         catch (OperationCanceledException) { _status.Text = "Update check cancelled."; }
@@ -245,7 +252,7 @@ internal sealed class AppUpdateWindow : Window
     private async void Verify_Click(object sender, RoutedEventArgs e)
     {
         if (_remote is null && string.IsNullOrWhiteSpace(_package))
-        { _status.Text = "Choose a local ZIP or check an HTTPS feed first."; return; }
+        { _status.Text = "Check GitHub for a new release, or use Advanced to select a binary update ZIP."; return; }
         DiscardUninstalledUpdate();
         _operation = new CancellationTokenSource();
         SetWorking(true);

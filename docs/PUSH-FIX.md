@@ -7,3 +7,7 @@ The public `main` branch was checked on 2026-10-12 and still contained `_Interna
 Changes: cancellation/no-op now return a clear failure; successful push checks `refs/heads/main`, then reads the actual `_Internal/VERSION.txt` through GitHub API and requires version `2.40.0` before dispatching the release workflow. It does not modify the installed application or any Story data.
 
 Run the replacement `WorkChat.zip` from a NEW, empty extracted folder; run `PUSH.bat`, type `YES`, and confirm the exact `VERIFIED GITHUB MAIN VERSION: 2.40.0` line. GitHub Actions must then pass independently. If it fails, save the complete console output and do not repeatedly dispatch the workflow.
+
+## Pager correction
+
+`git diff --cached --stat` previously could invoke a terminal pager (`less`), displaying `(END)` and pausing before the `Type YES` confirmation. Press `q` to resume a currently blocked PUSH. This source version sets `GIT_PAGER`, `GH_PAGER`, and `PAGER` to `cat` and runs `git --no-pager diff --cached --stat`, then checks its exit code.
