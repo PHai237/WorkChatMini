@@ -11,8 +11,11 @@ internal static class StoryInlineMarkdown
 {
     private const int MaxCharacters = 7200;
     private const int MaxInlines = 180;
-    private static readonly FontFamily CodeFont = new("Consolas");
-    private static readonly Brush CodeBackground = new SolidColorBrush(Color.FromRgb(40, 37, 32));
+    // This WPF application also enables Windows Forms: System.Drawing defines
+    // FontFamily, Brush and Color, so qualify all WPF graphics types explicitly.
+    private static readonly System.Windows.Media.FontFamily CodeFont = new("Consolas");
+    private static readonly System.Windows.Media.Brush CodeBackground =
+        new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(40, 37, 32));
 
     internal static void Render(TextBlock text, string? source)
     {
