@@ -63,8 +63,10 @@ internal static class StoryNarrativeSteering
         };
         string guardrails = (project.NarrativeGuardrails ?? string.Empty).Trim();
         if (guardrails.Length > 480) guardrails = guardrails[..480];
+        string feedback = StoryCraftFeedback.Guidance(project.ChapterCraftFeedback);
         return "CREATOR'S NARRATIVE STEERING (editorial preference, NOT confirmed canon):\n" + focus +
-            (guardrails.Length > 0 ? "\nCurrent avoid/prefer notes: " + guardrails : string.Empty);
+            (guardrails.Length > 0 ? "\nCurrent avoid/prefer notes: " + guardrails : string.Empty) +
+            (feedback.Length > 0 ? "\n" + feedback : string.Empty);
     }
 }
 
@@ -95,7 +97,8 @@ The creator will select or edit ONE option. Do not invent established facts, por
 Return JSON ONLY: {"optionA":"...","optionB":"...","optionC":"..."}
 """;
         string request = "CREATOR'S CURRENT DIRECTION:\n" +
-            (string.IsNullOrWhiteSpace(creatorInstruction) ? "Continue naturally from the last committed chapter." : creatorInstruction.Trim());
+            (string.IsNullOrWhiteSpace(creatorInstruction) ? "Continue naturally from the last committed chapter." : creatorInstruction.Trim()) +
+            "\n\n" + StoryNarrativeSteering.Guidance(project);
         string raw = await _runner.CompleteAsync(provider, model, system,
             new[] { new StoryMessage { Role = "user", Content = request } },
             cancellationToken, temperature: 0.4, workload: StoryAiWorkload.Utility,

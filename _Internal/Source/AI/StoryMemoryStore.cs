@@ -266,18 +266,43 @@ public sealed partial class StoryMemoryStore
         }
         catch (Exception ex)
         {
+            // Index failures must never bypass the committed-manuscript gate.
+            // The older raw directory scan could surface an orphaned draft after
+            // an index IO failure, even though indexed retrieval excluded it.
             AppLogger.Warn("STORY-RETRIEVAL",
-                $"Indexed retrieval failed; falling back to full chapter scan | project={projectId} | {ex.Message}");
-            return await SearchChapterTextLegacyAsync(directory, plan, maxResults, cancellationToken);
+                $"Indexed retrieval failed; trying ledger-scoped scan | project={projectId} | {ex.Message}");
+            try
+            {
+                StoryMemoryDocument authoritativeMemory = await LoadAsync(projectId, cancellationToken);
+                HashSet<string> committed = StoryChapterIndexStore.CommittedChapterFileNames(authoritativeMemory);
+                return await SearchChapterTextLegacyAsync(directory, plan, maxResults, committed, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception fallbackError)
+            {
+                // Malformed or unreadable story-memory.json must never be
+                // interpreted as permission to index any stray chapter files.
+                AppLogger.Warn("STORY-RETRIEVAL",
+                    $"Ledger-scoped retrieval unavailable; no chapter evidence returned | project={projectId} | {fallbackError.Message}");
+                return Array.Empty<StoryChapterSearchHit>();
+            }
         }
     }
 
-    private static async Task<IReadOnlyList<StoryChapterSearchHit>> SearchChapterTextLegacyAsync(
+    // Exposed internally so regression tests can exercise this last-resort path
+    // independently of platform-specific index IO failures.
+    internal static async Task<IReadOnlyList<StoryChapterSearchHit>> SearchChapterTextLegacyAsync(
         string directory,
         StoryRetrievalPlan plan,
         int maxResults,
-        CancellationToken cancellationToken)
+        IReadOnlySet<string> committedFileNames,
+        CancellationToken cancellationToken = default)
     {
+        if (committedFileNames.Count == 0 || !Directory.Exists(directory))
+            return Array.Empty<StoryChapterSearchHit>();
         string[] terms = plan.Terms.Take(40).ToArray();
         return await Task.Run(() =>
         {
@@ -285,8 +310,11 @@ public sealed partial class StoryMemoryStore
             foreach (string path in Directory.EnumerateFiles(directory, "*.md", SearchOption.TopDirectoryOnly))
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                if (!committedFileNames.Contains(Path.GetFileName(path)))
+                    continue;
                 string text;
                 try { text = ReadChapterTextCached(path); }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
                 catch { continue; }
 
                 string name = Path.GetFileNameWithoutExtension(path);

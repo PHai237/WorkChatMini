@@ -6,6 +6,7 @@ internal static class StoryLongSessionSelfTest
 {
     internal static void Verify()
     {
+        StoryConversationContextSelfTest.Verify();
         // Interrupted provider responses are readable history, not accepted
         // ideas or chapter drafts, including after JSON snapshots/reloads.
         const string delivered = "1. Bí mật của nhân vật có thể đổi hướng.\nSome streamed prose...";

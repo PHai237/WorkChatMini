@@ -6,6 +6,9 @@ internal static class StoryNarrativeQualitySelfTest
 {
     internal static void Verify()
     {
+        StoryRelationshipContinuitySelfTest.Verify();
+        StoryLongContinuityAuditSelfTest.Verify();
+        StoryReadinessSelfTest.Verify();
         var memory = new StoryMemoryDocument();
         for (int n = 1; n <= 5; n++)
             memory.Chapters.Add(new StoryChapterMemory { Number = n,

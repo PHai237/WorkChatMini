@@ -22,7 +22,7 @@
         <SolidColorBrush x:Key="StoryGold" Color="#C8A84B"/>
         <SolidColorBrush x:Key="StoryGoldDim" Color="#17C8A84B"/>
         <SolidColorBrush x:Key="StoryGoldBorder" Color="#3DC8A84B"/>
-        <BitmapImage x:Key="StoryIconImage" UriSource="pack://application:,,,/WorkChatMini;component/Assets/Icons/story.png"/>
+        <BitmapImage x:Key="StoryIconImage" UriSource="pack://application:,,,/WorkChatMini;component/Assets/Icons/story.png" DecodePixelWidth="64"/>
 
         <Style x:Key="StoryButton" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource StorySub}"/>
@@ -577,9 +577,9 @@
                 <Grid x:Name="EmptyState">
                     <!-- No-project state: only one New Story action, centered as requested. -->
                     <StackPanel x:Name="NoProjectState" HorizontalAlignment="Center" VerticalAlignment="Center" Width="430">
-                        <Border Width="68" Height="68" CornerRadius="18" Background="{StaticResource StoryGoldDim}"
-                                BorderBrush="{StaticResource StoryGoldBorder}" BorderThickness="1" HorizontalAlignment="Center">
-                            <Image Source="{StaticResource StoryIconImage}" Width="46" Height="46" Stretch="Uniform"
+                        <Border Width="68" Height="68" CornerRadius="18" Background="Transparent"
+                                BorderThickness="0" HorizontalAlignment="Center">
+                            <Image Source="{StaticResource StoryIconImage}" Width="62" Height="62" Stretch="Uniform"
                                    RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"/>
                         </Border>
                         <TextBlock Text="Begin a new story." Foreground="{StaticResource StoryText}" FontSize="24" FontWeight="Bold"
@@ -638,8 +638,8 @@
                             BorderBrush="#5B4C27" BorderThickness="1" CornerRadius="16" Padding="28">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">
-                                <Border Width="50" Height="50" CornerRadius="12" Background="{StaticResource StoryGoldDim}" BorderBrush="{StaticResource StoryGoldBorder}" BorderThickness="1">
-                                    <Image Source="{StaticResource StoryIconImage}" Width="34" Height="34" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                <Border Width="50" Height="50" CornerRadius="12" Background="Transparent" BorderThickness="0">
+                                    <Image Source="{StaticResource StoryIconImage}" Width="46" Height="46" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                                 </Border>
                                 <StackPanel Margin="14,1,0,0">
                                     <TextBlock Text="Create a new story" Foreground="{StaticResource StoryText}" FontSize="21" FontWeight="SemiBold"/>
@@ -847,6 +847,9 @@
                             <TextBox x:Name="SettingsNarrativeGuardrailsBox" Style="{StaticResource StoryTextBox}" MaxLength="480" AcceptsReturn="True" TextWrapping="Wrap"
                                      Height="70" VerticalScrollBarVisibility="Auto"/>
                             <Button Content="Save direction" Style="{StaticResource StoryButton}" HorizontalAlignment="Left" Margin="0,8,0,0" Click="SaveNarrativeGuardrails_Click"/>
+                            <TextBlock Text="CHAPTER CRAFT FEEDBACK" Foreground="{StaticResource StoryMuted}" FontSize="9.5" FontWeight="SemiBold" Margin="0,16,0,7"/>
+                            <TextBlock Text="What should the next chapter improve? Affects future Continue Story only; does not alter chapters or memory." Foreground="{StaticResource StorySub}" FontSize="10.5" TextWrapping="Wrap" Margin="0,0,0,7"/>
+                            <ComboBox x:Name="SettingsCraftFeedbackBox" Style="{StaticResource StoryCombo}" SelectionChanged="SettingsCraftFeedbackBox_SelectionChanged" ToolTip="One editorial correction for subsequent chapters; choose No correction to reset"/>
 
                             <Border Height="1" Background="{StaticResource StoryDivider}" Margin="0,18"/>
                             <TextBlock Text="MANUSCRIPT" Style="{StaticResource InspectorSectionTitle}"/>

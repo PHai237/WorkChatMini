@@ -20,6 +20,7 @@ public static class StoryKnowledgeGraph
         var nodes = new Dictionary<string, Node>(StringComparer.OrdinalIgnoreCase);
         var edges = new List<Edge>();
         Build(memory, nodes, edges);
+        HashSet<int> eligibleChapters = StoryCommittedEvidence.UniqueChapters(memory);
 
         string[] terms = StoryMemoryRetriever.Tokenize(query)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -53,11 +54,12 @@ public static class StoryKnowledgeGraph
         {
             AddExpansion(expansion, node.Label);
             reasons.Add($"Knowledge graph seed: {node.Kind} — {node.Label}");
-            if (node.ChapterNumber is int chapter)
+            if (node.ChapterNumber is int chapter && eligibleChapters.Contains(chapter))
                 AddBoost(boosts, chapter, Math.Min(8, 2 + score));
         }
 
         foreach (Edge edge in edges
+                     .Where(edge => edge.ChapterNumber is not int chapter || eligibleChapters.Contains(chapter))
                      .Where(edge => selectedKeys.Contains(edge.From) || selectedKeys.Contains(edge.To))
                      .OrderByDescending(edge => edge.Weight)
                      .Take(autoContinue ? 28 : 20))
@@ -69,13 +71,15 @@ public static class StoryKnowledgeGraph
             AddExpansion(expansion, other.Label);
             if (selectedKeys.Add(other.Key))
                 reasons.Add($"Knowledge graph link: {edge.Relation} → {other.Kind} — {other.Label}");
-            if (edge.ChapterNumber is int chapter)
+            if (edge.ChapterNumber is int chapter && eligibleChapters.Contains(chapter))
                 AddBoost(boosts, chapter, Math.Max(2, edge.Weight));
-            if (other.ChapterNumber is int otherChapter)
+            if (other.ChapterNumber is int otherChapter && eligibleChapters.Contains(otherChapter))
                 AddBoost(boosts, otherChapter, Math.Max(2, edge.Weight - 1));
         }
 
-        string context = BuildContext(nodes, edges, selectedKeys, seedKeys);
+        string context = BuildContext(nodes, edges
+            .Where(edge => edge.ChapterNumber is not int chapter || eligibleChapters.Contains(chapter))
+            .ToList(), selectedKeys, seedKeys);
         return new StoryKnowledgeGraphFocus
         {
             ExpansionTerms = expansion.Take(32).ToArray(),
@@ -117,22 +121,33 @@ public static class StoryKnowledgeGraph
 
         foreach (StoryRelationshipMemory relationship in memory.Relationships)
         {
-            string from = CharacterKey(relationship.From);
-            string to = CharacterKey(relationship.To);
-            AddNode(nodes, new Node(from, "Character", relationship.From, relationship.From));
-            AddNode(nodes, new Node(to, "Character", relationship.To, relationship.To));
+            if (!StoryRelationshipLedger.TryCanonicalPair(memory, relationship.From, relationship.To,
+                    out string canonicalFrom, out string canonicalTo)) continue;
+            string from = CharacterKey(canonicalFrom);
+            string to = CharacterKey(canonicalTo);
+            AddNode(nodes, new Node(from, "Character", canonicalFrom, canonicalFrom));
+            AddNode(nodes, new Node(to, "Character", canonicalTo, canonicalTo));
             edges.Add(new Edge(from, to, "RELATIONSHIP:" + relationship.State, 5));
         }
 
-        foreach (StoryRelationshipChange change in memory.RelationshipHistory)
+        HashSet<int> chapters = StoryCommittedEvidence.UniqueChapters(memory);
+        HashSet<string> duplicateIds = StoryCommittedEvidence.DuplicateEventIds(memory);
+
+        foreach (StoryRelationshipChange change in memory.RelationshipHistory
+                     .Where(change => change.ChapterNumber is int chapter && chapters.Contains(chapter)))
         {
-            string from = CharacterKey(change.From);
-            string to = CharacterKey(change.To);
+            if (!StoryRelationshipLedger.TryCanonicalPair(memory, change.From, change.To,
+                    out string canonicalFrom, out string canonicalTo)) continue;
+            string from = CharacterKey(canonicalFrom);
+            string to = CharacterKey(canonicalTo);
             edges.Add(new Edge(from, to, "RELATIONSHIP_CHANGE", change.Importance == "Critical" ? 8 : 6, change.ChapterNumber));
         }
 
         foreach (StoryLocationMemory location in memory.Locations)
         {
+            // The location record is durable current state, but a stale or
+            // duplicated chapter cannot be cited as its historical evidence.
+
             string locationKey = LocationKey(location.Name);
             AddNode(nodes, new Node(locationKey, "Location", location.Name,
                 StoryWorldStateGraph.BuildLocationSearchText(location), location.LastChapter));
@@ -156,8 +171,14 @@ public static class StoryKnowledgeGraph
             }
         }
 
-        foreach (StorySignificantEvent storyEvent in memory.Events)
+        foreach (StorySignificantEvent storyEvent in memory.Events
+                     .Where(e => StoryCommittedEvidence.IsVerifiedEvent(e, chapters, duplicateIds)))
         {
+            // Shared nicknames are not reliable actor identities. Do not make
+            // a character link that implies the event belongs to one owner.
+            _ = StoryCharacterIdentity.ResolveUnique(memory, storyEvent.Subject, out bool ambiguousActor);
+            if (ambiguousActor) continue;
+
             string label = string.IsNullOrWhiteSpace(storyEvent.Summary)
                 ? $"{storyEvent.Type}: {storyEvent.Subject} {storyEvent.Target}".Trim()
                 : storyEvent.Summary;
@@ -165,11 +186,14 @@ public static class StoryKnowledgeGraph
             AddNode(nodes, new Node(eventKey, "Event", label, StoryEventLedger.BuildSearchText(storyEvent), storyEvent.ChapterNumber));
             if (!string.IsNullOrWhiteSpace(storyEvent.Subject))
             {
-                bool subjectIsCharacter = memory.Characters.Any(x => Same(x.Name, storyEvent.Subject) || x.Aliases.Any(alias => Same(alias, storyEvent.Subject))) ||
-                                          storyEvent.RelatedCharacters.Any(x => Same(x, storyEvent.Subject));
-                string subjectKind = subjectIsCharacter ? "Character" : "Entity";
-                string subjectKey = subjectIsCharacter ? CharacterKey(storyEvent.Subject) : EntityKey(subjectKind, storyEvent.Subject);
-                AddNode(nodes, new Node(subjectKey, subjectKind, storyEvent.Subject, storyEvent.Subject, storyEvent.ChapterNumber));
+                StoryCharacterMemory? canonicalActor = StoryCharacterIdentity.ResolveUnique(
+                    memory, storyEvent.Subject, out _);
+                string subjectKind = canonicalActor is null ? "Entity" : "Character";
+                string subjectLabel = canonicalActor?.Name ?? storyEvent.Subject;
+                string subjectKey = canonicalActor is null
+                    ? EntityKey(subjectKind, storyEvent.Subject) : CharacterKey(subjectLabel);
+                AddNode(nodes, new Node(subjectKey, subjectKind, subjectLabel,
+                    subjectLabel, storyEvent.ChapterNumber));
                 edges.Add(new Edge(eventKey, subjectKey, "SUBJECT", 6, storyEvent.ChapterNumber));
             }
             if (!string.IsNullOrWhiteSpace(storyEvent.Target))
@@ -183,8 +207,10 @@ public static class StoryKnowledgeGraph
             }
             foreach (string related in storyEvent.RelatedCharacters)
             {
-                string characterKey = CharacterKey(related);
-                AddNode(nodes, new Node(characterKey, "Character", related, related));
+                StoryCharacterMemory? owner = StoryCharacterIdentity.ResolveUnique(memory, related, out bool ambiguous);
+                if (ambiguous || owner is null) continue;
+                string characterKey = CharacterKey(owner.Name);
+                AddNode(nodes, new Node(characterKey, "Character", owner.Name, owner.Name));
                 edges.Add(new Edge(eventKey, characterKey, "INVOLVES", 5, storyEvent.ChapterNumber));
             }
         }
@@ -246,8 +272,18 @@ public static class StoryKnowledgeGraph
             }
         }
 
+        StorySignificantEvent[] verifiedEvents = memory.Events
+            .Where(e => StoryCommittedEvidence.IsVerifiedEvent(e, chapters, duplicateIds))
+            .ToArray();
+        bool VerifiedEndpoint(string value) => verifiedEvents.Any(e =>
+            Same(e.Id, value) ||
+            (value.Trim().Length >= 12 && Same(e.Summary, value)));
         foreach (StoryCausalLink link in memory.CausalLinks)
         {
+            if (link.ChapterNumber is not int linkedChapter || !chapters.Contains(linkedChapter) ||
+                !VerifiedEndpoint(link.From) || !VerifiedEndpoint(link.To))
+                continue;
+
             string fromKey = EntityKey("CausalFact", link.From);
             string toKey = EntityKey("CausalFact", link.To);
             AddNode(nodes, new Node(fromKey, "CausalFact", link.From, link.From, link.ChapterNumber));
@@ -372,7 +408,8 @@ public static class StoryKnowledgeGraph
         return tokenized.Length > 0 ? tokenized : value.Trim().ToLowerInvariant();
     }
     private static bool Same(string left, string right) => string.Equals(left?.Trim(), right?.Trim(), StringComparison.OrdinalIgnoreCase);
+    // The retrieval graph represents durable truth, not proposed ideas.
+    // Proposed items remain separately labeled in the conversation/memory UI.
     private static bool IsCurrentCanon(StoryCanonFact fact) =>
-        !string.Equals(fact.Status, "Retconned", StringComparison.OrdinalIgnoreCase) &&
-        !string.Equals(fact.Status, "Contradicted", StringComparison.OrdinalIgnoreCase);
+        string.Equals(fact.Status, "Confirmed", StringComparison.OrdinalIgnoreCase);
 }

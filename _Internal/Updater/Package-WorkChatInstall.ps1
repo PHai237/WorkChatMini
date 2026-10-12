@@ -20,8 +20,8 @@ if (-not (Test-Path -LiteralPath (Split-Path -Parent $outputPath))) {
 # The left side is an exact ZIP entry name, NOT an OS path. Never put \\ in it.
 $files = @(
     @{ Entry = 'WorkChatMini.exe';                                  Source = '_Internal/Build/WorkChatMini.exe' }
-    @{ Entry = 'INSTALL-APP.bat';                                  Source = 'INSTALL-APP.bat' }
-    @{ Entry = 'RESTORE-PREVIOUS.bat';                              Source = 'RESTORE-PREVIOUS.bat' }
+    @{ Entry = 'INSTALL-APP.bat';                                  Source = '_Internal/Installer/INSTALL-APP.bat' }
+    @{ Entry = 'RESTORE-PREVIOUS.bat';                              Source = '_Internal/Installer/RESTORE-PREVIOUS.bat' }
     @{ Entry = 'TEST-APP.bat';                                     Source = '_Internal/Updater/TEST-APP.bat' }
     @{ Entry = '_Updater/Apply-WorkChatUpdate.ps1';                Source = '_Internal/Updater/Apply-WorkChatUpdate.ps1' }
     @{ Entry = '_Internal/Updater/Install-WorkChatApp.ps1';        Source = '_Internal/Updater/Install-WorkChatApp.ps1' }

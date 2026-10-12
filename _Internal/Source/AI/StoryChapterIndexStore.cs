@@ -36,6 +36,24 @@ public sealed class StoryChapterIndexStore
         }
     }
 
+    // Preserve existing legacy chapter names, but refuse ambiguous or unsafe
+    // references. A duplicate chapter number / filename is not solid evidence.
+    internal static HashSet<string> CommittedChapterFileNames(StoryMemoryDocument memory)
+    {
+        var byNumber = (memory.Chapters ?? new List<StoryChapterMemory>())
+            .Where(c => c is not null && c.Number > 0 && !string.IsNullOrWhiteSpace(c.FileName))
+            .GroupBy(c => c.Number)
+            .Where(group => group.Count() == 1)
+            .Select(group => group.Single())
+            .ToArray();
+        return byNumber.GroupBy(c => c.FileName, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() == 1)
+            .Select(group => group.Single().FileName)
+            .Where(file => string.Equals(Path.GetFileName(file), file, StringComparison.Ordinal) &&
+                           file.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
     private readonly StoryProjectStore _projects = new();
 
     public async Task<StoryChapterIndexDocument> RefreshAsync(
@@ -43,6 +61,11 @@ public sealed class StoryChapterIndexStore
         string chaptersDirectory,
         CancellationToken cancellationToken = default)
     {
+        // An orphaned chapter file is NOT committed prose. Only the manuscript
+        // ledger in story-memory.json can authorize chapter evidence. If memory
+        // cannot be read safely, do not silently fall back to scanning files.
+        StoryMemoryDocument committedMemory = await new StoryMemoryStore().LoadAsync(projectId, cancellationToken);
+        HashSet<string> committedFiles = CommittedChapterFileNames(committedMemory);
         StoryChapterIndexDocument index = await LoadAsync(projectId, cancellationToken);
         if (!Directory.Exists(chaptersDirectory))
         {
@@ -67,7 +90,7 @@ public sealed class StoryChapterIndexStore
         foreach (string path in Directory.EnumerateFiles(chaptersDirectory, "*.md", SearchOption.TopDirectoryOnly))
         {
             string fileName = Path.GetFileName(path) ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(fileName))
+            if (!string.IsNullOrWhiteSpace(fileName) && committedFiles.Contains(fileName))
                 files[fileName] = path;
         }
 

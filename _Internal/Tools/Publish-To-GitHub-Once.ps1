@@ -50,7 +50,7 @@ try {
     & git add --all
     if ($LASTEXITCODE -ne 0) { throw 'git add failed' }
     $pending = @(& git diff --cached --name-only)
-    $sensitive = @($pending | Where-Object { $_ -match '(?i)(^|/)(\.env(?:\.|$)|[^/]*secret[^/]*|[^/]*credential[^/]*|[^/]*\.key$|[^/]*\.pfx$|[^/]*\.pem$|[^/]*\.exe$|[^/]*\.dll$|[^/]*\.zip$)' -and $_ -cne '_Internal/Source/AI/StoryCredentialStore.cs' })
+    $sensitive = @($pending | Where-Object { $_ -match '(?i)(^|/)(\.env(?:\.|$)|[^/]*secret[^/]*|[^/]*credential[^/]*|[^/]*\.key$|[^/]*\.pfx$|[^/]*\.pem$|[^/]*\.exe$|[^/]*\.dll$|[^/]*\.zip$)' })
     if ($sensitive.Count -gt 0) { throw ('Possible sensitive or generated files staged: ' + ($sensitive -join ', ')) }
     if ($pending.Count -eq 0) { throw 'No source files to upload.' }
     Write-Host "Staged $($pending.Count) source files (source only, no user profile)."

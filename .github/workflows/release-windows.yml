@@ -53,18 +53,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $releaseUrl = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/tags/$env:RELEASE_TAG"
-          $response = Invoke-WebRequest -Method GET -Uri $releaseUrl -Headers @{
-            Authorization = "Bearer $env:GH_TOKEN"
-            Accept = "application/vnd.github+json"
-            "X-GitHub-Api-Version" = "2022-11-28"
-          } -SkipHttpErrorCheck
-          if ($response.StatusCode -eq 200) {
-            throw "Release $env:RELEASE_TAG already exists. Bump VERSION.txt; do not overwrite published binaries."
-          } elseif ($response.StatusCode -eq 404) {
-            Write-Host "Release $env:RELEASE_TAG does not exist; proceeding."
-          } else {
-            throw "GitHub release lookup failed: HTTP $($response.StatusCode)"
+          $endpoint = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/tags/$env:RELEASE_TAG"
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; "User-Agent" = "WorkChatMiniRelease"; "X-GitHub-Api-Version" = "2022-11-28" }
+          try {
+            $existing = Invoke-RestMethod -Uri $endpoint -Headers $headers -Method Get -ErrorAction Stop
+            if ($null -ne $existing) { throw "Release $env:RELEASE_TAG already exists. Bump VERSION.txt instead of overwriting binaries." }
+          }
+          catch {
+            $code = if ($null -ne $_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+            if ($code -ne 404) { throw }
+            Write-Host 'Release tag not published yet; safe to continue.'
           }
       - name: Static source check
         shell: pwsh
@@ -78,8 +76,8 @@ jobs:
         shell: pwsh
         run: |
           $version = $env:RELEASE_VERSION
-          $updateZip = "_Internal/Releases/WorkChatMini-update-v$version.zip"
-          $installZip = "_Internal/Releases/WorkChatMini-install-v$version.zip"
+          $updateZip = "_Internal/Releases/WorkChat-Update.zip"
+          $installZip = "_Internal/Releases/WorkChat-Install.zip"
           foreach ($path in @($updateZip, $installZip)) {
             if (!(Test-Path -LiteralPath $path -PathType Leaf)) { throw "Missing release asset: $path" }
           }
@@ -139,20 +137,20 @@ jobs:
           if (-not (Test-Path -LiteralPath $iscc)) { throw 'ISCC.exe not found' }
           & $iscc "/DAppVersion=$env:RELEASE_VERSION" '_Internal/Installer/WorkChatMini.iss'
           if ($LASTEXITCODE -ne 0) { throw 'Windows Setup EXE build failed' }
-          $installer = "_Internal/Releases/WorkChatMini-Setup-v$env:RELEASE_VERSION.exe"
+          $installer = "_Internal/Releases/WorkChat-Setup.exe"
           if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "Installer missing: $installer" }
-      - name: Preserve Windows test reports (repository workspace)
+      - name: Preserve Windows test reports (workspace)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: workchat-windows-test-reports
+          name: workchat-test-reports
           path: _Internal/Reports/
           if-no-files-found: ignore
-      - name: Preserve Windows SelfTest logs (runner AppData)
+      - name: Preserve Windows SelfTest logs (AppData)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: workchat-windows-selftest-logs
+          name: workchat-selftest-logs
           path: ~/AppData/Local/WorkChatMini-SelfTest/Logs/
           if-no-files-found: ignore
       - name: Generate HTTPS feed and release checksums
@@ -160,9 +158,9 @@ jobs:
         run: |
           $version = $env:RELEASE_VERSION
           $tag = $env:RELEASE_TAG
-          $update = "WorkChatMini-update-v$version.zip"
-          $install = "WorkChatMini-install-v$version.zip"
-          $setup = "WorkChatMini-Setup-v$version.exe"
+          $update = "WorkChat-Update.zip"
+          $install = "WorkChat-Install.zip"
+          $setup = "WorkChat-Setup.exe"
           $setupPath = Join-Path '_Internal/Releases' $setup
           $updatePath = Join-Path '_Internal/Releases' $update
           $installPath = Join-Path '_Internal/Releases' $install
@@ -200,9 +198,9 @@ jobs:
           $version = $env:RELEASE_VERSION
           $tag = $env:RELEASE_TAG
           $assets = @(
-            "_Internal/Releases/WorkChatMini-update-v$version.zip",
-            "_Internal/Releases/WorkChatMini-install-v$version.zip",
-            "_Internal/Releases/WorkChatMini-Setup-v$version.exe",
+            "_Internal/Releases/WorkChat-Update.zip",
+            "_Internal/Releases/WorkChat-Install.zip",
+            "_Internal/Releases/WorkChat-Setup.exe",
             'latest.json', 'checksums-sha256.txt'
           )
           $flags = @()

@@ -1,0 +1,19 @@
+{
+  "version": "2.36.0",
+  "csharp_files": 206,
+  "xaml_files": 5,
+  "xml_parsed": 6,
+  "max_lines": 991,
+  "longest": "_Internal/Source/MainWindow.SelfTest.cs",
+  "xaml_handlers_checked": 166,
+  "xaml_handlers_missing": 0,
+  "github_jobs": [
+    "build-test-release",
+    "publish-latest-feed"
+  ],
+  "zip_entries": 352,
+  "zip_size_bytes": 2233074,
+  "zip_sha256": "104690c63a0c42b10d93ce463b6761a44d12bf453489325835c9d63db6f84fc7",
+  "windows_build": "NOT RUN",
+  "windows_quick_stress": "NOT RUN"
+}

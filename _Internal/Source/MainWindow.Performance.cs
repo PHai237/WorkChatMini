@@ -110,8 +110,15 @@ public partial class MainWindow
 
     private void AnalyzeProcessCpu(ResourceSnapshot snapshot)
     {
-        if (snapshot.CapturedTimestamp <= 0 || snapshot.ProcessSamples.Count == 0)
+        if (snapshot.CapturedTimestamp <= 0)
             return;
+        if (snapshot.ProcessSamples.Count == 0)
+        {
+            // After all WebView processes exit, PID baselines are no longer valid.
+            // Dropping them also avoids attributing CPU use to a recycled PID.
+            _cpuBaselines.Clear();
+            return;
+        }
 
         var alive = new HashSet<int>();
         foreach (ResourceProcessSample sample in snapshot.ProcessSamples)
@@ -178,8 +185,16 @@ public partial class MainWindow
         ResourceCapturePlan plan = ResourceTelemetry.CreateCapturePlan(_webEnvironment);
         _ = Task.Run(() =>
         {
-            ResourceSnapshot snapshot = ResourceTelemetry.Capture(plan);
-            CrashDiagnostics.WriteWebViewFailure(source, details, snapshot);
+            try
+            {
+                ResourceSnapshot snapshot = ResourceTelemetry.Capture(plan);
+                CrashDiagnostics.WriteWebViewFailure(source, details, snapshot);
+            }
+            catch (Exception ex)
+            {
+                // Diagnostic writing must never leave an unobserved background exception.
+                AppLogger.Warn("PERF", $"WebView failure report could not be written | {source} | {ex.Message}");
+            }
         });
     }
 

@@ -11,6 +11,9 @@ namespace WorkChatMini;
 
 public partial class StoryPanel : System.Windows.Controls.UserControl
 {
+    private static readonly WpfFontFamily ChatFont = new("Segoe UI");
+    private static readonly WpfFontFamily ReadingFont = new("Georgia");
+
     private readonly StoryProjectStore _store = new();
     private readonly StoryActionOrchestrator _actionOrchestrator = new();
     private readonly List<StoryProject> _projects = new();
@@ -639,10 +642,13 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
         bool user = string.Equals(message.Role, "user", StringComparison.OrdinalIgnoreCase);
         var text = new TextBlock
         {
-            Text = message.Content,
+            // Avoid assigning a giant manuscript to the WPF visual tree before
+            // AttachLongMessageReader swaps in its bounded visible excerpt.
+            Text = !streaming && (message.Content?.Length ?? 0) > StoryLongMessageWindow.ChunkCharacters
+                ? string.Empty : message.Content,
             TextWrapping = TextWrapping.Wrap,
             Foreground = (SolidColorBrush)FindResource("StoryText"),
-            FontFamily = user ? new WpfFontFamily("Segoe UI") : new WpfFontFamily("Georgia"),
+            FontFamily = user ? ChatFont : ReadingFont,
             FontSize = user ? 13.5 : 14,
             LineHeight = user ? 22 : 24,
             MaxWidth = user ? 500 : 620
@@ -729,16 +735,17 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
                 Width = 30,
                 Height = 30,
                 CornerRadius = new CornerRadius(8),
-                Background = (SolidColorBrush)FindResource("StoryGoldDim"),
-                BorderBrush = (SolidColorBrush)FindResource("StoryGoldBorder"),
-                BorderThickness = new Thickness(1),
+                // The closed-book pixel icon already includes its own tile.
+                // Avoid placing a second brass square underneath it.
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
                 Margin = new Thickness(0, 2, 12, 0),
                 VerticalAlignment = VerticalAlignment.Top,
                 Child = new System.Windows.Controls.Image
                 {
                     Source = (ImageSource)FindResource("StoryIconImage"),
-                    Width = 22,
-                    Height = 22,
+                    Width = 28,
+                    Height = 28,
                     Stretch = Stretch.Uniform,
                     SnapsToDevicePixels = true
                 }

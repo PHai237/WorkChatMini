@@ -27,6 +27,7 @@ public partial class StoryPanel
         SettingsAutonomyBox.ItemsSource = StoryAutonomyModes.All;
         SettingsDirectorBox.ItemsSource = StoryDirector.Modes;
         SettingsNarrativeFocusBox.ItemsSource = StoryNarrativeSteering.All;
+        SettingsCraftFeedbackBox.ItemsSource = StoryCraftFeedback.All;
         SettingsManuscriptModeBox.ItemsSource = StoryManuscriptModes.All;
         SettingsMaturityBox.ItemsSource = StoryContentProfiles.MaturityLevels;
         SettingsViolenceBox.ItemsSource = StoryContentProfiles.ViolenceLevels;
@@ -673,6 +674,7 @@ public partial class StoryPanel
             SettingsDirectorBox.SelectedItem = StoryDirector.Normalize(_activeProject.StoryDirectorMode);
             SettingsNarrativeFocusBox.SelectedItem = StoryNarrativeSteering.Normalize(_activeProject.NarrativeFocusPreference);
             SettingsNarrativeGuardrailsBox.Text = _activeProject.NarrativeGuardrails ?? string.Empty;
+            SettingsCraftFeedbackBox.SelectedItem = StoryCraftFeedback.Normalize(_activeProject.ChapterCraftFeedback);
             SettingsManuscriptModeBox.SelectedItem = StoryManuscriptModes.Normalize(_activeProject.ManuscriptMode);
             StoryContentProfiles.Normalize(_activeProject);
             SettingsMaturityBox.SelectedItem = _activeProject.ContentProfile.Maturity;

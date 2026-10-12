@@ -112,6 +112,48 @@ internal static class AppUpdatePackage
         }
     }
 
+    // A verified EXE may remain in Pending when Updates is closed, changed, or rechecked
+    // without installation. Only a WorkChat-generated Pending/<guid>/WorkChatMini.exe is
+    // eligible for deletion; never remove a ZIP selected by the user or app data.
+    internal static bool DiscardPrepared(PreparedAppUpdate prepared)
+    {
+        try
+        {
+            string path = Path.GetFullPath(prepared.StagedExecutable);
+            if (!string.Equals(Path.GetFileName(path), "WorkChatMini.exe", StringComparison.OrdinalIgnoreCase))
+                return false;
+            string? staging = Path.GetDirectoryName(path);
+            if (staging is null || !Guid.TryParseExact(Path.GetFileName(staging), "N", out _))
+                return false;
+            string? parent = Path.GetDirectoryName(staging);
+            string pendingRoot = Path.GetFullPath(Path.Combine(WorkDirectory, "Pending"));
+            if (parent is null || !string.Equals(Path.GetFullPath(parent), pendingRoot,
+                StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (Directory.Exists(staging))
+                Directory.Delete(staging, recursive: true);
+            return true;
+        }
+        catch (IOException ex)
+        {
+            AppLogger.Warn("UPDATE", $"Discard of unused verified update deferred | {ex.Message}");
+            return false;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            AppLogger.Warn("UPDATE", $"Discard of unused verified update denied | {ex.Message}");
+            return false;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+        catch (NotSupportedException)
+        {
+            return false;
+        }
+    }
+
     internal static async Task<string> ComputeSha256Async(string path, CancellationToken token)
     {
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, true);

@@ -20,7 +20,7 @@ Compression=lzma2
 SolidCompression=yes
 UninstallDisplayIcon={app}\{#AppExe}
 OutputDir=..\Releases
-OutputBaseFilename=WorkChatMini-Setup-v{#AppVersion}
+OutputBaseFilename=WorkChat-Setup
 SetupIconFile=..\Source\Assets\workchat.ico
 CloseApplications=no
 RestartApplications=no
@@ -38,7 +38,7 @@ Source: "..\Updater\Apply-WorkChatUpdate.ps1"; DestDir: "{app}\_Updater"; Flags:
 Source: "..\Updater\Restore-Previous.ps1"; DestDir: "{app}\_Updater"; Flags: ignoreversion
 Source: "..\Updater\Run-WorkChatSelfTest.ps1"; DestDir: "{app}\_Updater"; Flags: ignoreversion
 Source: "..\Updater\TEST-APP.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\..\RESTORE-PREVIOUS.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "RESTORE-PREVIOUS.bat"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{userprograms}\WorkChat Mini"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"

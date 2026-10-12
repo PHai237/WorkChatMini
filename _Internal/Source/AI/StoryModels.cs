@@ -18,6 +18,9 @@ public sealed class StoryProject
     public string? NarrativeFocusPreference { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? NarrativeGuardrails { get; set; }
+    // Author craft feedback for subsequent Continue Story only. Never saved as canon.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ChapterCraftFeedback { get; set; }
     public StoryContentProfile ContentProfile { get; set; } = new();
     public DateTimeOffset CreatedUtc { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedUtc { get; set; } = DateTimeOffset.UtcNow;

@@ -29,6 +29,17 @@ internal static class StoryDirectorSelfTest
         if (!steering.Contains("No arbitrary new factions", StringComparison.Ordinal) ||
             !steering.Contains("NOT confirmed canon", StringComparison.Ordinal))
             throw new InvalidOperationException("Creative steering was not safely included in prompt context.");
+        var reviewedStory = new StoryProject { ChapterCraftFeedback = StoryCraftFeedback.OutOfCharacter };
+        string craft = StoryNarrativeSteering.Guidance(reviewedStory);
+        if (!craft.Contains("not canon", StringComparison.OrdinalIgnoreCase) ||
+            !craft.Contains("knowledge", StringComparison.OrdinalIgnoreCase) ||
+            StoryCraftFeedback.Guidance("unexpected feedback").Length != 0 ||
+            !string.IsNullOrEmpty(StoryCraftFeedback.Guidance(null)))
+            throw new InvalidOperationException("Author feedback leaked into canon or accepted an unknown value.");
+        string serializedFeedback = System.Text.Json.JsonSerializer.Serialize(reviewedStory);
+        if (System.Text.Json.JsonSerializer.Deserialize<StoryProject>(serializedFeedback)?.ChapterCraftFeedback != StoryCraftFeedback.OutOfCharacter ||
+            System.Text.Json.JsonSerializer.Deserialize<StoryProject>("{}")?.ChapterCraftFeedback is not null)
+            throw new InvalidOperationException("Chapter craft feedback failed backwards-compatible persistence.");
         if (StoryDirector.IsValidOption("too short") || !StoryDirector.IsValidOption("A grounded consequence from the previous chapter."))
             throw new InvalidOperationException("Director option validation accepted an empty plan.");
         string json = System.Text.Json.JsonSerializer.Serialize(new StoryProject { StoryDirectorMode = StoryDirector.Review });

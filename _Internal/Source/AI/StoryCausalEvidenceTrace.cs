@@ -38,9 +38,10 @@ internal static class StoryCausalEvidenceTrace
         if (aliases.Reasons.Any(reason => reason.StartsWith("Ambiguous character alias", StringComparison.Ordinal)))
             return Result.Empty;
 
+        HashSet<int> committed = StoryCommittedEvidence.UniqueChapters(memory);
+        HashSet<string> duplicateIds = StoryCommittedEvidence.DuplicateEventIds(memory);
         StorySignificantEvent[] confirmed = memory.Events.Where(e =>
-            string.Equals(e.Status, "Confirmed", StringComparison.OrdinalIgnoreCase) &&
-            e.ChapterNumber is > 0).ToArray();
+            StoryCommittedEvidence.IsVerifiedEvent(e, committed, duplicateIds)).ToArray();
 
         // Reject duplicate IDs or summaries: an ambiguous endpoint cannot provide provenance.
         var byId = UniqueIndex(confirmed, e => e.Id);
@@ -60,7 +61,8 @@ internal static class StoryCausalEvidenceTrace
         var valid = new List<Step>();
         foreach (StoryCausalLink link in memory.CausalLinks)
         {
-            if (!Relations.Contains(link.Relation))
+            if (!Relations.Contains(link.Relation) ||
+                (link.ChapterNumber is int chapter && !committed.Contains(chapter)))
                 continue;
             StorySignificantEvent? from = Resolve(link.From);
             StorySignificantEvent? to = Resolve(link.To);

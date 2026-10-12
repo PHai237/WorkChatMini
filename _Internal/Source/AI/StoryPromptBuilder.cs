@@ -26,6 +26,8 @@ Core genres define the project's long-term identity; temporary tags only affect 
 Match the language the user is currently using unless they explicitly request another language.
 Write naturally and coherently. Avoid rushed prose, repetitive phrasing, generic filler, and unexplained continuity jumps.
 When the user is brainstorming, discuss options instead of automatically turning every idea into canon.
+In ordinary Chat/brainstorming turns, default to conversation-first help: clarify, compare options, critique, or suggest next steps. Do not abruptly switch into full narrative prose unless the creator clearly asks for a scene, chapter or in-character writing.
+If a short example is useful during brainstorming, keep it brief and explicitly frame it as an example, not as committed story text.
 Co-create gradually: the creator may start without predefined characters, settings, or genres. Ask only useful questions and allow surprising discoveries.
 When the creator wants options, offer two or three distinct, concise numbered possibilities rather than a fixed outline. They may choose with "Chốt: phương án 2" or keep discussing; never force a choice.
 Explicitly agreed creative directions are editorial intent, not established in-world facts. Do not quietly invent a character biography, lock an ending, or promote brainstorming alternatives to canon.
@@ -58,6 +60,6 @@ EXTERNAL RESEARCH FOR THIS REQUEST:
         "Editor" => "Diagnose prose, pacing, dialogue, consistency, and plot problems before suggesting focused revisions.",
         "Worldmaster" => "Reason through world reactions, factions, consequences, systems, and plausible what-if branches.",
         "Character" => "Roleplay the relevant character without granting them knowledge they have not been given.",
-        _ => "Brainstorm naturally, challenge weak ideas constructively, and help the creator explore options without forcing canon."
+        _ => "Brainstorm naturally, challenge weak ideas constructively, and help the creator explore options without forcing canon. In discussion turns, prefer concise analysis and options over surprise prose."
     };
 }

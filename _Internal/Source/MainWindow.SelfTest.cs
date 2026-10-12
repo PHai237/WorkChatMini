@@ -135,6 +135,20 @@ public partial class MainWindow
                     throw new InvalidOperationException("No WebView process samples were captured.");
                 if (sample.ProcessSamples.Any(process => process.PrivateBytes < 0 || process.TotalProcessorTimeTicks < 0))
                     throw new InvalidOperationException("Invalid process telemetry values.");
+                // A browser shutdown should clear stale CPU baselines, not pin old PIDs.
+                const int stalePid = int.MaxValue;
+                _cpuBaselines[stalePid] = new CpuProcessBaseline
+                {
+                    TotalProcessorTimeTicks = TimeSpan.TicksPerSecond,
+                    Timestamp = sample.CapturedTimestamp
+                };
+                AnalyzeProcessCpu(new ResourceSnapshot
+                {
+                    CapturedTimestamp = sample.CapturedTimestamp,
+                    ProcessSamples = Array.Empty<ResourceProcessSample>()
+                });
+                if (_cpuBaselines.Count != 0)
+                    throw new InvalidOperationException("Empty WebView snapshot retained stale CPU baselines.");
                 return Task.CompletedTask;
             });
 

@@ -1,23 +1,19 @@
-# WorkChat Mini v2.30.0-preview22
+# WorkChat Mini 2.40.0 — Story Readiness Gate
 
-## AI Story — Scene Compass
+## Reliability fixes
 
-- Added a per-branch, read-only Scene Compass accessible from the sidebar and story composer chip.
-- Displays up to 2 recent unambiguously committed chapter summaries, up to 3 eligible open threads, up to 2 active promises, and up to 3 character goals from current Memory.
-- Strict local-only feature: no provider call, no persisted new story data, no automatic messaging/continuation/canon commit.
-- Single-click insert of an editable Continue Story direction, preserving any unsent input.
-- New deterministic self-test for empty branches, ambiguous duplicate chapter numbers, unopened/future threads, closed threads and uncommitted promises.
-- Existing Story Director, dialogue rules, Memory v6, checkpoint recovery and Writer Pipeline unchanged.
+- Chapter-summary retrieval now checks `StoryCommittedEvidence.UniqueChapters` before treating a chapter's title and summary as search evidence. A duplicate chapter number is ambiguous and can no longer enter this path.
+- A final provenance guard rejects all retrieval boosts that do not resolve to a unique committed chapter, including stale references from threads, arcs, canon or explicit chapter requests.
+- Proposed, contradicted and retconned Canon facts no longer enter the retrieval Knowledge Graph, expand evidence-search terms, or boost chapters. Confirmed facts still do. Proposed ideas may remain visible as **labeled, uncertain** data in other brainstorming contexts; they do not get promoted into confirmed chapter evidence.
+- Continue Story's three recent chapter hints now use the same committed-chapter set with O(n) membership instead of scanning the chapter list for each candidate.
 
-## Distribution and updates
+## Readiness coverage
 
-- Fixed order-dependent update ZIP validation in `_Internal/Updater/Update-This-PC.ps1` and Windows GitHub release workflow.
-- GitHub release gate verifies the archived EXE's uncompressed size and SHA-256, not just the on-disk executable.
-- Bumped source/publish/manifest version to 2.30.0-preview22; original in-place updater expects a NEWER version.
-- Unchanged installed data locations; app data, Story and WebView2 profiles are not part of the source ZIP.
+- Added a deterministic StoryReadinessSelfTest inside the **existing** Story memory Quick/Stress case: 20-chapter fixture, duplicate chapter numbers, confirmed vs proposed canon, orphan thread provenance, 24K-character context budget, rejected draft exclusion and Chat/Review safety.
+- Tests do **not** call Gemini; writing quality and end-to-end generation must still be validated using real chapters.
+- No extra top-level self-test was added; Run-WorkChatSelfTest.ps1 still expects 22 PASS for Quick and Stress.
+- No schema changes, extra API calls, UI widgets, updates workflow changes, or user data migrations.
 
-## Verification
+## Readiness policy
 
-- Source/static lint, XAML/XML and YAML parsing, event handler resolution, ZIP integrity: checked locally.
-- Windows WPF build, Windows Quick/Stress, GitHub release and installation from Setup EXE: **NOT checked** in this environment.
-- No binary release asset is provided until a real Windows build is executed via connected GitHub Actions/release infrastructure.
+See `docs/STORY-READY.md`. Do not describe this version as production-ready until a Windows GitHub build and actual story-writing pilot succeed.

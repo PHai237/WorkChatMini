@@ -107,7 +107,7 @@ public static class StoryMemoryRetriever
         StoryMemoryDocument memory, string query,
         IReadOnlyList<StoryChapterSearchHit>? chapterHits, int budget, int chapter)
     {
-        HashSet<int> committed = memory.Chapters.Select(c => c.Number).ToHashSet();
+        HashSet<int> committed = StoryCommittedEvidence.UniqueChapters(memory);
         var sections = new List<string>
         {
             $"HISTORICAL STORY CONTEXT — Revisit Ch.{chapter}. Current Confirmed Canon/approved retcons below are AUTHOR constraints, NOT a character's earlier knowledge. No future event, inventory, relationship, or current Character.Knowledge may be assumed in this historical scene.",
@@ -201,15 +201,24 @@ public static class StoryMemoryRetriever
                 StoryEventLedger.FormatForContext, StoryEventLedger.BuildSearchText,
                 plan.OriginalQuery, 6, 2800);
         }
+        IEnumerable<StorySignificantEvent> events = memory.Events;
+        if (plan is not null)
+        {
+            HashSet<int> chapters = StoryCommittedEvidence.UniqueChapters(memory);
+            HashSet<string> duplicates = StoryCommittedEvidence.DuplicateEventIds(memory);
+            events = events.Where(e => StoryCommittedEvidence.IsVerifiedEvent(e, chapters, duplicates));
+        }
         return BuildRankedSection("SIGNIFICANT EVENT LEDGER",
-            memory.Events.OrderByDescending(x => x.CreatedUtc).ToList(),
+            events.OrderByDescending(x => x.ChapterNumber).ThenByDescending(x => x.CreatedUtc).ToList(),
             StoryEventLedger.FormatForContext, StoryEventLedger.BuildSearchText, query, 8, 2800);
     }
 
     private static string BuildRecentChaptersSection(StoryMemoryDocument memory, int? latestChapter = null)
     {
+        HashSet<int> committed = StoryCommittedEvidence.UniqueChapters(memory);
         StoryChapterMemory[] recent = memory.Chapters
-            .Where(c => latestChapter is null || c.Number <= latestChapter.Value)
+            .Where(c => committed.Contains(c.Number) &&
+                (latestChapter is null || c.Number <= latestChapter.Value))
             .OrderByDescending(c => c.Number).Take(4).OrderBy(c => c.Number).ToArray();
         if (recent.Length == 0)
             return string.Empty;

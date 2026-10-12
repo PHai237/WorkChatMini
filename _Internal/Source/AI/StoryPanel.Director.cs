@@ -187,6 +187,29 @@ public partial class StoryPanel
         }
     }
 
+    private async void SettingsCraftFeedbackBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingInspector || _activeProject is null || _loadingProject ||
+            _generationCts is not null || SettingsCraftFeedbackBox.SelectedItem is not string selected)
+            return;
+        StoryProject project = _activeProject;
+        string? previous = project.ChapterCraftFeedback;
+        string normalized = StoryCraftFeedback.Normalize(selected);
+        project.ChapterCraftFeedback = normalized == StoryCraftFeedback.None ? null : normalized;
+        try
+        {
+            await _store.SaveProjectAsync(project);
+            ClearDirectorPreview();
+            SetStatus("Craft feedback saved · future Continue Story only; confirmed canon unchanged.");
+        }
+        catch (Exception ex)
+        {
+            project.ChapterCraftFeedback = previous;
+            AppLogger.Error("STORY-CRAFT", "Failed to save creative feedback", ex);
+            SetStatus("Error · Craft feedback was not saved.");
+        }
+    }
+
     private async void SettingsDirectorBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_loadingInspector || _activeProject is null ||

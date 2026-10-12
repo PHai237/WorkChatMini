@@ -45,13 +45,13 @@
         <SolidColorBrush x:Key="WebBrandBrush" Color="#10B977"/>
         <SolidColorBrush x:Key="StoryBrandBrush" Color="#9A6A2E"/>
         <!-- Pixel app icons are embedded WPF resources. Nearest-neighbor scaling is used at render time. -->
-        <BitmapImage x:Key="MessengerPixelIcon" UriSource="Assets/Icons/messenger.png"/>
-        <BitmapImage x:Key="FacebookPixelIcon" UriSource="Assets/Icons/facebook.png"/>
-        <BitmapImage x:Key="YouTubePixelIcon" UriSource="Assets/Icons/youtube.png"/>
-        <BitmapImage x:Key="DiscordPixelIcon" UriSource="Assets/Icons/discord.png"/>
-        <BitmapImage x:Key="ZaloPixelIcon" UriSource="Assets/Icons/zalo.png"/>
-        <BitmapImage x:Key="WebPixelIcon" UriSource="Assets/Icons/web.png"/>
-        <BitmapImage x:Key="StoryPixelIcon" UriSource="Assets/Icons/story.png"/>
+        <BitmapImage x:Key="MessengerPixelIcon" UriSource="Assets/Icons/messenger.png" DecodePixelWidth="48"/>
+        <BitmapImage x:Key="FacebookPixelIcon" UriSource="Assets/Icons/facebook.png" DecodePixelWidth="48"/>
+        <BitmapImage x:Key="YouTubePixelIcon" UriSource="Assets/Icons/youtube.png" DecodePixelWidth="48"/>
+        <BitmapImage x:Key="DiscordPixelIcon" UriSource="Assets/Icons/discord.png" DecodePixelWidth="48"/>
+        <BitmapImage x:Key="ZaloPixelIcon" UriSource="Assets/Icons/zalo.png" DecodePixelWidth="48"/>
+        <BitmapImage x:Key="WebPixelIcon" UriSource="Assets/Icons/web.png" DecodePixelWidth="48"/>
+        <BitmapImage x:Key="StoryPixelIcon" UriSource="Assets/Icons/story.png" DecodePixelWidth="48"/>
         <Style x:Key="AppIconButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="#141922"/>

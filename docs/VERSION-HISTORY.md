@@ -1,3 +1,11 @@
+## 2.32.0 — Literary Craft 2.0
+
+- Add optional, bounded scene craft intent to existing Continue Story preparation/draft/editor (no extra AI call or canon changes).
+- Introduce genre-sensitive prose guidance focused on POV, subtext, emotional cause and earned chapter endings.
+- Add committed-only cross-chapter opening/ending echo watch and two feedback choices: Stiff dialogue, Over-explaining.
+- Keep installer/updater feed, GitHub Actions and stable download filenames unchanged.
+- Windows BUILD and Quick/Stress must pass on GitHub before release.
+
 ## v2.30.0-preview20 — GitHub Windows release delivery (Windows validation pending)
 
 - GitHub Actions builds and tests Windows release, packages both first-install and update ZIPs, then publishes Release and stable GitHub Pages update feed.

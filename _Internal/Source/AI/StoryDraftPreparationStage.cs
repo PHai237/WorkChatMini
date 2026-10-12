@@ -13,7 +13,8 @@ public sealed class StoryDraftPreparationStage
         string providerId,
         string model,
         CancellationToken cancellationToken,
-        bool continueStory = false)
+        bool continueStory = false,
+        bool discussionOnly = false)
     {
         string systemPrompt = StoryPromptBuilder.BuildBase(project, memoryContext, researchContext) + """
 
@@ -24,9 +25,18 @@ PLAN must cover only what matters: objective, POV, participating characters/moti
 
 CONTINUITY CONSTRAINTS must explicitly check character knowledge, scene location/travel, injuries/condition, power/progression, inventory, relationship history/current state, active character arcs, timeline, world rules, and open threads. Unknown information is not a contradiction. Do not invent canon to fill blanks.
 
+For Continue Story only, add craftBrief (three to five short sentences, not a chapter outline):
+- What makes this exact scene worth reading now, given the previous committed ending?
+- What does the viewpoint character want but cannot say plainly, and what specific behavior exposes it?
+- What perceptibly changes for the reader by the end, even if the plot stays quiet?
+- What narrative distance, rhythm and selective detail suit the current genre and POV?
+- Avoid mandatory twists, poetic metaphors, invented canon or a fixed dramatic formula.
+For other actions, craftBrief can be empty. This brief is private editorial intent, not new story facts.
+
 Return ONE JSON object only, no markdown fence:
-{"plan":"compact working plan","constraints":"compact continuity constraints"}
-""" + (continueStory ? StoryNarrativeCraftGuide.ForPreparation : string.Empty);
+{"plan":"compact working plan","constraints":"compact continuity constraints","craftBrief":"short literary intent, or empty"}
+""" + (continueStory ? StoryNarrativeCraftGuide.ForPreparation + StoryLiteraryCraft.ForPreparation : string.Empty)
+            + (discussionOnly ? StoryBrainstormingCraft.ForPreparation : string.Empty);
 
         string input = $"""
 CREATOR INSTRUCTION:
@@ -50,6 +60,7 @@ RECENT CONVERSATION:
         if (result is not null && !string.IsNullOrWhiteSpace(result.Plan))
         {
             result.Plan = result.Plan.Trim();
+            result.CraftBrief = continueStory ? StoryLiteraryCraft.NormalizeBrief(result.CraftBrief) : string.Empty;
             result.Constraints = string.IsNullOrWhiteSpace(result.Constraints)
                 ? "Preserve confirmed Story Memory and the creator's explicit constraints. Treat unknown facts as unknown rather than inventing them."
                 : result.Constraints.Trim();

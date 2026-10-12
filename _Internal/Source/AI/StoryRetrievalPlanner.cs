@@ -78,6 +78,13 @@ public static partial class StoryRetrievalPlanner
         if (autoContinue)
             AddAutoContinueSignals(memory, expansion, chapterBoosts, reasons);
 
+        // A boost is evidence only when its chapter number resolves to one
+        // committed manuscript entry. Keep this final guard even when an
+        // individual expansion path accidentally supplies stale provenance.
+        HashSet<int> validChapters = StoryCommittedEvidence.UniqueChapters(memory);
+        foreach (int number in chapterBoosts.Keys.Where(n => !validChapters.Contains(n)).ToArray())
+            chapterBoosts.Remove(number);
+
         string expanded = JoinBounded(expansion, MaxExpandedCharacters);
         string[] directTerms = StoryMemoryRetriever.Tokenize(original)
             .Distinct(StringComparer.OrdinalIgnoreCase).Take(16).ToArray();
@@ -112,7 +119,8 @@ public static partial class StoryRetrievalPlanner
     {
         if (terms.Count == 0)
             return;
-        foreach (StoryChapterMemory chapter in memory.Chapters)
+        HashSet<int> validChapters = StoryCommittedEvidence.UniqueChapters(memory);
+        foreach (StoryChapterMemory chapter in memory.Chapters.Where(c => validChapters.Contains(c.Number)))
         {
             int score = Score($"{chapter.Title} {chapter.Summary}", terms);
             if (score < 2)
@@ -131,6 +139,8 @@ public static partial class StoryRetrievalPlanner
         Dictionary<int, int> chapterBoosts,
         List<string> reasons)
     {
+        HashSet<int> committed = StoryCommittedEvidence.UniqueChapters(memory);
+        HashSet<string> duplicateIds = StoryCommittedEvidence.DuplicateEventIds(memory);
         foreach (StoryCharacterMemory character in memory.Characters)
         {
             string searchable = string.Join(" ", new[]
@@ -150,8 +160,10 @@ public static partial class StoryRetrievalPlanner
             // handles provenance. Do not boost every historical event of a cast member.
             foreach (StorySignificantEvent e in (StoryEventContextMatcher.HasActionIntent(query)
                          ? Enumerable.Empty<StorySignificantEvent>()
-                         : memory.Events.Where(e => Same(e.Subject, character.Name) ||
-                                                     e.RelatedCharacters.Any(x => Same(x, character.Name)))))
+                         : memory.Events.Where(e =>
+                             StoryCommittedEvidence.IsVerifiedEvent(e, committed, duplicateIds) &&
+                             (Same(e.Subject, character.Name) ||
+                              e.RelatedCharacters.Any(x => Same(x, character.Name))))))
             {
                 if (e.ChapterNumber is int chapter)
                     AddBoost(chapterBoosts, chapter, EventBoost(e));
@@ -168,7 +180,10 @@ public static partial class StoryRetrievalPlanner
         List<string> reasons,
         bool autoContinue)
     {
-        IEnumerable<StoryRelationshipChange> source = memory.RelationshipHistory.OrderByDescending(x => x.CreatedUtc);
+        HashSet<int> committed = StoryCommittedEvidence.UniqueChapters(memory);
+        IEnumerable<StoryRelationshipChange> source = memory.RelationshipHistory
+            .Where(x => x.ChapterNumber is int chapter && committed.Contains(chapter))
+            .OrderByDescending(x => x.ChapterNumber).ThenByDescending(x => x.CreatedUtc);
         if (autoContinue)
             source = source.Take(12);
         foreach (StoryRelationshipChange change in source)
@@ -239,10 +254,16 @@ public static partial class StoryRetrievalPlanner
             reasons.Add($"Location state: {location.Name}" + (location.LastChapter is int ch ? $" → Chapter {ch}" : string.Empty));
         }
 
-        foreach (StorySceneStateMemory scene in memory.SceneStates.OrderByDescending(x => x.CreatedUtc).Take(autoContinue ? 8 : 40))
+        HashSet<int> committed = StoryCommittedEvidence.UniqueChapters(memory);
+        StorySceneStateMemory[] validScenes = memory.SceneStates
+            .Where(x => x.ChapterNumber is int chapter && committed.Contains(chapter))
+            .OrderByDescending(x => x.ChapterNumber).ThenByDescending(x => x.CreatedUtc)
+            .Take(autoContinue ? 8 : 40).ToArray();
+        HashSet<StorySceneStateMemory> recentScenes = validScenes.Take(3).ToHashSet();
+        foreach (StorySceneStateMemory scene in validScenes)
         {
             int score = Score(StoryWorldStateGraph.BuildSceneSearchText(scene), terms);
-            bool latestRelevant = autoContinue && memory.SceneStates.OrderByDescending(x => x.CreatedUtc).Take(3).Contains(scene);
+            bool latestRelevant = autoContinue && recentScenes.Contains(scene);
             if (score < 2 && !latestRelevant)
                 continue;
             expansion.Add($"{scene.Location} {scene.PovCharacter} {string.Join(" ", scene.PresentCharacters)} {scene.Summary}");
@@ -289,7 +310,11 @@ public static partial class StoryRetrievalPlanner
         Dictionary<int, int> chapterBoosts,
         List<string> reasons)
     {
-        foreach (StoryCausalLink link in memory.CausalLinks.OrderByDescending(x => x.CreatedUtc))
+        HashSet<int> committed = StoryCommittedEvidence.UniqueChapters(memory);
+        HashSet<string> duplicateIds = StoryCommittedEvidence.DuplicateEventIds(memory);
+        foreach (StoryCausalLink link in memory.CausalLinks
+                     .Where(x => x.ChapterNumber is int n && committed.Contains(n))
+                     .OrderByDescending(x => x.CreatedUtc))
         {
             int score = Score(StoryCausalMemoryLedger.BuildCausalLinkSearchText(link), terms);
             if (score < 2)
@@ -300,7 +325,8 @@ public static partial class StoryRetrievalPlanner
             // Only follow EXPLICIT event IDs or exactly matching full summaries.
             // Being mentioned in the same arc/chapter never implies causation.
             foreach (StorySignificantEvent evidence in memory.Events.Where(e =>
-                         CausalEndpointMatches(link.From, e) || CausalEndpointMatches(link.To, e)).Take(4))
+                         StoryCommittedEvidence.IsVerifiedEvent(e, committed, duplicateIds) &&
+                         (CausalEndpointMatches(link.From, e) || CausalEndpointMatches(link.To, e))).Take(4))
             {
                 if (evidence.ChapterNumber is not int evidenceChapter || evidenceChapter <= 0)
                     continue;
@@ -339,7 +365,11 @@ public static partial class StoryRetrievalPlanner
             return;
         }
 
-        foreach (StorySignificantEvent e in memory.Events.OrderByDescending(x => x.CreatedUtc))
+        HashSet<int> chapters = StoryCommittedEvidence.UniqueChapters(memory);
+        HashSet<string> duplicateIds = StoryCommittedEvidence.DuplicateEventIds(memory);
+        foreach (StorySignificantEvent e in memory.Events
+                     .Where(item => StoryCommittedEvidence.IsVerifiedEvent(item, chapters, duplicateIds))
+                     .OrderByDescending(x => x.ChapterNumber).ThenByDescending(x => x.CreatedUtc))
         {
             string searchable = StoryEventLedger.BuildSearchText(e);
             int score = Score(searchable, terms);
@@ -417,13 +447,18 @@ public static partial class StoryRetrievalPlanner
         Dictionary<int, int> chapterBoosts,
         List<string> reasons)
     {
+        HashSet<int> validChapters = StoryCommittedEvidence.UniqueChapters(memory);
         foreach (StoryCanonFact fact in memory.Canon)
         {
+            // Proposed lore can be discussed as an uncertain idea, but it is
+            // not evidence for retrieval and may not promote a chapter.
+            if (!string.Equals(fact.Status, "Confirmed", StringComparison.OrdinalIgnoreCase))
+                continue;
             int score = Score($"{fact.Fact} {fact.Source}", terms);
             if (score < 2)
                 continue;
             expansion.Add(fact.Fact);
-            if (TryParseChapter(fact.Source, out int chapter))
+            if (TryParseChapter(fact.Source, out int chapter) && validChapters.Contains(chapter))
                 AddBoost(chapterBoosts, chapter, 6);
         }
 
@@ -433,7 +468,7 @@ public static partial class StoryRetrievalPlanner
             if (score < 2 && !ContainsMeaningful(query, revision.OriginalFact) && !ContainsMeaningful(query, revision.ReplacementFact))
                 continue;
             expansion.Add($"{revision.OriginalFact} {revision.ReplacementFact} {revision.Reason}");
-            if (revision.ChapterNumber is int chapter)
+            if (revision.ChapterNumber is int chapter && validChapters.Contains(chapter))
                 AddBoost(chapterBoosts, chapter, 8);
             reasons.Add("Canon revision matched; current replacement must outrank historical wording.");
         }
@@ -445,16 +480,21 @@ public static partial class StoryRetrievalPlanner
         Dictionary<int, int> chapterBoosts,
         List<string> reasons)
     {
-        foreach (StoryChapterMemory chapter in memory.Chapters.OrderByDescending(x => x.Number).Take(3))
+        HashSet<int> validChapters = StoryCommittedEvidence.UniqueChapters(memory);
+        foreach (StoryChapterMemory chapter in memory.Chapters
+                     .Where(x => validChapters.Contains(x.Number))
+                     .OrderByDescending(x => x.Number).Take(3))
         {
             expansion.Add(chapter.Summary);
             AddBoost(chapterBoosts, chapter.Number, 4);
         }
 
+        HashSet<string> duplicateIds = StoryCommittedEvidence.DuplicateEventIds(memory);
         foreach (StorySignificantEvent e in memory.Events
-                     .Where(x => string.Equals(x.Importance, "Critical", StringComparison.OrdinalIgnoreCase) ||
-                                 string.Equals(x.Importance, "Major", StringComparison.OrdinalIgnoreCase))
-                     .OrderByDescending(x => x.CreatedUtc)
+                     .Where(x => StoryCommittedEvidence.IsVerifiedEvent(x, validChapters, duplicateIds) &&
+                        (string.Equals(x.Importance, "Critical", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(x.Importance, "Major", StringComparison.OrdinalIgnoreCase)))
+                     .OrderByDescending(x => x.ChapterNumber).ThenByDescending(x => x.CreatedUtc)
                      .Take(6))
         {
             expansion.Add($"{e.Subject} {e.Target} {e.Summary} {e.After}");
@@ -472,7 +512,9 @@ public static partial class StoryRetrievalPlanner
                 AddBoost(chapterBoosts, chapter, 4);
         }
 
-        foreach (StorySceneStateMemory scene in memory.SceneStates.OrderByDescending(x => x.CreatedUtc).Take(3))
+        foreach (StorySceneStateMemory scene in memory.SceneStates
+                     .Where(x => x.ChapterNumber is int chapter && validChapters.Contains(chapter))
+                     .OrderByDescending(x => x.ChapterNumber).ThenByDescending(x => x.CreatedUtc).Take(3))
         {
             expansion.Add($"{scene.Location} {scene.PovCharacter} {string.Join(" ", scene.PresentCharacters)} {scene.Summary}");
             if (scene.ChapterNumber is int chapter)

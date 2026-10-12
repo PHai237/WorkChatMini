@@ -29,12 +29,14 @@ public static class StoryNarrativeFocus
         string priorities = StoryCharacterPriorityFocus.Build(memory);
         IReadOnlyList<string> recentBeats = StoryNarrativeCraftGuide.RecentBeatEvidence(memory);
         IReadOnlyList<string> recentConsequences = StoryRecentConsequenceFocus.Build(memory);
+        IReadOnlyList<string> relationshipHandoff = StoryRelationshipContinuityFocus.Build(memory);
         IReadOnlyList<string> patternWatch = StoryPlotPatternFocus.Build(memory);
         IReadOnlyList<string> voiceAnchors = StoryCharacterVoiceFocus.Build(memory);
         if (activeArcs.Length == 0 && openThreads.Length == 0 && promises.Length == 0 &&
             characterArcs.Length == 0 && string.IsNullOrEmpty(decisionFocus) &&
             string.IsNullOrEmpty(motivationFocus) && string.IsNullOrEmpty(priorities) &&
             memory.SceneStates.Count == 0 && recentBeats.Count == 0 && recentConsequences.Count == 0 &&
+            relationshipHandoff.Count == 0 &&
             patternWatch.Count == 0 && voiceAnchors.Count == 0)
             return string.Empty;
 
@@ -43,6 +45,18 @@ public static class StoryNarrativeFocus
         AddLine("- Keep a primary arc and at most one supporting thread in focus. Stale setups are not deadlines; never force a payoff merely because it is old.");
         AddLine("- Past choices, trust and promises matter, but an earned change, relapse or surprise is allowed. Do not infer causality or character knowledge from proximity.");
 
+        // A duplicate chapter number cannot establish an unambiguous
+        // spatial handoff for Continue Story.
+        var uniqueCommittedChapters = memory.Chapters.Where(c => c.Number > 0)
+            .GroupBy(c => c.Number).Where(g => g.Count() == 1)
+            .Select(g => g.Key).ToHashSet();
+        StorySceneStateMemory? latest = memory.SceneStates
+            .Where(x => x.ChapterNumber is int chapter && uniqueCommittedChapters.Contains(chapter))
+            .OrderByDescending(x => x.ChapterNumber).ThenByDescending(x => x.CreatedUtc)
+            .FirstOrDefault();
+        if (latest is not null)
+            AddSection("LATEST COMMITTED SPATIAL STATE",
+                new[] { "- " + Trim(StoryWorldStateGraph.FormatSceneForContext(latest), 190) }, 1, 230);
         AddSection("ACTIVE ARC ATTENTION", activeArcs.Select(x =>
             $"- [{NormalizePriority(x.Priority)}/{NormalizeMomentum(x.Momentum)}] {Trim(x.Title, 54)}: {Trim(x.Progress, 112)}"), 2, 340);
         AddSection("OPEN THREAD ATTENTION", openThreads.Select(x =>
@@ -63,18 +77,9 @@ public static class StoryNarrativeFocus
         // anchors, not dialogue templates or permission to reset an arc.
         AddSection("LAST COMMITTED CAST — VOICE ANCHORS, not dialogue templates",
             voiceAnchors, 2, 350);
-        // A duplicate chapter number cannot establish an unambiguous
-        // spatial handoff for Continue Story.
-        var uniqueCommittedChapters = memory.Chapters.Where(c => c.Number > 0)
-            .GroupBy(c => c.Number).Where(g => g.Count() == 1)
-            .Select(g => g.Key).ToHashSet();
-        StorySceneStateMemory? latest = memory.SceneStates
-            .Where(x => x.ChapterNumber is int chapter && uniqueCommittedChapters.Contains(chapter))
-            .OrderByDescending(x => x.ChapterNumber).ThenByDescending(x => x.CreatedUtc)
-            .FirstOrDefault();
-        if (latest is not null)
-            AddSection("LATEST COMMITTED SPATIAL STATE",
-                new[] { "- " + Trim(StoryWorldStateGraph.FormatSceneForContext(latest), 190) }, 1, 230);
+        // Relational evidence is subordinate to committed spatial state.
+        AddSection("RECENT RELATIONSHIP TURN — chapter-backed; current canon wins",
+            relationshipHandoff, 2, 335);
         // Lower-priority craft evidence must never evict confirmed character,
         // arc, thread or spatial state from the fixed narrative budget.
         // Chapter summaries are historical: current canon/retcons always win.

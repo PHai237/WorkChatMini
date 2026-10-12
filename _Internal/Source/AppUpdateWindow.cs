@@ -36,6 +36,8 @@ internal sealed class AppUpdateWindow : Window
     private PreparedAppUpdate? _ready;
     private string? _package;
     private bool _working;
+    private bool _closing;
+    private bool _updaterLaunched;
     private CancellationTokenSource? _operation;
 
     private static Brush Brush(string hex) => (Brush)new BrushConverter().ConvertFromString(hex)!;
@@ -125,7 +127,14 @@ internal sealed class AppUpdateWindow : Window
         _installButton.Click += Verify_Click;
         _restartButton.Click += Restart_Click;
         _cancelButton.Click += (_, _) => { if (_working) _operation?.Cancel(); else Close(); };
-        Closing += (_, _) => _operation?.Cancel();
+        Closing += (_, _) =>
+        {
+            _closing = true;
+            _operation?.Cancel();
+            // After launch, the external updater still needs its staged executable.
+            if (!_updaterLaunched)
+                DiscardUninstalledUpdate();
+        };
         // Only an opened Updates window fetches the release feed; never installs silently.
         Loaded += (_, _) =>
         {
@@ -179,10 +188,19 @@ internal sealed class AppUpdateWindow : Window
         _cancelButton.Content = value ? "Cancel" : "Close";
     }
 
+    private void DiscardUninstalledUpdate()
+    {
+        PreparedAppUpdate? unused = _ready;
+        _ready = null;
+        if (unused is not null)
+            AppUpdatePackage.DiscardPrepared(unused);
+    }
+
     private void Choose_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog { Title = "Select a WorkChat binary update ZIP", Filter = "ZIP packages (*.zip)|*.zip", CheckFileExists = true };
         if (dialog.ShowDialog(this) != true) return;
+        DiscardUninstalledUpdate();
         _package = dialog.FileName;
         _packageLabel.Text = Path.GetFileName(_package);
         _remote = null;
@@ -197,7 +215,7 @@ internal sealed class AppUpdateWindow : Window
         if (!AppUpdateFeed.IsHttps(url)) { _status.Text = "Enter a valid HTTPS feed URL. Empty or HTTP links are not accepted."; return; }
         _settings.UpdateFeedUrl = url;
         _settings.Save();
-        _ready = null;
+        DiscardUninstalledUpdate();
         _restartButton.IsEnabled = false;
         _operation = new CancellationTokenSource();
         SetWorking(true);
@@ -228,7 +246,7 @@ internal sealed class AppUpdateWindow : Window
     {
         if (_remote is null && string.IsNullOrWhiteSpace(_package))
         { _status.Text = "Choose a local ZIP or check an HTTPS feed first."; return; }
-        _ready = null;
+        DiscardUninstalledUpdate();
         _operation = new CancellationTokenSource();
         SetWorking(true);
         string? downloaded = null;
@@ -246,6 +264,11 @@ internal sealed class AppUpdateWindow : Window
                 try { Directory.Delete(Path.GetDirectoryName(prepared.StagedExecutable)!, recursive: true); }
                 catch (IOException) { } catch (UnauthorizedAccessException) { }
                 throw new InvalidDataException("Downloaded package version does not match the online release feed.");
+            }
+            if (_closing)
+            {
+                AppUpdatePackage.DiscardPrepared(prepared);
+                return;
             }
             _ready = prepared;
             _status.Text = $"Verified {prepared.Version}. When you're ready, choose Restart & install. WorkChat will exit completely (including tray), replace only WorkChatMini.exe, and relaunch.";
@@ -267,6 +290,7 @@ internal sealed class AppUpdateWindow : Window
             string? blocking = _updateBlocker();
             if (blocking is not null) { _status.Text = blocking; return; }
             AppUpdatePackage.LaunchInstaller(_ready);
+            _updaterLaunched = true;
             _restartButton.IsEnabled = false;
             _status.Text = "Updater started. WorkChat is now closing to apply the verified update.";
             _exitApp();

@@ -35,6 +35,7 @@ Private workflow rules:
 - Use confirmed Story Memory and recent chapters as the continuity anchor.
 - Preserve character-specific knowledge, relationship history/current state, active character arcs, injuries/condition, inventory, current scene/location, timeline, and world rules.
 - Character development is cumulative: use committed turning points and recent relationship shifts, not just initial Personality/Goals. A character may regress or act inconsistently under stress, but show a believable trigger and consequences rather than silently resetting their arc.
+- If RECENT RELATIONSHIP TURN is present, treat it as a documented past change for the current cast. Express its continuing effect through credible speech, decisions or distance when relevant. Do not force reconciliation, romance or betrayal, and do not treat a historical note as stronger than current canon.
 - World truth and retrieved secrets are author context, not character knowledge. In POV dialogue/thoughts/actions, rely on that character's established knowledge or reveal a believable on-page discovery first. Missing structured knowledge is uncertainty, not proof of ignorance.
 - Prefer consequences and unfinished threads that naturally follow from what already happened.
 - If NARRATIVE FOCUS is present in memory context, use it to balance long-running plot arcs, character arcs, and neglected threads. It is planning guidance, not canon: do not force a stale arc to resolve merely because it has not appeared recently.

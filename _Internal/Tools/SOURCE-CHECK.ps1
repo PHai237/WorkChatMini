@@ -77,18 +77,17 @@ if ($workflow -match '--clobber' -or $workflow -notmatch 'Prevent publishing the
 
 $testBatch = [System.IO.File]::ReadAllText((Join-Path $root 'AUTO-TEST.bat'))
 if ($testBatch -match '(?im)^\s*(?:call\s+)?BUILD\.bat') { $errors.Add('AUTO-TEST.bat must not call BUILD.bat') }
-# The cmd -> powershell -File boundary breaks if a quoted SourceRoot ends in a
-# backslash. Never pass "%~dp0" directly; use "%~dp0." instead.
-$oneClickBatch = [System.IO.File]::ReadAllText((Join-Path $root 'UPDATE-NOW.bat'))
-if ($oneClickBatch.Contains('-SourceRoot "%~dp0"')) {
-    $errors.Add('UPDATE-NOW.bat passes a trailing backslash to PowerShell. Use -SourceRoot "%~dp0."')
-}
-if (-not $oneClickBatch.Contains('-SourceRoot "%~dp0."')) {
-    $errors.Add('UPDATE-NOW.bat is missing the path-safe SourceRoot argument')
-}
-
-foreach ($name in @('BUILD.bat', 'AUTO-TEST.bat', '_Internal/Updater/TEST-APP.bat', 'SOURCE-CHECK.bat', 'INSTALL-APP.bat', 'UPDATE-NOW.bat', 'PUBLISH-GITHUB-ONCE.bat', 'FIRST-AND-LAST-LOCAL-BUILD.bat')) {
+# Public source root deliberately stays small: the old one-click local BUILD
+# and first-release publisher are archived. Only essential CI scripts remain.
+foreach ($name in @('BUILD.bat', 'AUTO-TEST.bat', 'SOURCE-CHECK.bat',
+                   '_Internal/Updater/TEST-APP.bat',
+                   '_Internal/Installer/INSTALL-APP.bat',
+                   '_Internal/Installer/RESTORE-PREVIOUS.bat')) {
     $file = Join-Path $root $name
+    if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
+        $errors.Add("Missing command batch: $name")
+        continue
+    }
     $bytes = [System.IO.File]::ReadAllBytes($file)
     if ($bytes.Length -lt 9 -or $bytes[0] -ne 64 -or $bytes[1] -ne 101) {
         $errors.Add("Unexpected command batch header: $name")

@@ -61,7 +61,7 @@ foreach ($required in @($versionPath, $buildScript, $packageScript, $updaterSour
 }
 $version = Get-VersionString ([IO.File]::ReadAllText($versionPath).Trim())
 $builtExe = Join-Path $root '_Internal\Build\WorkChatMini.exe'
-$package = Join-Path $root ("_Internal\Releases\WorkChatMini-update-v{0}.zip" -f $version)
+$package = Join-Path $root ('_Internal\Releases\WorkChat-Update.zip')
 
 Write-Host ('Source folder: ' + $root)
 Write-Host '[1/4] Building Windows app and real binary update ZIP...' -ForegroundColor Cyan

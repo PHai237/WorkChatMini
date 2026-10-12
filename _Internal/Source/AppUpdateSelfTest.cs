@@ -33,14 +33,31 @@ internal static class AppUpdateSelfTest
         {
             byte[] fakeExecutable = new byte[2048];
             RandomNumberGenerator.Fill(fakeExecutable);
+            string hash = Convert.ToHexString(SHA256.HashData(fakeExecutable));
             // A structurally valid binary ZIP with deliberately wrong checksum must be rejected
             // without launching anything or accepting this fake executable.
             string invalidHashZip = Path.Combine(folder, "invalid-hash.zip");
             WritePackage(invalidHashZip, fakeExecutable, new string('A', 64), includeUnsafeEntry: false);
             await RequireRejectedAsync(invalidHashZip, "checksum mismatch was accepted");
             string unsafeZip = Path.Combine(folder, "unsafe-entry.zip");
-            WritePackage(unsafeZip, fakeExecutable, Convert.ToHexString(SHA256.HashData(fakeExecutable)), includeUnsafeEntry: true);
+            WritePackage(unsafeZip, fakeExecutable, hash, includeUnsafeEntry: true);
             await RequireRejectedAsync(unsafeZip, "unexpected ZIP entry was accepted");
+            // Verification can succeed but the author may close Updates without
+            // installing. The staged executable must be removable, without touching
+            // arbitrary paths or a user-supplied ZIP.
+            string pendingRoot = Path.Combine(AppUpdatePackage.WorkDirectory, "Pending");
+            string stage = Path.Combine(pendingRoot, Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(stage);
+            string stagedExe = Path.Combine(stage, "WorkChatMini.exe");
+            await File.WriteAllBytesAsync(stagedExe, fakeExecutable);
+            PreparedAppUpdate abandoned = new("2.30.0-preview18", stagedExe, hash);
+            Require(AppUpdatePackage.DiscardPrepared(abandoned) && !Directory.Exists(stage),
+                "an abandoned verified update kept its staging folder");
+            string unrelated = Path.Combine(folder, "WorkChatMini.exe");
+            await File.WriteAllBytesAsync(unrelated, fakeExecutable);
+            Require(!AppUpdatePackage.DiscardPrepared(new PreparedAppUpdate(
+                "2.30.0-preview18", unrelated, hash)) && File.Exists(unrelated),
+                "staging cleanup touched a file outside WorkChat Pending");
         }
         finally
         {

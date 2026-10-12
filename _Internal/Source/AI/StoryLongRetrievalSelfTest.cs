@@ -20,6 +20,21 @@ internal static class StoryLongRetrievalSelfTest
             if (chapter is null)
                 throw new InvalidOperationException("Long chapter fixture not created.");
 
+            // Retrieval now trusts the committed manuscript ledger, never raw
+            // orphan files left behind by an interrupted chapter operation.
+            await memories.SaveAsync(project.Id, memory);
+
+            async Task RegisterFixtureChapterAsync(int number, string path)
+            {
+                memory.Chapters.Add(new StoryChapterMemory
+                {
+                    Number = number,
+                    FileName = Path.GetFileName(path),
+                    Title = "Self-test chapter " + number
+                });
+                await memories.SaveAsync(project.Id, memory);
+            }
+
             // A v1 sample-only index should be rebuilt into schema v3, whose
             // fixed-size signature covers *all* chapter tokens. Terms remains
             // a bounded sample and need not contain a late-chapter clue.
@@ -187,6 +202,8 @@ internal static class StoryLongRetrievalSelfTest
 
             // Follow cross-chapter causal evidence only via explicit event IDs.
             var causalMemory = new StoryMemoryDocument();
+            causalMemory.Chapters.Add(new StoryChapterMemory { Number = 3 });
+            causalMemory.Chapters.Add(new StoryChapterMemory { Number = 17 });
             causalMemory.Events.Add(new StorySignificantEvent
             {
                 Id = "event-relic-discovery", Type = "Discovery", ChapterNumber = 3,
@@ -210,6 +227,8 @@ internal static class StoryLongRetrievalSelfTest
             // across chapters; neither chronology nor a matching item alone
             // justifies connecting another character's history.
             var tracedMemory = new StoryMemoryDocument();
+            foreach (int committedNumber in new[] { 3, 9, 12, 27 })
+                tracedMemory.Chapters.Add(new StoryChapterMemory { Number = committedNumber });
             tracedMemory.Characters.Add(new StoryCharacterMemory
             {
                 Name = "Magica", Aliases = new List<string> { "Silver Crow", "The Watcher" }
@@ -303,6 +322,7 @@ internal static class StoryLongRetrievalSelfTest
             midText = midText.Insert(midpoint, " " + hidden + " ");
             string midPath = Path.Combine(memories.GetChaptersDirectory(project.Id), "0060-middle.md");
             await File.WriteAllTextAsync(midPath, "# Middle\n\n" + midText);
+            await RegisterFixtureChapterAsync(60, midPath);
             StoryMemoryStore.InvalidateChapterCache(project.Id);
             IReadOnlyList<StoryChapterSearchHit> middleHits = await memories.SearchChapterTextAsync(project.Id, hidden);
             if (!middleHits.Any(x => x.Number == 60 && x.Excerpt.Contains(hidden, StringComparison.Ordinal)))
@@ -340,6 +360,7 @@ internal static class StoryLongRetrievalSelfTest
                 throw new InvalidOperationException("Local paraphrase matching has unsafe boundaries.");
             string decoyPath = Path.Combine(memories.GetChaptersDirectory(project.Id), "0061-decoy.md");
             await File.WriteAllTextAsync(decoyPath, "# Decoy\n\nThe sentry disappearedly, a made-up term.");
+            await RegisterFixtureChapterAsync(61, decoyPath);
             StoryMemoryStore.InvalidateChapterCache(project.Id);
             if ((await memories.SearchChapterTextAsync(project.Id, "vanished")).Count != 0)
                 throw new InvalidOperationException("Paraphrase search returned a substring-only false match.");
@@ -347,6 +368,7 @@ internal static class StoryLongRetrievalSelfTest
                 throw new InvalidOperationException("A substring in another word was treated as direct evidence.");
             string paraphrasePath = Path.Combine(memories.GetChaptersDirectory(project.Id), "0062-paraphrase.md");
             await File.WriteAllTextAsync(paraphrasePath, "# Bridge chapter\n\nThe sentry disappeared beneath the stone arch.");
+            await RegisterFixtureChapterAsync(62, paraphrasePath);
             StoryMemoryStore.InvalidateChapterCache(project.Id);
             IReadOnlyList<StoryChapterSearchHit> paraphraseHits = await memories.SearchChapterTextAsync(project.Id, "vanished");
             if (paraphraseHits.Count != 1 || paraphraseHits[0].Number != 62 ||
@@ -357,6 +379,7 @@ internal static class StoryLongRetrievalSelfTest
             // replace a direct result even when a newer semantic candidate exists.
             string directPath = Path.Combine(memories.GetChaptersDirectory(project.Id), "0063-direct.md");
             await File.WriteAllTextAsync(directPath, "# Direct evidence\n\nThe sentry vanished in the snow.");
+            await RegisterFixtureChapterAsync(63, directPath);
             StoryMemoryStore.InvalidateChapterCache(project.Id);
             IReadOnlyList<StoryChapterSearchHit> directHits = await memories.SearchChapterTextAsync(project.Id, "vanished");
             if (!directHits.Any(h => h.Number == 63) || directHits.Any(h => h.Number == 62))
@@ -371,6 +394,7 @@ internal static class StoryLongRetrievalSelfTest
             // chapter prose, without requiring translation or an embedding API.
             string vietPath = Path.Combine(memories.GetChaptersDirectory(project.Id), "0064-viet.md");
             await File.WriteAllTextAsync(vietPath, "# Người mất tích\n\nNgười gác đền biến mất dưới cơn mưa.");
+            await RegisterFixtureChapterAsync(64, vietPath);
             StoryMemoryStore.InvalidateChapterCache(project.Id);
             IReadOnlyList<StoryChapterSearchHit> vietnamese = await memories.SearchChapterTextAsync(project.Id, "mat tich");
             if (!vietnamese.Any(x => x.Number == 64 && x.Excerpt.Contains("biến mất", StringComparison.Ordinal)))
@@ -384,6 +408,55 @@ internal static class StoryLongRetrievalSelfTest
                 throw new InvalidOperationException("Paraphrase retrieval transferred an event to the wrong character.");
             File.Delete(vietPath);
             StoryMemoryStore.InvalidateChapterCache(project.Id);
+
+            // A plausible chapter file without a committed ledger entry must
+            // never contaminate the writer's retrieval context.
+            string orphanPath = Path.Combine(memories.GetChaptersDirectory(project.Id), "0065-uncommitted.md");
+            await File.WriteAllTextAsync(orphanPath, "# Uncommitted\n\nUncommittedNightglassBeacon");
+            StoryMemoryStore.InvalidateChapterCache(project.Id);
+            try
+            {
+                IReadOnlyList<StoryChapterSearchHit> orphanHits = await memories.SearchChapterTextAsync(
+                    project.Id, "UncommittedNightglassBeacon");
+                if (orphanHits.Any(hit => hit.Number == 65 ||
+                        hit.Excerpt.Contains("UncommittedNightglassBeacon", StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException("Uncommitted orphan chapter entered indexed retrieval.");
+
+                // Force the LEGACY FALLBACK directly. Indexed retrieval being
+                // clean is not enough: a corrupt cache/IO error must not allow
+                // a previously abandoned scene to become prompt evidence.
+                string directory = memories.GetChaptersDirectory(project.Id);
+                var orphanPlan = new StoryRetrievalPlan
+                {
+                    Terms = new[] { "UncommittedNightglassBeacon" },
+                    DirectTerms = new[] { "UncommittedNightglassBeacon" }
+                };
+                HashSet<string> allowed = StoryChapterIndexStore.CommittedChapterFileNames(memory);
+                IReadOnlyList<StoryChapterSearchHit> fallbackOrphan =
+                    await StoryMemoryStore.SearchChapterTextLegacyAsync(directory, orphanPlan, 3, allowed);
+                if (fallbackOrphan.Count != 0)
+                    throw new InvalidOperationException("Uncommitted draft leaked through fallback chapter scan.");
+                IReadOnlyList<StoryChapterSearchHit> fallbackEmpty =
+                    await StoryMemoryStore.SearchChapterTextLegacyAsync(directory, orphanPlan, 3,
+                        new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+                if (fallbackEmpty.Count != 0)
+                    throw new InvalidOperationException("Fallback without committed ledger returned chapter text.");
+                var committedPlan = new StoryRetrievalPlan
+                {
+                    Terms = new[] { "AlternateBranchBeacon" },
+                    DirectTerms = new[] { "AlternateBranchBeacon" }
+                };
+                IReadOnlyList<StoryChapterSearchHit> fallbackCommitted =
+                    await StoryMemoryStore.SearchChapterTextLegacyAsync(directory, committedPlan, 3, allowed);
+                if (!fallbackCommitted.Any(hit => hit.Number == chapter.Number &&
+                        hit.Excerpt.Contains("AlternateBranchBeacon", StringComparison.Ordinal)))
+                    throw new InvalidOperationException("Ledger-scoped fallback lost committed chapter evidence.");
+            }
+            finally
+            {
+                File.Delete(orphanPath);
+                StoryMemoryStore.InvalidateChapterCache(project.Id);
+            }
 
             // Historical prose must be labeled as provenance, while recent
             // confirmed revisions precede unrelated chapter excerpts.
@@ -407,6 +480,10 @@ internal static class StoryLongRetrievalSelfTest
             // Deterministic event retrieval requires matching actor + action +
             // specific clue, with confirmed per-chapter provenance.
             var eventMemory = new StoryMemoryDocument();
+            // Event provenance must resolve to a unique committed chapter.
+            foreach (int committedNumber in new[] { 3, 4, 5, 6 })
+                eventMemory.Chapters.Add(new StoryChapterMemory { Number = committedNumber,
+                    Title = "Event chapter " + committedNumber });
             eventMemory.Characters.Add(new StoryCharacterMemory
             {
                 Name = "Magica", Aliases = new List<string> { "Silver Crow", "The Watcher" }

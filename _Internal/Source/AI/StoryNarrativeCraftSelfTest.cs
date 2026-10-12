@@ -7,6 +7,7 @@ internal static class StoryNarrativeCraftSelfTest
     {
         StoryDirectorSelfTest.Verify();
         StorySceneCompassSelfTest.Verify();
+        StoryLiteraryCraftSelfTest.Verify();
         if (!StoryNarrativeCraftGuide.IsRoutineContinuation("tiếp tục") ||
             !StoryNarrativeCraftGuide.IsRoutineContinuation("  Continue! ") ||
             !StoryNarrativeCraftGuide.IsRoutineContinuation(string.Empty) ||

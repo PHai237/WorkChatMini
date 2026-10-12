@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title WorkChat Mini - Build V2.30.0-preview23
+title WorkChat Mini - Build V2.40.0
 cls
 
 set "PROJECT=%CD%\_Internal\Source\WorkChatMini.csproj"
@@ -11,7 +11,7 @@ set "EXE=%BUILDDIR%\WorkChatMini.exe"
 set "RELEASES=%CD%\_Internal\Releases"
 
 echo =============================================
-echo            WorkChat Mini V2.30.0-preview23 - BUILD
+echo            WorkChat Mini V2.40.0 - BUILD
 echo =============================================
 echo.
 echo Working folder:
@@ -73,22 +73,22 @@ if not exist "%RELEASES%" mkdir "%RELEASES%"
 echo.
 echo [RELEASE] Creating binary update ZIP...
 powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%CD%\_Internal\Updater\Package-WorkChatUpdate.ps1" ^
-  -Executable "%EXE%" -Version "2.30.0-preview23" ^
-  -Output "%RELEASES%\WorkChatMini-update-v2.30.0-preview23.zip"
+  -Executable "%EXE%" -Version "2.40.0" ^
+  -Output "%RELEASES%\WorkChat-Update.zip"
 if errorlevel 1 goto :package_fail
 echo [RELEASE] Creating legacy first-install ZIP...
 powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%CD%\_Internal\Updater\Package-WorkChatInstall.ps1" ^
-  -SourceRoot "%CD%" -Version "2.30.0-preview23" ^
-  -Output "%RELEASES%\WorkChatMini-install-v2.30.0-preview23.zip"
+  -SourceRoot "%CD%" -Version "2.40.0" ^
+  -Output "%RELEASES%\WorkChat-Install.zip"
 if errorlevel 1 goto :package_fail
 echo.
 echo =============================================
 echo [BUILD SUCCESS]
 echo Built executable: _Internal\Build\WorkChatMini.exe
 echo Build output stays inside _Internal; no root EXE or release folders.
-echo New installation: _Internal\Releases\WorkChatMini-install-v2.30.0-preview23.zip
-echo Updates: _Internal\Releases\WorkChatMini-update-v2.30.0-preview23.zip
-echo App version: 2.30.0-preview23
+echo New installation: _Internal\Releases\WorkChat-Install.zip
+echo Updates: _Internal\Releases\WorkChat-Update.zip
+echo App version: 2.40.0
 echo =============================================
 echo.
 if /I "%~1"=="--nopause" exit /b 0

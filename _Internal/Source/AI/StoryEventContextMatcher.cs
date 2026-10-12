@@ -50,10 +50,12 @@ internal static class StoryEventContextMatcher
             .Where(x => !Uninformative.Contains(x) && x.Length >= 3 && !int.TryParse(x, out _))
             .Distinct(StringComparer.OrdinalIgnoreCase).Take(16).ToArray();
         int? exactChapter = ExplicitChapter(query);
+        HashSet<int> committed = StoryCommittedEvidence.UniqueChapters(memory);
+        HashSet<string> duplicateIds = StoryCommittedEvidence.DuplicateEventIds(memory);
         var matches = new List<Match>();
         foreach (StorySignificantEvent item in memory.Events)
         {
-            if (!string.Equals(item.Status, "Confirmed", StringComparison.OrdinalIgnoreCase) ||
+            if (!StoryCommittedEvidence.IsVerifiedEvent(item, committed, duplicateIds) ||
                 !string.Equals(item.Type, type, StringComparison.OrdinalIgnoreCase) ||
                 item.ChapterNumber is not int chapter || chapter <= 0 ||
                 (exactChapter.HasValue && exactChapter.Value != chapter))

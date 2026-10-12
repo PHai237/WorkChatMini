@@ -55,5 +55,7 @@ public sealed class StoryDraftPreparation
 {
     public string Plan { get; set; } = string.Empty;
     public string Constraints { get; set; } = string.Empty;
+    // Optional private literary scene brief; never canon and never a new AI call.
+    public string CraftBrief { get; set; } = string.Empty;
 }
 

@@ -1,12 +1,7 @@
-using System.Text;
-
 namespace WorkChatMini;
 
 public sealed class StoryWritingPipeline
 {
-    private const int MaxContextMessages = 20;
-    private const int MaxConversationCharacters = 32000;
-
     private readonly StoryAiOrchestrator _direct = new();
     private readonly StoryResearchGate _researchGate = new();
     private readonly StoryResearchCoordinator _research = new();
@@ -35,7 +30,7 @@ public sealed class StoryWritingPipeline
             return new StoryActionResult { Response = response, Action = action, UsedWritingPipeline = false, ShouldAutoBookkeep = StoryActions.MayAutoBookkeep(action) };
         }
 
-        string recentConversation = BuildConversationContext(messages, userInstruction);
+        string recentConversation = StoryConversationContextBuilder.Build(messages, userInstruction);
 
         StoryResearchDecision decision;
         if (action == StoryActionType.ContinueStory && skipRoutineResearchGate)
@@ -82,22 +77,37 @@ public sealed class StoryWritingPipeline
         // Plan + continuity pre-check used to be two separate network round trips.
         // They are private reasoning stages over the same inputs, so prepare both in one compact pass.
         onStage("Preparing draft…");
+        bool discussionOnly = action == StoryActionType.Chat;
+
         StoryDraftPreparation preparation = await _preparation.PrepareAsync(
             project, userInstruction, recentConversation, memoryContext, research.Context,
             providerId, model, cancellationToken,
-            continueStory: action == StoryActionType.ContinueStory);
+            continueStory: action == StoryActionType.ContinueStory,
+            discussionOnly: discussionOnly);
+
+        // The scene brief remains private, bounded and non-canonical. It uses
+        // the existing preparation/draft/editor stages; no extra model call.
+        string workingPlan = action == StoryActionType.ContinueStory
+            ? StoryLiteraryCraft.WithSceneBrief(preparation)
+            : preparation.Plan;
 
         onStage("Drafting…");
         string draft = await _writer.DraftAsync(
             project, userInstruction, recentConversation, memoryContext, research.Context,
-            preparation.Plan, preparation.Constraints, providerId, model, cancellationToken,
-            continueStory: action == StoryActionType.ContinueStory);
+            workingPlan, preparation.Constraints, providerId, model, cancellationToken,
+            continueStory: action == StoryActionType.ContinueStory,
+            discussionOnly: discussionOnly);
 
+        string crossChapterWatch = action == StoryActionType.ContinueStory
+            ? StoryCrossChapterStyleWatch.Build(messages, draft)
+            : string.Empty;
         onStage("Editing…");
         string edited = await _writer.EditAndStreamAsync(
-            project, userInstruction, memoryContext, research.Context, preparation.Plan, preparation.Constraints, draft,
+            project, userInstruction, memoryContext, research.Context, workingPlan, preparation.Constraints, draft,
             providerId, model, onDelta, cancellationToken,
-            continueStory: action == StoryActionType.ContinueStory);
+            continueStory: action == StoryActionType.ContinueStory,
+            discussionOnly: discussionOnly,
+            crossChapterWatch: crossChapterWatch);
 
         bool repaired = false;
         bool continuityVerified = false;
@@ -162,56 +172,4 @@ public sealed class StoryWritingPipeline
         };
     }
 
-    private static string BuildConversationContext(IReadOnlyList<StoryMessage> messages, string currentInstruction)
-    {
-        var selected = new List<StoryMessage>();
-        var skippedDraftIndexes = new HashSet<int>();
-        for (int i = 0; i < messages.Count; i++)
-        {
-            StoryMessage candidate = messages[i];
-            if (!string.Equals(candidate.Role, "assistant", StringComparison.OrdinalIgnoreCase) ||
-                (!candidate.IsNarrativeDraft && !candidate.IsInterruptedResponse) ||
-                candidate.ManuscriptCommitted)
-            {
-                continue;
-            }
-            skippedDraftIndexes.Add(i);
-            if (i > 0 && string.Equals(messages[i - 1].Role, "user", StringComparison.OrdinalIgnoreCase) &&
-                (candidate.IsNarrativeDraft ||
-                    (StoryActions.TryParse(candidate.Action, out StoryActionType action) &&
-                     StoryActions.IsNarrativeAction(action))))
-                skippedDraftIndexes.Add(i - 1);
-        }
-
-        int characters = 0;
-        int start = messages.Count - 1;
-        if (start >= 0 &&
-            string.Equals(messages[start].Role, "user", StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(messages[start].Content, currentInstruction, StringComparison.Ordinal))
-        {
-            start--;
-        }
-
-        for (int i = start; i >= 0 && selected.Count < MaxContextMessages; i--)
-        {
-            if (skippedDraftIndexes.Contains(i))
-                continue;
-            StoryMessage message = messages[i];
-            if (message.IsInterruptedResponse)
-                continue;
-            if (characters + message.Content.Length > MaxConversationCharacters && selected.Count > 0)
-                break;
-            selected.Add(message);
-            characters += message.Content.Length;
-        }
-        selected.Reverse();
-
-        var sb = new StringBuilder();
-        foreach (StoryMessage message in selected)
-        {
-            string role = string.Equals(message.Role, "assistant", StringComparison.OrdinalIgnoreCase) ? "Assistant" : "Creator";
-            sb.AppendLine($"{role}: {message.Content}");
-        }
-        return sb.ToString().Trim();
-    }
 }
