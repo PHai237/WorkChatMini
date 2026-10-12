@@ -15,6 +15,33 @@ public partial class StoryPanel
     private bool _conversationSearchBusy;
     private bool _conversationSearchError;
     private CancellationTokenSource? _conversationSearchCts;
+    private bool _conversationSearchOpen;
+
+    private void ToggleConversationSearch(bool? show = null)
+    {
+        bool target = show ?? !_conversationSearchOpen;
+        if (_creatingStory || _activeProject is null || _messages.Count == 0)
+            target = false;
+        _conversationSearchOpen = target;
+        if (!target)
+        {
+            bool focused = _conversationFocusIndex is not null;
+            ResetConversationSearch();
+            if (focused) RenderConversation(scrollToEnd: false);
+            FocusComposer();
+        }
+        UpdateConversationSearchVisibility();
+        if (target && ConversationSearchToolbar.IsEnabled)
+        {
+            ConversationSearchBox.Focus();
+            ConversationSearchBox.SelectAll();
+        }
+    }
+
+    private void UpdateConversationSearchVisibility() =>
+        ConversationSearchToolbar.Visibility = _conversationSearchOpen && !_creatingStory &&
+            _activeProject is not null && _messages.Count > 0
+                ? Visibility.Visible : Visibility.Collapsed;
 
     private void ResetConversationSearch()
     {
@@ -33,12 +60,9 @@ public partial class StoryPanel
 
     private void StoryPanel_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        if (e.Key == Key.F && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) &&
-            ConversationSearchToolbar.Visibility == Visibility.Visible &&
-            ConversationSearchToolbar.IsEnabled)
+        if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Alt)
         {
-            ConversationSearchBox.Focus();
-            ConversationSearchBox.SelectAll();
+            ToggleConversationSearch();
             e.Handled = true;
         }
     }
@@ -62,9 +86,7 @@ public partial class StoryPanel
         if (e.Key == Key.Escape)
         {
             e.Handled = true;
-            ResetConversationSearch();
-            RenderConversation();
-            FocusComposer();
+            ToggleConversationSearch(false);
             return;
         }
         if (e.Key != Key.Enter) return;

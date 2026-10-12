@@ -15,7 +15,10 @@ public partial class StoryPanel
         string full = message.Content ?? string.Empty;
         if (full.Length <= StoryLongMessageWindow.ChunkCharacters)
         {
-            text.Text = full;
+            if (string.Equals(message.Role, "assistant", StringComparison.OrdinalIgnoreCase))
+                StoryInlineMarkdown.Render(text, full);
+            else
+                text.Text = full;
             return;
         }
 
@@ -51,7 +54,11 @@ public partial class StoryPanel
         void ShowSegment()
         {
             (int from, int to) = StoryLongMessageWindow.Slice(full.Length, start);
-            text.Text = full.Substring(from, to - from);
+            string excerpt = full.Substring(from, to - from);
+            if (string.Equals(message.Role, "assistant", StringComparison.OrdinalIgnoreCase))
+                StoryInlineMarkdown.Render(text, excerpt);
+            else
+                text.Text = excerpt;
             progress.Text = $"{from + 1:N0}–{to:N0} / {full.Length:N0} characters";
             previous.IsEnabled = from > 0;
             next.IsEnabled = to < full.Length;

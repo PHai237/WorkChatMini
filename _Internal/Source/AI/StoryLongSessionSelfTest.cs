@@ -29,6 +29,14 @@ internal static class StoryLongSessionSelfTest
             incompleteNarrative.ProposalJson.Length != 0 || incompleteNarrative.ProposalKind.Length != 0 ||
             !incompleteNarrative.Content.Contains("[Stopped before completion · not committed to Story]", StringComparison.Ordinal))
             throw new InvalidOperationException("Stopped draft retained a writable proposal or lost its incomplete marker.");
+        // Retry is offered only for the last unanswered/incomplete prompt.
+        var unanswered = new StoryMessage { Role = "user", Content = "Continue this scene" };
+        var completed = new StoryMessage { Role = "assistant", Content = "Completed scene", ManuscriptCommitted = true };
+        if (!ReferenceEquals(StoryRetryEligibility.FindLastUnansweredPrompt(new[] { unanswered }), unanswered) ||
+            !ReferenceEquals(StoryRetryEligibility.FindLastUnansweredPrompt(new[] { unanswered, incompleteChat }), unanswered) ||
+            StoryRetryEligibility.FindLastUnansweredPrompt(new[] { unanswered, completed }) is not null ||
+            StoryRetryEligibility.FindLastUnansweredPrompt(Array.Empty<StoryMessage>()) is not null)
+            throw new InvalidOperationException("Retry offered for a finished Story or lost an unanswered prompt.");
         var incompleteHistory = new[]
         {
             new StoryMessage { Role = "user", Action = StoryActionType.Chat.ToString(), Content = "Brainstorm options" },

@@ -255,7 +255,7 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
         }
     }
 
-    private async Task SendAsync()
+    private async Task SendAsync(bool retryLast = false)
     {
         if (_loadingProject || _generationCts is not null || _checkpointRecoveryFailed || _storageAuditBusy || _creativeDecisionBusy)
             return;
@@ -266,8 +266,12 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
         }
         if (_settings is null)
             return;
-        StoryActionType requestedAction = _selectedAction;
-        string text = InputBox.Text.Trim();
+        StoryMessage? retryPrompt = retryLast ? GetRetryablePrompt() : null;
+        if (retryLast && retryPrompt is null) return;
+        StoryActionType requestedAction = retryPrompt is not null &&
+            StoryActions.TryParse(retryPrompt.Action, out StoryActionType savedAction)
+                ? savedAction : _selectedAction;
+        string text = retryPrompt is null ? InputBox.Text.Trim() : retryPrompt.Content;
         if (text.Length == 0 && requestedAction != StoryActionType.ContinueStory)
             return;
         if (text.Length == 0)
@@ -275,14 +279,19 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
 
         // The opt-in Director gate runs BEFORE persisting any user turn or
         // creating narrative output. Only approval starts the normal pipeline.
-        if (NeedsDirectorReview(text, requestedAction))
+        if (!retryLast && NeedsDirectorReview(text, requestedAction))
         {
             await PreviewDirectorAsync(text);
             return;
         }
-        string effectiveInstruction = requestedAction == StoryActionType.ContinueStory
-            ? StoryDirector.ComposeInstruction(text, _directorApprovedDirection ?? string.Empty)
-            : text;
+        StoryMessage? previousInterrupted = retryLast && _messages.Count > 0 &&
+            _messages[^1].IsInterruptedResponse ? _messages[^1] : null;
+        string effectiveInstruction = previousInterrupted is not null &&
+            !string.IsNullOrWhiteSpace(previousInterrupted.SourceInstruction)
+            ? previousInterrupted.SourceInstruction
+            : requestedAction == StoryActionType.ContinueStory
+                ? StoryDirector.ComposeInstruction(text, _directorApprovedDirection ?? string.Empty)
+                : text;
 
         IStoryAiProvider provider = StoryProviderFactory.Get(_settings.StoryProvider);
         if (!StoryCredentialStore.HasKey(provider.Id))
@@ -314,6 +323,8 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
         SetGeneratingState(true);
         string alternateGroupId = StoryActions.IsNarrativeAction(requestedAction) ? _pendingAlternateGroupId : string.Empty;
         _pendingAlternateGroupId = string.Empty;
+        if (!retryLast)
+        {
         List<string> previousGenres = new(project.CoreGenres);
         InputBox.Clear();
         SetSelectedStoryAction(StoryActionType.Chat);
@@ -361,6 +372,7 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
             _generationCts = null;
             SetGeneratingState(false);
             return;
+        }
         }
 
         // This turn is durable. Clear the transient Director proposal before
@@ -457,11 +469,12 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
             FlushStreamingText();
             AppLogger.Error("STORY", "Generation failed", ex);
             bool? saved = await PreserveInterruptedReplyAsync(project, assistantMessage, stopped: false);
+            string detail = StoryProviderFailure.Describe(ex);
             if (saved == false && _streamingTextBlock is not null && !_messages.Contains(assistantMessage))
-                _streamingTextBlock.Text = "Could not complete the request. Check provider settings or Logs.";
-            SetStatus(saved == true ? "Error · partial reply saved as incomplete (not canon)"
+                _streamingTextBlock.Text = detail;
+            SetStatus(saved == true ? $"{detail} · Partial reply preserved (not canon)"
                 : saved is null ? "Error · partial reply could not be saved; see Logs"
-                : "Error · check provider settings or Logs");
+                : detail);
         }
         finally
         {
@@ -549,12 +562,16 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
         StoryNavPanel.IsEnabled = canEdit;
         GenresButton.IsEnabled = canEdit;
         ProviderButton.IsEnabled = !generating && !_loadingProject && !_storageAuditBusy;
+        InspectorPanel.IsEnabled = hasProject && !_creatingStory && !_loadingProject;
+        InspectorMemoryView.IsEnabled = canEdit;
+        InspectorSettingsView.IsEnabled = canEdit;
         RoleBox.IsEnabled = canEdit;
         MemoryButton.IsEnabled = canEdit;
         StopButton.Visibility = generating ? Visibility.Visible : Visibility.Collapsed;
         StopButton.IsEnabled = generating;
         ConversationSearchToolbar.IsEnabled = !generating && !_loadingProject &&
             !_checkpointRecoveryFailed && !_storageAuditBusy;
+        UpdateRetryLastUi();
         UpdateConversationSearchUi();
     }
 

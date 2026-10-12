@@ -1,3 +1,13 @@
+# WorkChat Mini 2.40.1 — AI Story bugfix (source candidate)
+
+- Gemini primary 60-second timeout / connection failure now triggers fallback to the configured secondary model, while preserving the retry limits and safeguards against retrying after emitted text.
+- Retry unanswered/interrupted last prompt without duplicating the creator message; completed and committed output is protected.
+- Render common Markdown in bounded WPF text segments while keeping stored content unchanged.
+- Toggle Find with Alt+F; leave Inspector Close available while a generation runs; record Inspector opening duration for performance diagnosis.
+- No migration or personal Story data touched. **Requires a successful Windows Release build and Quick/Stress tests before publication.**
+
+---
+
 # WorkChat Mini 2.40.0 — Story Readiness Gate
 
 ## Reliability fixes

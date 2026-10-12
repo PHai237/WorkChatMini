@@ -759,6 +759,9 @@
                                     <TextBlock x:Name="StatusText" Grid.Column="1" Visibility="Collapsed" Foreground="{StaticResource StoryMuted}" FontSize="10.5"
                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="8,0"/>
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button x:Name="RetryLastButton" Content="↻ Retry AI" Visibility="Collapsed" IsEnabled="False"
+                                                ToolTip="Retry the latest unanswered/interrupted prompt; never duplicates the user turn or commits incomplete text"
+                                                Margin="0,0,7,0" Padding="10,6" Style="{StaticResource StoryButton}" Click="RetryLastButton_Click"/>
                                         <Button x:Name="StopButton" Content="Stop" Width="62" Margin="0,0,7,0" Visibility="Collapsed"
                                                 Style="{StaticResource StoryButton}" Background="#2A1B18" BorderBrush="#5D352D" Click="StopButton_Click"/>
                                         <Button x:Name="SendButton" Content="Send  ➤" Width="92" IsEnabled="False" Style="{StaticResource StoryAccentButton}" Click="SendButton_Click"/>

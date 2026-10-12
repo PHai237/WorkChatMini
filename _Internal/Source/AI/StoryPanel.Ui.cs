@@ -56,8 +56,7 @@ public partial class StoryPanel
         NoProjectState.Visibility = !_creatingStory && !hasProject ? Visibility.Visible : Visibility.Collapsed;
         ProjectWelcomeState.Visibility = !_creatingStory && hasProject && !hasMessages ? Visibility.Visible : Visibility.Collapsed;
         ChatScroll.Visibility = !_creatingStory && hasMessages ? Visibility.Visible : Visibility.Collapsed;
-        ConversationSearchToolbar.Visibility = !_creatingStory && hasMessages
-            ? Visibility.Visible : Visibility.Collapsed;
+        UpdateConversationSearchVisibility();
         ConversationSearchToolbar.IsEnabled = canEdit;
         ContextBar.Visibility = !_creatingStory && hasMessages ? Visibility.Visible : Visibility.Collapsed;
         SuggestionStrip.Visibility = !_creatingStory && hasProject ? Visibility.Visible : Visibility.Collapsed;
@@ -71,7 +70,12 @@ public partial class StoryPanel
         if (_generationCts is null)
             SendButton.IsEnabled = canEdit && CanSubmitCurrentStoryAction();
         StoryNavPanel.IsEnabled = canEdit;
-        InspectorPanel.IsEnabled = canEdit;
+        // Keep Inspector chrome and Close available while a slow API request runs.
+        // Only mutation controls are disabled; it must never look like a frozen dialog.
+        InspectorPanel.IsEnabled = hasProject && !_creatingStory && !_loadingProject;
+        InspectorMemoryView.IsEnabled = canEdit;
+        InspectorSettingsView.IsEnabled = canEdit;
+        UpdateRetryLastUi();
 
         if (hasProject)
         {

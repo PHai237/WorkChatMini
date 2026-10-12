@@ -108,6 +108,15 @@ public sealed partial class GeminiStoryProvider
                         if (string.Equals(activeModel, primaryModel, StringComparison.OrdinalIgnoreCase))
                             break;
                     }
+                    // A 60-second timeout on the primary is just as disruptive as 503.
+                    // Try a different model ONCE instead of waiting another minute.
+                    if ((ex is TimeoutException or HttpRequestException) &&
+                        string.Equals(activeModel, primaryModel, StringComparison.OrdinalIgnoreCase) &&
+                        ShouldTryFallback(ex, primaryModel))
+                    {
+                        AppLogger.Warn("STORY-AI", $"Gemini primary timed out/network failed; trying fallback | primary={primaryModel}");
+                        break;
+                    }
 
                     if (attempt < MaxTransientAttempts)
                     {
@@ -183,7 +192,9 @@ public sealed partial class GeminiStoryProvider
 
     private static bool ShouldTryFallback(Exception? ex, string primaryModel)
     {
-        if (ex is not GeminiApiException api || !IsCapacityStatus(api.StatusCode))
+        bool overload = ex is GeminiApiException api && IsCapacityStatus(api.StatusCode);
+        bool transportTimeout = ex is TimeoutException or HttpRequestException;
+        if (!overload && !transportTimeout)
             return false;
 
         string fallback = SelectFallbackModel(primaryModel);

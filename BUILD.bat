@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title WorkChat Mini - Build V2.40.0
+title WorkChat Mini - Build V2.40.1
 cls
 
 set "PROJECT=%CD%\_Internal\Source\WorkChatMini.csproj"
@@ -11,7 +11,7 @@ set "EXE=%BUILDDIR%\WorkChatMini.exe"
 set "RELEASES=%CD%\_Internal\Releases"
 
 echo =============================================
-echo            WorkChat Mini V2.40.0 - BUILD
+echo            WorkChat Mini V2.40.1 - BUILD
 echo =============================================
 echo.
 echo Working folder:
@@ -73,12 +73,12 @@ if not exist "%RELEASES%" mkdir "%RELEASES%"
 echo.
 echo [RELEASE] Creating binary update ZIP...
 powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%CD%\_Internal\Updater\Package-WorkChatUpdate.ps1" ^
-  -Executable "%EXE%" -Version "2.40.0" ^
+  -Executable "%EXE%" -Version "2.40.1" ^
   -Output "%RELEASES%\WorkChat-Update.zip"
 if errorlevel 1 goto :package_fail
 echo [RELEASE] Creating legacy first-install ZIP...
 powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%CD%\_Internal\Updater\Package-WorkChatInstall.ps1" ^
-  -SourceRoot "%CD%" -Version "2.40.0" ^
+  -SourceRoot "%CD%" -Version "2.40.1" ^
   -Output "%RELEASES%\WorkChat-Install.zip"
 if errorlevel 1 goto :package_fail
 echo.
@@ -88,7 +88,7 @@ echo Built executable: _Internal\Build\WorkChatMini.exe
 echo Build output stays inside _Internal; no root EXE or release folders.
 echo New installation: _Internal\Releases\WorkChat-Install.zip
 echo Updates: _Internal\Releases\WorkChat-Update.zip
-echo App version: 2.40.0
+echo App version: 2.40.1
 echo =============================================
 echo.
 if /I "%~1"=="--nopause" exit /b 0

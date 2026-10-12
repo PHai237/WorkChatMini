@@ -398,6 +398,8 @@ public partial class StoryPanel
     {
         if (_activeProject is null)
             return;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        AppLogger.Info("STORY-UI", $"Inspector opening | section={section} | generating={_generationCts is not null}");
 
         _activeInspectorSection = section;
         InspectorColumn.Width = new GridLength(372);
@@ -419,6 +421,7 @@ public partial class StoryPanel
             RenderMemoryInspector(section);
             ApplyNavSelection(section);
         }
+        AppLogger.Info("STORY-UI", $"Inspector opened | section={section} | elapsedMs={watch.ElapsedMilliseconds}");
     }
 
     private void RenderMemoryInspector(string section)
