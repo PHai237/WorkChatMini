@@ -27,6 +27,7 @@ internal static class StoryMessageSnapshot
                 DraftVersionId = msg.DraftVersionId,
                 DraftDiscarded = msg.DraftDiscarded,
                 IsInterruptedResponse = msg.IsInterruptedResponse,
+                IsSupersededResponse = msg.IsSupersededResponse,
                 IsNarrativeDraft = msg.IsNarrativeDraft,
                 ManuscriptCommitted = msg.ManuscriptCommitted,
                 ManuscriptChapterNumber = msg.ManuscriptChapterNumber,

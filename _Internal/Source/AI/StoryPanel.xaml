@@ -759,6 +759,12 @@
                                     <TextBlock x:Name="StatusText" Grid.Column="1" Visibility="Collapsed" Foreground="{StaticResource StoryMuted}" FontSize="10.5"
                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="8,0"/>
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button x:Name="CancelPromptEditButton" Content="Cancel edit" Visibility="Collapsed"
+                                                ToolTip="Keep the original message and reply unchanged"
+                                                Margin="0,0,7,0" Padding="10,6" Style="{StaticResource StoryButton}" Click="CancelPromptEditButton_Click"/>
+                                        <Button x:Name="EditLastPromptButton" Content="✎ Edit prompt" Visibility="Collapsed"
+                                                ToolTip="Edit the last uncommitted user turn and generate a new answer; a local checkpoint preserves the original"
+                                                Margin="0,0,7,0" Padding="10,6" Style="{StaticResource StoryButton}" Click="EditLastPromptButton_Click"/>
                                         <Button x:Name="RetryLastButton" Content="↻ Retry AI" Visibility="Collapsed" IsEnabled="False"
                                                 ToolTip="Retry the latest unanswered/interrupted prompt; never duplicates the user turn or commits incomplete text"
                                                 Margin="0,0,7,0" Padding="10,6" Style="{StaticResource StoryButton}" Click="RetryLastButton_Click"/>

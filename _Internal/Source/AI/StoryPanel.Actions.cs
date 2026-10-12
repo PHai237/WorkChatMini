@@ -29,6 +29,15 @@ public partial class StoryPanel
 
     private void SetSelectedStoryAction(StoryActionType action)
     {
+        // While editing an existing turn, its action is part of the immutable
+        // provenance. Changing a chip would silently run a different workflow.
+        if (_editingUserPrompt is not null &&
+            StoryActions.TryParse(_editingUserPrompt.Action, out StoryActionType savedAction) &&
+            action != savedAction)
+        {
+            SetStatus("Finish or cancel the prompt edit before switching Story Actions.");
+            return;
+        }
         _selectedAction = action;
         bool explicitAction = action != StoryActionType.Chat;
         ActiveActionBar.Visibility = explicitAction ? Visibility.Visible : Visibility.Collapsed;
@@ -37,7 +46,7 @@ public partial class StoryPanel
                 ? $"Continue Story · {StoryAutonomyModes.Normalize(_activeProject.AutonomyMode)}"
                 : StoryActions.Label(action)
             : string.Empty;
-        SendButton.Content = explicitAction ? "Run  ➤" : "Send  ➤";
+        SendButton.Content = _editingUserPrompt is not null ? "Regenerate  ➤" : explicitAction ? "Run  ➤" : "Send  ➤";
         if (_generationCts is null)
             SendButton.IsEnabled = CanSubmitCurrentStoryAction();
         UpdateComposerHint();
@@ -58,7 +67,7 @@ public partial class StoryPanel
 
     private void AttachProposalActions(StackPanel content, StoryMessage message)
     {
-        if (string.IsNullOrWhiteSpace(message.ProposalKind))
+        if (message.IsSupersededResponse || string.IsNullOrWhiteSpace(message.ProposalKind))
             return;
 
         if (message.ProposalApplied)

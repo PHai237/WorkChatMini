@@ -15,7 +15,7 @@ public partial class StoryPanel
     // Small, modeless action: only the creator can make an idea durable.
     private void AttachCoCreationActions(StackPanel content, StoryMessage message)
     {
-        if (message.IsInterruptedResponse || message.Action != StoryActionType.Chat.ToString() ||
+        if (message.IsInterruptedResponse || message.IsSupersededResponse || message.Action != StoryActionType.Chat.ToString() ||
             string.IsNullOrWhiteSpace(message.Content))
             return;
 

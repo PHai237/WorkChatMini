@@ -37,6 +37,25 @@ internal static class StoryLongSessionSelfTest
             StoryRetryEligibility.FindLastUnansweredPrompt(new[] { unanswered, completed }) is not null ||
             StoryRetryEligibility.FindLastUnansweredPrompt(Array.Empty<StoryMessage>()) is not null)
             throw new InvalidOperationException("Retry offered for a finished Story or lost an unanswered prompt.");
+        // Editing never destroys an earlier response: it is persisted as history,
+        // excluded from LLM context and skipped when looking for a retryable prompt.
+        var archivedResponse = new StoryMessage
+        {
+            Role = "assistant", Action = StoryActionType.Chat.ToString(),
+            Content = "Old answer", IsSupersededResponse = true
+        };
+        if (!ReferenceEquals(StoryRetryEligibility.FindLastUnansweredPrompt(
+                new[] { unanswered, archivedResponse, incompleteChat }), unanswered) ||
+            !ReferenceEquals(StoryRetryEligibility.FindLastUnansweredPrompt(
+                new[] { unanswered, archivedResponse }), unanswered) ||
+            StoryDraftIsolation.ForGeneration(new[] { unanswered, archivedResponse }).Count != 1)
+            throw new InvalidOperationException("Edited prompt could not retry, or old response leaked into context.");
+        StoryMessage[] archivedSnapshot = StoryMessageSnapshot.Capture(new[] { archivedResponse });
+        if (!StoryProjectStore.ParseConversationMessages(
+                System.Text.Json.JsonSerializer.Serialize(archivedSnapshot))[0].IsSupersededResponse ||
+            System.Text.Json.JsonSerializer.Serialize(new StoryMessage())
+                .Contains("IsSupersededResponse", StringComparison.Ordinal))
+            throw new InvalidOperationException("Regenerated response history was not backwards-compatible.");
         var incompleteHistory = new[]
         {
             new StoryMessage { Role = "user", Action = StoryActionType.Chat.ToString(), Content = "Brainstorm options" },

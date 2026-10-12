@@ -9,8 +9,13 @@ public partial class StoryPanel
 {
     private void AttachManuscriptActions(StackPanel content, StoryMessage message)
     {
-        if (!message.IsNarrativeDraft)
+        if (message.IsSupersededResponse)
             return;
+        if (!message.IsNarrativeDraft)
+        {
+            AttachChatChapterPromotion(content, message);
+            return;
+        }
 
         if (message.ManuscriptCommitted)
         {

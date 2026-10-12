@@ -132,6 +132,17 @@ public partial class StoryPanel
             }
         };
         meta.Children.Add(copyButton);
+        if (user && ReferenceEquals(GetEditablePrompt(), message))
+        {
+            var editButton = new System.Windows.Controls.Button
+            {
+                Content = "✎ Edit",
+                ToolTip = "Edit this last uncommitted prompt and regenerate the response",
+                Style = (Style)FindResource("StoryMessageCopyButton")
+            };
+            editButton.Click += (_, _) => BeginPromptEdit(message);
+            meta.Children.Add(editButton);
+        }
         return meta;
     }
 

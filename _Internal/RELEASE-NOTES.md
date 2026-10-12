@@ -1,5 +1,9 @@
-# WorkChat Mini 2.40.1 — AI Story bugfix (source candidate)
+# WorkChat Mini 2.40.2 — AI Story bugfix (source candidate)
 
+- Edit & Regenerate the latest uncommitted creator message, keeping a local pre-edit checkpoint and preserving the previous AI reply as view-only history (excluded from future prompts).
+- An explicit two-step Save reply as Chapter command can convert a long, latest Chat-written chapter into a committed manuscript and run eligible character/location/event extraction. No automatic canonization of brainstorming.
+- Discuss, Scene Compass and Continue Story navigation remain accessible while the current AI request runs; changes that write canon and the second Send are still blocked.
+- Added regression checks for edited-prompt retry and JSON persistence of superseded response flags.
 - Gemini primary 60-second timeout / connection failure now triggers fallback to the configured secondary model, while preserving the retry limits and safeguards against retrying after emitted text.
 - Retry unanswered/interrupted last prompt without duplicating the creator message; completed and committed output is protected.
 - Render common Markdown in bounded WPF text segments while keeping stored content unchanged.

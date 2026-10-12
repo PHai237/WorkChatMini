@@ -45,6 +45,10 @@ public sealed class StoryMessage
     // Optional so older stories keep the same JSON shape; never eligible for canon.
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool IsInterruptedResponse { get; set; }
+    // Previous AI response after creator edits the last prompt. Preserved for review,
+    // but never used as generation context, a proposal or a draft to commit.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool IsSupersededResponse { get; set; }
     public bool IsNarrativeDraft { get; set; }
     public bool ManuscriptCommitted { get; set; }
     public int? ManuscriptChapterNumber { get; set; }

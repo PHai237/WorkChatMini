@@ -60,7 +60,9 @@ public partial class StoryPanel
         ConversationSearchToolbar.IsEnabled = canEdit;
         ContextBar.Visibility = !_creatingStory && hasMessages ? Visibility.Visible : Visibility.Collapsed;
         SuggestionStrip.Visibility = !_creatingStory && hasProject ? Visibility.Visible : Visibility.Collapsed;
-        SuggestionStrip.IsEnabled = canEdit;
+        // Navigation is not a mutation: allow discussing/selecting the next action or
+        // opening Scene Compass while Gemini works. Send itself remains guarded.
+        SuggestionStrip.IsEnabled = hasProject && !_creatingStory && !_loadingProject && !_checkpointRecoveryFailed;
 
         RoleBox.IsEnabled = canEdit;
         MemoryButton.IsEnabled = canEdit;
@@ -69,13 +71,14 @@ public partial class StoryPanel
         InputBox.IsEnabled = canEdit;
         if (_generationCts is null)
             SendButton.IsEnabled = canEdit && CanSubmitCurrentStoryAction();
-        StoryNavPanel.IsEnabled = canEdit;
+        StoryNavPanel.IsEnabled = hasProject && !_creatingStory && !_loadingProject && !_checkpointRecoveryFailed;
         // Keep Inspector chrome and Close available while a slow API request runs.
         // Only mutation controls are disabled; it must never look like a frozen dialog.
         InspectorPanel.IsEnabled = hasProject && !_creatingStory && !_loadingProject;
         InspectorMemoryView.IsEnabled = canEdit;
         InspectorSettingsView.IsEnabled = canEdit;
         UpdateRetryLastUi();
+        UpdatePromptEditUi();
 
         if (hasProject)
         {

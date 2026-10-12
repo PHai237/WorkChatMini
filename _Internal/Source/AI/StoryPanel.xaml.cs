@@ -132,6 +132,7 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
     private async Task LoadProjectCoreAsync(StoryProject project)
     {
         _pendingAlternateGroupId = string.Empty;
+        _editingUserPrompt = null;
         ClearDirectorPreview();
         ResetConversationSearch();
         _activeProject = project;
@@ -270,8 +271,15 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
         if (retryLast && retryPrompt is null) return;
         StoryActionType requestedAction = retryPrompt is not null &&
             StoryActions.TryParse(retryPrompt.Action, out StoryActionType savedAction)
-                ? savedAction : _selectedAction;
+                ? savedAction : _editingUserPrompt is not null &&
+                  StoryActions.TryParse(_editingUserPrompt.Action, out StoryActionType editAction)
+                    ? editAction : _selectedAction;
         string text = retryPrompt is null ? InputBox.Text.Trim() : retryPrompt.Content;
+        if (_editingUserPrompt is not null && (GetEditablePrompt() != _editingUserPrompt || text.Length == 0))
+        {
+            SetStatus("Edit unavailable · finish the current draft or enter nonempty text.");
+            return;
+        }
         if (text.Length == 0 && requestedAction != StoryActionType.ContinueStory)
             return;
         if (text.Length == 0)
@@ -323,7 +331,47 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
         SetGeneratingState(true);
         string alternateGroupId = StoryActions.IsNarrativeAction(requestedAction) ? _pendingAlternateGroupId : string.Empty;
         _pendingAlternateGroupId = string.Empty;
-        if (!retryLast)
+        if (!retryLast && _editingUserPrompt is not null)
+        {
+            StoryMessage original = _editingUserPrompt;
+            StoryMessage? priorReply = GetCurrentReplyForPrompt(original);
+            string previousText = original.Content;
+            bool revisionSaved = false;
+            try
+            {
+                // Checkpoint contains the original user prompt and full old AI reply.
+                // Editing NEVER mutates an already committed chapter, approved proposal
+                // or a previously accepted creative direction.
+                await _checkpoints.CaptureAsync(project.Id, _memory, _messages,
+                    "Before editing latest prompt", _generationCts.Token);
+                original.Content = text;
+                if (priorReply is not null) priorReply.IsSupersededResponse = true;
+                await _store.SaveMessagesAsync(project.Id, _messages, _generationCts.Token);
+                revisionSaved = true;
+                _editingUserPrompt = null;
+                InputBox.Clear();
+                SetSelectedStoryAction(StoryActionType.Chat);
+                RenderConversation();
+                AppLogger.Info("STORY", $"Last prompt edited; previous answer archived | project={project.Id}");
+            }
+            catch (Exception ex)
+            {
+                if (!revisionSaved)
+                {
+                    original.Content = previousText;
+                    if (priorReply is not null) priorReply.IsSupersededResponse = false;
+                }
+                AppLogger.Error("STORY", "Could not safely finish edited prompt", ex);
+                SetStatus(revisionSaved
+                    ? "Edited prompt saved, but regeneration did not start. Try Retry AI; see Logs."
+                    : "Error · Edit was not applied. Original turn preserved; see Logs.");
+                _generationCts.Dispose();
+                _generationCts = null;
+                SetGeneratingState(false);
+                return;
+            }
+        }
+        else if (!retryLast)
         {
         List<string> previousGenres = new(project.CoreGenres);
         InputBox.Clear();
@@ -489,6 +537,8 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
             _streamingTextBlock = null;
             SetGeneratingState(false);
             RefreshProviderStatus();
+            // The last eligible prompt remains editable after generation.
+            RenderConversation(scrollToEnd: true);
         }
     }
 
@@ -559,7 +609,7 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
         ProjectBox.IsEnabled = !generating && _generationCts is null && !_creativeDecisionBusy && !_storageAuditBusy;
         NewProjectButton.IsEnabled = !generating && !_loadingProject && !_storageAuditBusy;
         EmptyStateNewStoryButton.IsEnabled = !generating && !_loadingProject && !_storageAuditBusy;
-        StoryNavPanel.IsEnabled = canEdit;
+        StoryNavPanel.IsEnabled = hasProject && !_creatingStory && !_loadingProject && !_checkpointRecoveryFailed;
         GenresButton.IsEnabled = canEdit;
         ProviderButton.IsEnabled = !generating && !_loadingProject && !_storageAuditBusy;
         InspectorPanel.IsEnabled = hasProject && !_creatingStory && !_loadingProject;
@@ -572,6 +622,7 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
         ConversationSearchToolbar.IsEnabled = !generating && !_loadingProject &&
             !_checkpointRecoveryFailed && !_storageAuditBusy;
         UpdateRetryLastUi();
+        UpdatePromptEditUi();
         UpdateConversationSearchUi();
     }
 
@@ -677,7 +728,8 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
             StoryActionType badgeAction = StoryActions.TryParse(message.Action, out StoryActionType parsedAction)
                 ? parsedAction
                 : StoryActionType.Chat;
-            string badgeLabel = message.IsInterruptedResponse ? "STORY COMPANION · INCOMPLETE"
+            string badgeLabel = message.IsSupersededResponse ? "STORY COMPANION · EARLIER VERSION (NOT USED)"
+                : message.IsInterruptedResponse ? "STORY COMPANION · INCOMPLETE"
                 : badgeAction == StoryActionType.Chat ? "STORY COMPANION"
                 : $"STORY COMPANION · {StoryActions.Label(badgeAction).ToUpperInvariant()}";
             var badgeText = new TextBlock

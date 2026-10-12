@@ -1,23 +1,31 @@
-# WorkChat Mini 2.40.1
+# WorkChat Mini 2.40.2
+
+## AI Story author experience — 2.40.2
+
+- Edit/regenerate the last uncommitted prompt, keeping previous AI response archived and checkpointed.
+- Explicitly save the latest long Chat answer as a chapter, with optional automatic Memory extraction.
+- Discuss/Scene Compass/Continue Story selections stay available during Gemini requests (no second request until the current one finishes).
+- Learn the limitations and local Story backup workflow in [AI Story 2.40.2 notes](docs/AI-STORY-EDIT-MEMORY-2.40.2.md).
+
 
 Windows app combining five communication/media tabs and AI Story.
 
 ## Install / update
 
 **If WorkChat is already installed**, do not uninstall or delete your Story data.
-After GitHub Actions releases `v2.40.1`, open **More → Updates → Check** in WorkChat and install the newer version. If the old app has no feed, choose `WorkChat-Update.zip` from [Releases](https://github.com/PHai237/WorkChatMini/releases). This ZIP contains **only** `WorkChatMini.exe` and `update.json`; a source ZIP cannot be used in Updates.
+After GitHub Actions releases `v2.40.2`, open **More → Updates → Check** in WorkChat and install the newer version. If the old app has no feed, choose `WorkChat-Update.zip` from [Releases](https://github.com/PHai237/WorkChatMini/releases). This ZIP contains **only** `WorkChatMini.exe` and `update.json`; a source ZIP cannot be used in Updates.
 
 **New Windows install:** download `WorkChat-Setup.exe` from Releases. No .NET SDK required.
 
 **Publish new source (developer):** extract `WorkChat.zip` to an empty folder and run `PUSH.bat` (GitHub CLI must be logged in). It pushes versioned source to the existing repo and runs GitHub Actions; it does **not** build on your laptop. Confirm the release and Pages job are green before relying on auto-updates.
 
-## AI Story reliability and chat UI — 2.40.1
+## AI Story reliability and chat UI — 2.40.2
 
 - AI: after a no-text timeout/network failure on the primary Gemini model, try the existing alternate model rather than spending another entire timeout period on the same model. HTTP 503/429 recovery remains in place.
 - Story: `↻ Retry AI` appears only when the **last** user prompt has no completed AI reply or the latest reply was explicitly interrupted. Resends the saved turn, does not duplicate it, and never automatically regenerates a committed chapter. Existing partial text stays marked incomplete/non-canon.
 - Chat: bounded WPF Markdown styling for assistant responses (`**bold**`, `*italic*`, inline code and bullet list markers). Raw saved content/copy/Memory are untouched; active streaming stays inexpensive.
 - Find: search bar hidden by default; **Alt+F** opens/closes; Escape closes. Inspector Close remains accessible while AI runs, and panel-open timings are written to Logs.
-- Version 2.40.1 is **source only** until Windows compile, Quick/Stress and actual installation test pass. Do not install `WorkChat.zip` through Updates or mistake it for an executable release.
+- Version 2.40.2 is **source only** until Windows compile, Quick/Stress and actual installation test pass. Do not install `WorkChat.zip` through Updates or mistake it for an executable release.
 
 ## AI Story readiness hardening — 2.40.0
 

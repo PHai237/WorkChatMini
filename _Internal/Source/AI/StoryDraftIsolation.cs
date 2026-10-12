@@ -14,6 +14,11 @@ public static class StoryDraftIsolation
             StoryMessage message = messages[i];
             if (!string.Equals(message.Role, "assistant", StringComparison.OrdinalIgnoreCase))
                 continue;
+            if (message.IsSupersededResponse)
+            {
+                excluded.Add(i);
+                continue;
+            }
             if (message.IsInterruptedResponse)
             {
                 // Incomplete Chat responses are not reliable creative context.
