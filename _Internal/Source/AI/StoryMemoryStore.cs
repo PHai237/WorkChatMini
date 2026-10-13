@@ -347,6 +347,18 @@ public sealed partial class StoryMemoryStore
     {
         memory.SchemaVersion = Math.Max(memory.SchemaVersion, 6);
         memory.Chapters ??= new List<StoryChapterMemory>();
+        foreach (StoryChapterMemory chapter in memory.Chapters)
+        {
+            string status = chapter.BookkeepingStatus?.Trim() ?? string.Empty;
+            chapter.BookkeepingStatus = status.ToUpperInvariant() switch
+            {
+                "REVIEWED" => "Reviewed",
+                "NAMESONLY" => "NamesOnly",
+                "SKIPPED" => "Skipped",
+                "INCOMPLETE" => "Incomplete",
+                _ => "Unknown"
+            };
+        }
         memory.Canon ??= new List<StoryCanonFact>();
         memory.Characters ??= new List<StoryCharacterMemory>();
         memory.Relationships ??= new List<StoryRelationshipMemory>();

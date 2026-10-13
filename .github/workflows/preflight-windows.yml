@@ -1,0 +1,35 @@
+# A temporary validation branch is compiled before Ship-GitHub.ps1 promotes
+# its exact tested commit to main. This job does NOT publish releases or data.
+name: WorkChat Mini - Windows Compile Preflight
+
+on:
+  push:
+    branches:
+      - 'workchat-preflight/**'
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Validate GitHub preflight discovery parser (Windows PowerShell 5.1)
+        shell: powershell
+        run: & powershell.exe -NoProfile -ExecutionPolicy Bypass -File _Internal/Tools/Test-ShipGitHubRunDiscovery.ps1
+      - name: Static guard
+        shell: cmd
+        run: call SOURCE-CHECK.bat --nopause
+      - name: Restore Windows dependencies
+        shell: cmd
+        run: dotnet restore _Internal\Source\WorkChatMini.csproj -r win-x64 --force-evaluate
+      - name: Real Release WPF compile (warnings are errors)
+        shell: cmd
+        run: >-
+          dotnet build _Internal\Source\WorkChatMini.csproj -c Release -r win-x64 --no-restore
+          -p:TreatWarningsAsErrors=true -p:PublishTrimmed=false

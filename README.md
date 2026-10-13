@@ -1,4 +1,31 @@
-# WorkChat Mini 2.40.2
+# WorkChat Mini 2.43.0
+
+## AI Story — read-only evidence auditing (2.43.0)
+
+- **Story Memory → Overview → Audit sources** compares up to 120 stored event, canon, timeline, narrative-promise and causal-link references with up to 20 committed chapter files. It uses no AI calls and never writes Story files. Audit results appear temporarily in the current inspector; select Overview to return.
+- Reports distinguish **exact excerpt found**, **chapter referenced with no quote**, **quote not found (could be paraphrase)**, **orphaned references / unreadable chapters**, and **not scanned**. A found quote does *not* prove interpretation, causation, or factual truth; no canon status is modified.
+- Bookkeeping prompts now request a short **verbatim evidence snippet** in event/promise/causal-link fields rather than an AI-generated paraphrase, making future citation review more useful. Old memory data stays compatible.
+- The Story Readiness self-test includes an offline source-audit regression test. Windows compile and Quick/Stress must still be verified by CI before publishing this source.
+
+## AI Story — honest memory coverage & safe long-story repair (2.42.0)
+
+- **No false completeness:** partial repair stores `NamesOnly`, never `Reviewed`. These chapters remain explicitly incomplete for canonical events, relationship history, and timeline; names-only scans will not re-run automatically and spend API quota again.
+- **Longer stories:** name repair processes a maximum of 20 chapters per click, up to 500 indexed chapters. Larger projects are not silently processed in one huge operation. Completely empty projects with up to 20 chapters keep the safer chronological full-recovery path; bigger empty projects can still do a conservative names-only scan.
+- **30,000+ character chapters:** a sampling-based bookkeeper cannot claim full extraction. These chapters retain an `Incomplete` receipt, including after full recovery when some original prose was omitted.
+- **Protection while extracting:** chapter body SHA-256 is rechecked before Memory is committed. If source prose changed during provider work, Memory save aborts; no chapter text is overwritten. Hashing is kept off the WPF UI thread.
+- **Visibility:** Memory Overview now shows counts of processed, names-only, incomplete, skipped, and unknown chapters, plus how many are eligible for the next bounded repair batch. Legacy receipts are normalized without deleting data.
+- **Regression checks:** standalone offline tests cover 21- and 45-chapter repair batches, legacy status normalization, no repeated names-only scan, strict full vs partial coverage warnings, safety cap, and chapter content fingerprinting.
+
+**Important:** `Reviewed` denotes a successful extraction from the available source text, **not** proof that every AI statement is factually correct. A names-only pass never updates existing canon or character state. The source bundle has not been Windows-compiled in this environment. Do not publish until GitHub Windows compile + Quick/Stress pass. No GitHub push was performed in this development pass.
+
+## AI Story Memory coverage and partial repair — 2.41.0
+
+- Every newly committed chapter records an explicit bookkeeping result: `Reviewed`, `Skipped`, or `Incomplete`. Existing chapters without that record remain `Unknown`; none of those states certifies perfect AI extraction.
+- The Story Memory Overview now shows incomplete/unknown coverage even when some characters or canon facts already exist. It permits a **two-click, provider-powered** repair (1–20 chapters, validated committed files only) without re-creating any chapters.
+- The new partial repair is intentionally **name-only**: it can add previously unknown character or place *names* only if those exact names occur as standalone mentions in committed prose. New locations are marked `Unverified`, character details are not invented, and existing inventory, relations, current location, events and canon are never changed.
+- Bookkeeping for each chapter is isolated from later chapter summaries. Results are staged in a detached copy and applied once only after all AI requests succeed, following a checkpoint. Cancellation, corrupted input or model failure aborts the entire batch without a partial save.
+- The AI's writing context now contains an explicit coverage warning when any committed chapters have unreviewed extraction; absence from structured Memory never proves that something did not occur. Legacy Story data needs no conversion and is not rewritten until the author requests repair.
+- Quick/Stress self-tests now check coverage flags, duplicate and unsafe chapter rejection, exact-name evidence matching, preservation of existing facts/state, and no repeat processing for reviewed chapters. These source tests require Windows CI to actually run.
 
 ## AI Story author experience — 2.40.2
 
@@ -13,11 +40,22 @@ Windows app combining five communication/media tabs and AI Story.
 ## Install / update
 
 **If WorkChat is already installed**, do not uninstall or delete your Story data.
-After GitHub Actions releases `v2.40.2`, open **More → Updates → Check** in WorkChat and install the newer version. If the old app has no feed, choose `WorkChat-Update.zip` from [Releases](https://github.com/PHai237/WorkChatMini/releases). This ZIP contains **only** `WorkChatMini.exe` and `update.json`; a source ZIP cannot be used in Updates.
+After GitHub Actions releases `v2.43.0`, open **More → Updates → Check** in WorkChat and install the newer version. If the old app has no feed, choose `WorkChat-Update.zip` from [Releases](https://github.com/PHai237/WorkChatMini/releases). This ZIP contains **only** `WorkChatMini.exe` and `update.json`; a source ZIP cannot be used in Updates.
 
 **New Windows install:** download `WorkChat-Setup.exe` from Releases. No .NET SDK required.
 
-**Publish new source (developer):** extract `WorkChat.zip` to an empty folder and run `PUSH.bat` (GitHub CLI must be logged in). It pushes versioned source to the existing repo and runs GitHub Actions; it does **not** build on your laptop. Confirm the release and Pages job are green before relying on auto-updates.
+**Publish new source (developer):** extract `WorkChat.zip` to an empty folder and run `PUSH.bat` (GitHub CLI must be logged in). After one `YES` confirmation, it pushes only to a temporary validation branch first, waits for a REAL Windows WPF Release compile, and **only on PASS** advances `main` and requests the release workflow. If compile fails, it prints the failing job log and leaves `main` untouched. It does **not** build on your laptop. A successful preflight proves compilation, **not** Quick/Stress or a working installer; wait for the full release workflow and Pages job before updating.
+
+## AI Story UI and Memory reliability — 2.40.3
+
+- Main writing toolbar now shows **Discuss**, **Continue Story**, **Scene Compass** and **More tools**; advanced actions are still available with one click. Selected actions are visibly highlighted and auto-revealed when chosen from the welcome screen.
+- Responsive Story layout gives the Inspector a bounded share of the screen, scales message bubbles with the actual chat column, keeps Edit/Retry readable, and makes the empty-story welcome scrollable instead of clipping its cards.
+- Bookkeeping of chapters longer than 30,000 characters now preserves both the beginning and ending of the prose, with an explicit omitted-middle marker. **This is still partial coverage**: do not assume the middle was read or extracted. The original complete chapter is kept in storage.
+- When bookkeeping fails or returns unusable JSON, the chapter can remain committed but the UI explicitly reports incomplete structured-memory extraction rather than silently implying that all characters/events were saved.
+- Archived/superseded AI replies are now also excluded by the bounded conversation-context builder itself, preventing them from becoming writing evidence even if a future caller skips the separate draft filter.
+- Self-tests include long-chapter excerpt boundaries and exclusion of superseded answers from writing context.
+
+**Release safety:** The source ZIP is not an app update. Run the Windows preflight and release workflows; install through **More → Updates** only after both pass and `latest.json` points to `2.43.0`. No existing Story/credentials/profile files are touched by the source changes.
 
 ## AI Story reliability and chat UI — 2.40.2
 
@@ -86,6 +124,23 @@ The closed-book Story icon remains, without nested gold backgrounds in the Story
 - `_Internal/Updater/`, `_Internal/Installer/`, `_Internal/Tools/` — packaging and maintenance
 - `docs/` — release notes and historical reports
 - `BUILD.bat`, `AUTO-TEST.bat`, `SOURCE-CHECK.bat` — CI/developer commands (not required to use the installed app)
-- `PUSH.bat` — GitHub publishing helper
+- `PUSH.bat` — protected GitHub publishing helper (Windows compile preflight before main)
 
 Keep all user profiles, local API keys, build outputs, and test logs **out** of the GitHub repository.
+
+### Git transport false-negative safeguard
+
+`Ship-GitHub.ps1` verifies the exact remote commit SHA after **both** the temporary-branch push and the main promotion, regardless of the Git exit code. A GitHub `fatal error in commit_refs` rejection can coexist with a successfully created remote ref. The script proceeds only if `git ls-remote` proves the correct 40-character SHA, otherwise it stops safely without force pushing. This does not bypass Windows preflight or publish an uncompiled release.
+
+## Missing Story Memory recovery — 2.40.4
+
+- **Story Memory → Overview → Recover missing Memory** appears only if 1–20 committed chapter files exist **and every structured Memory collection is empty**. If you've already edited canon, characters, events or other Memory, this action remains unavailable rather than overwrite your work.
+- Recovery reads the **committed chapter `.md` files** in chapter-number order, one by one, calls the selected provider's utility bookkeeping stage for each, and builds a detached structured-Memory candidate. Chapter N's retrieval context does **not** include later chapter summaries.
+- Click the recovery button twice to confirm API usage (possibly up to 20 requests, subject to provider timeout, quota or cancellation). If any extraction fails or a deterministic continuity conflict is found, **nothing is committed**. A checkpoint of the original state is captured before one atomic Memory save. No chapter is appended, replaced, or edited.
+- This is **conservative recovery**, not a full automatic rebuild of existing or partially populated Memory. It cannot guarantee AI extraction accuracy; review the recovered facts before trusting them for new chapters.
+- Long-chapter bookkeeping now samples beginning, midpoint and ending inside the same 30,000-character budget, marking both omitted passages. It is **still partial coverage**, not full-chapter analysis.
+- Quick/Stress sources now include offline recovery eligibility, duplicate filename/number, traversal protection and future-chapter isolation tests. Windows WPF compile and integrated tests must still pass via GitHub Actions before installing.
+
+## GitHub publish discovery guard (2.43.0 source maintenance)
+
+PUSH first runs an offline PowerShell 5.1 regression check of the GitHub Actions run parser. The publisher then queries GitHub Actions REST (`workflow_runs`, `head_sha`, `name`, `id`) instead of assuming each `gh run list` JSON item always has `headSha`. Missing runs are retried; malformed responses or repeated API failures stop before updating `main`. No release/version change is needed for this source-only publish fix.

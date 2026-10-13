@@ -39,6 +39,12 @@ public partial class StoryPanel
             return;
         }
         _selectedAction = action;
+        if (action is not StoryActionType.Chat and not StoryActionType.ContinueStory && !_advancedStoryToolsVisible)
+        {
+            _advancedStoryToolsVisible = true;
+            AdvancedStoryActions.Visibility = Visibility.Visible;
+            AdvancedStoryActionsButton.Content = "Fewer tools  ▴";
+        }
         bool explicitAction = action != StoryActionType.Chat;
         ActiveActionBar.Visibility = explicitAction ? Visibility.Visible : Visibility.Collapsed;
         ActiveActionText.Text = explicitAction
@@ -50,6 +56,7 @@ public partial class StoryPanel
         if (_generationCts is null)
             SendButton.IsEnabled = CanSubmitCurrentStoryAction();
         UpdateComposerHint();
+        UpdateActionChipSelection();
     }
 
     private bool CanSubmitCurrentStoryAction() =>

@@ -30,6 +30,12 @@ foreach ($f in $sourceFiles) {
         [regex]::IsMatch($body, '(?<![\w.])Orientation\s*=\s*Orientation\.')) {
         $errors.Add("Ambiguous Orientation enum in $($f.Name): qualify System.Windows.Controls.Orientation")
     }
+    # CS0176: a WPF control's HorizontalAlignment property shadows the enum
+    # name in an object initializer; fully qualify it (v2.40.2 regression).
+    if ($f.Extension -eq '.cs' -and $f.FullName -match '[\\/]AI[\\/]StoryPanel\.' -and
+        [regex]::IsMatch($body, '(?<![\w.])HorizontalAlignment\s*=\s*HorizontalAlignment\.')) {
+        $errors.Add("Unqualified HorizontalAlignment enum in $($f.Name): use System.Windows.HorizontalAlignment")
+    }
     # WPF+WinForms makes Brushes ambiguous via System.Drawing/System.Windows.Media.
     # Regression gate for the CS0104 found in StoryPanel.xaml.cs of v2.40.0.
     if ($f.Extension -eq '.cs' -and $f.FullName -match '[\\/]AI[\\/]StoryPanel\.' -and
@@ -41,6 +47,14 @@ foreach ($f in $sourceFiles) {
     if ($f.Extension -eq '.cs' -and $f.FullName -match '[\\/]AI[\\/]StoryPanel\.' -and
         [regex]::IsMatch($body, '(?<![\w.])new\s+Point\s*\(')) {
         $errors.Add("Ambiguous Point constructor in $($f.Name): use System.Windows.Point or System.Drawing.Point explicitly")
+    }
+    # WPF C# implicit usings do not guarantee System.IO is in scope for all
+    # source files. 2.43.0 failed Windows compile with missing InvalidDataException.
+    if ($f.Extension -eq '.cs' -and
+        [regex]::IsMatch($body, '(?<![\w.])InvalidDataException\b') -and
+        -not [regex]::IsMatch($body, '(?m)^\s*using\s+System\.IO\s*;') -and
+        -not [regex]::IsMatch($body, 'System\.IO\.InvalidDataException')) {
+        $errors.Add("Unqualified InvalidDataException without System.IO import in $($f.Name)")
     }
     # Catch the preview2 StringReader failure pattern without pretending this is a compiler.
     if ($f.Extension -eq '.cs' -and

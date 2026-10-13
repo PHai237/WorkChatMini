@@ -34,6 +34,7 @@ public partial class StoryPanel
         CharactersCountBadge.Visibility = _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
         RebuildProjectList();
         UpdateProjectSelectorUi();
+        ApplyResponsiveLayout();
     }
 
     private void InputBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -54,7 +55,7 @@ public partial class StoryPanel
         NewStoryEditor.Visibility = _creatingStory ? Visibility.Visible : Visibility.Collapsed;
         EmptyState.Visibility = !_creatingStory && !hasMessages ? Visibility.Visible : Visibility.Collapsed;
         NoProjectState.Visibility = !_creatingStory && !hasProject ? Visibility.Visible : Visibility.Collapsed;
-        ProjectWelcomeState.Visibility = !_creatingStory && hasProject && !hasMessages ? Visibility.Visible : Visibility.Collapsed;
+        ProjectWelcomeScroller.Visibility = !_creatingStory && hasProject && !hasMessages ? Visibility.Visible : Visibility.Collapsed;
         ChatScroll.Visibility = !_creatingStory && hasMessages ? Visibility.Visible : Visibility.Collapsed;
         UpdateConversationSearchVisibility();
         ConversationSearchToolbar.IsEnabled = canEdit;

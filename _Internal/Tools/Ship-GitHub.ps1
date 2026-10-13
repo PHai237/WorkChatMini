@@ -31,6 +31,61 @@ $files = @(Get-ChildItem -LiteralPath $root -File -Force -Recurse | Where-Object
 })
 if ($files.Count -lt 200) { throw 'Source package looks incomplete. Publishing stopped.' }
 $repoWork = Join-Path ([IO.Path]::GetTempPath()) ('WorkChatShip-' + [Guid]::NewGuid().ToString('N'))
+$preflightBranch = ''
+$preflightPushed = $false
+
+# Isolate API result parsing so its empty/malformed cases can be tested offline.
+. (Join-Path $PSScriptRoot 'Ship-GitHub.RunDiscovery.ps1')
+
+# A rejected Git transport response does not prove a ref was not created.
+# Match the exact SHA on the remote before deciding success or failure.
+function Assert-RemoteRefAfterPush {
+    param(
+        [Parameter(Mandatory=$true)][string]$BranchName,
+        [Parameter(Mandatory=$true)][string]$ExpectedSha,
+        [Parameter(Mandatory=$true)][string]$Description
+    )
+    $refName = "refs/heads/$BranchName"
+    $pushCode = 1
+    $originalPreference = $ErrorActionPreference
+    try {
+        # Windows PowerShell 5.1 turns native stderr into error records even
+        # when Git is only reporting progress. Restore normal error handling
+        # immediately afterward. A failed push is checked by remote SHA.
+        $ErrorActionPreference = 'Continue'
+        & git -C $repoWork push --porcelain origin "HEAD:$refName" 2>&1 | ForEach-Object { Write-Host ([string]$_) }
+        $pushCode = $LASTEXITCODE
+    }
+    finally { $ErrorActionPreference = $originalPreference }
+
+    $observedSha = ''
+    $remoteQueryCode = 1
+    for ($check = 0; $check -lt 6; $check++) {
+        # Reading the server ref is authoritative: no force push, no guessing
+        # from local branches, and no assumption that upload failure = failure.
+        $remoteLines = @(& git -C $repoWork ls-remote --refs origin $refName)
+        $remoteQueryCode = $LASTEXITCODE
+        $observedSha = ''
+        if ($remoteQueryCode -eq 0 -and $remoteLines.Count -eq 1) {
+            $fields = ([string]$remoteLines[0]).Trim() -split '\s+'
+            if ($fields.Count -ge 2 -and $fields[1] -eq $refName) {
+                $observedSha = $fields[0]
+            }
+        }
+        if ($observedSha -eq $ExpectedSha) { break }
+        if ($check -lt 5) { Start-Sleep -Seconds 2 }
+    }
+    if ($observedSha -ne $ExpectedSha) {
+        throw ("$Description was NOT verified on GitHub. gitExit=$pushCode " +
+               "lsRemoteExit=$remoteQueryCode remoteSha=$observedSha " +
+               "expectedSha=$ExpectedSha. Stop safely; do not force push.")
+    }
+    if ($pushCode -ne 0) {
+        Write-Warning ("Git reported exit $pushCode but remote '$refName' points to " +
+                       "the EXACT expected SHA $ExpectedSha. Continuing safely.")
+    }
+    Write-Host "REMOTE SHA VERIFIED: $refName = $ExpectedSha" -ForegroundColor Green
+}
 try {
     Write-Host "Cloning $repository into a temporary directory..."
     & gh repo clone $repository $repoWork -- --quiet
@@ -76,14 +131,80 @@ try {
         & git --no-pager -C $repoWork diff --cached --stat
         if ($LASTEXITCODE -ne 0) { throw 'Could not summarize staged changes.' }
     }
-    Write-Host 'This will publish pending source changes (if any) and request a Windows GitHub build.' -ForegroundColor Yellow
+    Write-Host 'This will first compile source on Windows in a temporary branch, then publish ONLY if it passes.' -ForegroundColor Yellow
     $ok = (Read-Host 'Type YES to continue').Trim()
     if ($ok -cne 'YES') { throw 'Cancelled. You must type YES in capitals. No new workflow was started.' }
-    if ($staged.Count -gt 0) {
-        & git -C $repoWork commit -m "WorkChat $version - publish source"
+    # Validate even when there are no new staged files: an unchanged source
+    # might have failed last time, and never deserves a release without compile.
+    $hasSourceChanges = $staged.Count -gt 0
+    # Push to a disposable branch first. A REAL Windows WPF compile must pass
+    # before this exact commit reaches main or starts a release. Static
+    # SOURCE-CHECK.bat alone cannot catch CS0176/CS0104 semantic errors.
+    $preflightBranch = 'workchat-preflight/v' + $version + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 10)
+    & git -C $repoWork checkout -b $preflightBranch
+    if ($LASTEXITCODE -ne 0) { throw 'Could not create temporary preflight branch.' }
+    if ($hasSourceChanges) {
+        & git -C $repoWork commit -m "WorkChat $version - Windows compile preflight"
         if ($LASTEXITCODE -ne 0) { throw 'Git commit failed. Set git user.name/email once if needed.' }
-        & git -C $repoWork push origin main
-        if ($LASTEXITCODE -ne 0) { throw 'Git push failed. Existing release and installed WorkChat are unchanged.' }
+    }
+    $testedSha = (& git -C $repoWork rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0 -or !$testedSha) { throw 'Could not determine preflight commit SHA.' }
+    Write-Host 'Uploading to temporary validation branch (main is unchanged)...' -ForegroundColor Cyan
+    # GitHub sometimes reports "fatal error in commit_refs" AFTER the ref was
+    # successfully created. Never treat the git exit code alone as the truth.
+    # Verify the exact commit SHA on remote; do not accept any different ref.
+    Assert-RemoteRefAfterPush -BranchName $preflightBranch -ExpectedSha $testedSha -Description 'Windows preflight branch'
+    $preflightPushed = $true
+    Write-Host 'Waiting for Windows compile preflight. No local .NET SDK needed.' -ForegroundColor Cyan
+    $preflightRunId = $null
+    $preflightWorkflow = 'WorkChat Mini - Windows Compile Preflight'
+    $encodedBranch = [uri]::EscapeDataString($preflightBranch)
+    $runsApi = "repos/$repository/actions/runs?branch=$encodedBranch&event=push&per_page=100"
+    $apiFailures = 0
+    for ($attempt = 0; $attempt -lt 90; $attempt++) {
+        # GitHub CLI's --json run listing may return null/partial objects while a
+        # newly-created workflow is becoming visible. The REST API returns a
+        # named workflow_runs array, and the parser safely skips partial rows.
+        # Native tools may write progress/errors to stderr. In Windows
+        # PowerShell 5.1 those must not bypass our explicit exit-code retry.
+        $pollPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            $runsJson = @(& gh api $runsApi 2>&1)
+            $apiExitCode = $LASTEXITCODE
+        }
+        finally { $ErrorActionPreference = $pollPreference }
+        if ($apiExitCode -ne 0) {
+            $apiFailures++
+            if ($apiFailures -ge 3) {
+                throw "GitHub Actions API failed $apiFailures times while checking Windows preflight. main is unchanged."
+            }
+            Write-Warning "GitHub Actions API request failed (attempt $apiFailures/3); retrying."
+        }
+        else {
+            $apiFailures = 0
+            $runsText = $runsJson -join "`n"
+            $preflightRunId = Find-WorkChatPreflightRunId -Json $runsText -ExpectedSha $testedSha -ExpectedWorkflowName $preflightWorkflow
+        }
+        if ($preflightRunId) { break }
+        Start-Sleep -Seconds 6
+    }
+    if (-not $preflightRunId) {
+        throw 'GitHub did not start Windows compile preflight. main is unchanged. Check Actions settings.'
+    }
+    Write-Host "Windows preflight run: https://github.com/$repository/actions/runs/$preflightRunId"
+    & gh run watch $preflightRunId --repo $repository --exit-status
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host 'GitHub compilation failed; showing compiler errors automatically...' -ForegroundColor Red
+        & gh run view $preflightRunId --repo $repository --log-failed
+        throw "Windows compile preflight FAILED (run $preflightRunId). main remains unchanged."
+    }
+    Write-Host 'WINDOWS COMPILE PREFLIGHT PASSED.' -ForegroundColor Green
+    if ($hasSourceChanges) {
+        Write-Host 'Publishing only this tested commit to main...' -ForegroundColor Green
+        # Non-force fast-forward push fails if main moved meanwhile. Never erase
+        # another contributor's commits or silently ship untested content.
+        Assert-RemoteRefAfterPush -BranchName 'main' -ExpectedSha $testedSha -Description 'verified main promotion'
     }
     # Verify the *remote* branch points at the newly pushed commit. Do not
     # mistake a successful local commit / queued workflow for published source.
@@ -113,7 +234,34 @@ try {
     Write-Host 'Watch https://github.com/PHai237/WorkChatMini/actions' -ForegroundColor Green
     Write-Host 'After ALL jobs pass, open WorkChat > More > Updates > Check.'
 }
+catch {
+    # Keep the real cause visible even when the cleanup phase runs afterward.
+    Write-Host ("PUSH FAILED before cleanup: " + $_.Exception.Message) -ForegroundColor Red
+    throw
+}
 finally {
+    # Git writes routine progress to stderr even on success. Windows PowerShell
+    # 5.1 can promote redirected native stderr to NativeCommandError when
+    # ErrorActionPreference is Stop. Cleanup must NEVER hide the original error.
+    if ($preflightPushed -and $preflightBranch -and (Test-Path -LiteralPath $repoWork)) {
+        $cleanupExitCode = 1
+        $originalErrorPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            & git -C $repoWork push --quiet origin ":refs/heads/$preflightBranch" 2>&1 | Out-Null
+            $cleanupExitCode = $LASTEXITCODE
+        }
+        catch {
+            # A failed attempt to remove a disposable branch is nonfatal.
+            Write-Host ("Temporary branch cleanup warning: " + $_.Exception.Message) -ForegroundColor Yellow
+        }
+        finally {
+            $ErrorActionPreference = $originalErrorPreference
+        }
+        if ($cleanupExitCode -ne 0) {
+            Write-Warning "Could not delete temporary branch $preflightBranch; remove it from GitHub when convenient."
+        }
+    }
     if (Test-Path -LiteralPath $repoWork) {
         Remove-Item -LiteralPath $repoWork -Recurse -Force -ErrorAction SilentlyContinue
     }

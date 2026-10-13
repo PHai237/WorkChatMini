@@ -9,9 +9,11 @@ public partial class StoryPanel
     private readonly StoryMemoryBookkeeper _bookkeeper = new();
     private readonly StoryCheckpointStore _checkpoints = new();
     private StoryMemoryDocument _memory = new();
+    private bool _bookkeepingExtractionIncomplete;
 
     private async Task LoadStoryMemoryAsync(StoryProject project)
     {
+        _memoryRecoveryConfirmed = false;
         _memory = await _memoryStore.LoadAsync(project.Id);
         LogDeterministicIntegrity("load", StoryDeterministicContinuity.AnalyzeMemory(_memory));
         UpdateMemoryButton();
@@ -41,6 +43,10 @@ public partial class StoryPanel
         long searchMs = elapsed.ElapsedMilliseconds - planMs;
         StoryDeterministicReport stateIntegrity = StoryDeterministicContinuity.AnalyzeMemory(_memory);
         string deterministicContext = stateIntegrity.BuildPromptContext();
+        string coverageWarning = StoryMemoryRepair.BuildCoverageWarning(_memory);
+        if (coverageWarning.Length > 0)
+            deterministicContext = coverageWarning + (deterministicContext.Length == 0
+                ? string.Empty : "\n" + deterministicContext);
         string narrativeContext = autoContinue ? StoryNarrativeFocus.Build(_memory) : string.Empty;
         string retrievalFocus = plan.BuildFocusContext();
         string creativeDirections = StoryCoCreation.BuildContext(_messages);
@@ -67,6 +73,7 @@ public partial class StoryPanel
     {
         if (_activeProject is null)
             return null;
+        _bookkeepingExtractionIncomplete = false;
 
         bool narrativeAction = StoryActions.IsNarrativeAction(action);
         bool narrativeEligible = narrativeAction && assistantResponse.Length >= (action == StoryActionType.ContinueStory ? 250 : 500);
@@ -95,7 +102,10 @@ public partial class StoryPanel
                         action,
                         cancellationToken);
                     if (update is null)
+                    {
+                        _bookkeepingExtractionIncomplete = true;
                         AppLogger.Warn("STORY-MEMORY", $"Bookkeeping produced no usable update | project={_activeProject.Id}");
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -103,10 +113,18 @@ public partial class StoryPanel
                 }
                 catch (Exception ex)
                 {
+                    _bookkeepingExtractionIncomplete = true;
                     // Manuscript persistence is independent of AI bookkeeping. A valid final narrative
                     // must still be committable even if the utility model/network is temporarily unavailable.
                     AppLogger.Warn("STORY-MEMORY", $"Bookkeeping extraction failed; manuscript commit will continue without structured deltas | project={_activeProject.Id} | {ex.Message}");
                 }
+            }
+
+            if (extractMemory && assistantResponse.Length > StoryMemoryBookkeeper.MaxBookkeepingCharacters)
+            {
+                // The model only saw sampled prose, so no fully reviewed
+                // chapter receipt is possible even if the JSON was valid.
+                _bookkeepingExtractionIncomplete = true;
             }
 
             if (commitNarrative)
@@ -126,6 +144,8 @@ public partial class StoryPanel
             LogDeterministicIntegrity("bookkeeping-delta", deltaIntegrity);
             if (deltaIntegrity.HasConflict)
             {
+                // Pruning unsafe model facts means this chapter still needs audit.
+                _bookkeepingExtractionIncomplete = true;
                 update = StoryDeterministicContinuity.SanitizeUnsafeUpdate(_memory, update);
                 StoryDeterministicReport sanitizedIntegrity = StoryDeterministicContinuity.ValidateUpdate(_memory, update);
                 LogDeterministicIntegrity("bookkeeping-delta-after-sanitize", sanitizedIntegrity);
@@ -134,6 +154,7 @@ public partial class StoryPanel
                     AppLogger.Warn("STORY-CONTINUITY",
                         $"Unsafe structured bookkeeping delta suppressed after deterministic sanitize; chapter prose remains eligible for commit | project={_activeProject.Id}");
                     update = StoryDeterministicContinuity.ToSafeChapterOnlyUpdate(update);
+                    _bookkeepingExtractionIncomplete = true;
                 }
                 else
                 {
@@ -172,6 +193,8 @@ public partial class StoryPanel
                 if (savedChapter is not null)
                 {
                     savedChapter.CheckpointId = pendingCheckpointId;
+                    savedChapter.BookkeepingStatus = !extractMemory ? "Skipped"
+                        : _bookkeepingExtractionIncomplete ? "Incomplete" : "Reviewed";
                     source = $"Chapter {savedChapter.Number}: {savedChapter.Title}";
                 }
             }
@@ -271,7 +294,9 @@ public partial class StoryPanel
         MemoryButton.IsEnabled = true;
         MemoryButton.ToolTip = $"Story Memory\n{_memory.Chapters.Count} chapters · {_memory.Characters.Count} characters · {_memory.Canon.Count(x => !IsRetiredCanon(x.Status))} current canon facts · {_memory.Events.Count} significant events · {_memory.Arcs.Count} story arcs · {_memory.CharacterArcs.Count} character arcs · {_memory.Locations.Count} locations · {_memory.Revisions.Count} revisions · {_memory.Threads.Count(x => x.Status == "Open")} open threads"
             + (proposed > 0 ? $"\n{proposed} proposed item(s) need review" : string.Empty)
-            + $"\nAuto-bookkeeping: {(_activeProject.AutoBookkeeping ? "On" : "Off")}";
+            + $"\nAuto-bookkeeping: {(_activeProject.AutoBookkeeping ? "On" : "Off")}"
+            + (StoryMemoryRepair.UnreviewedCount(_memory) is int missed && missed > 0
+                ? $"\n{missed} chapters lack full extraction ({StoryMemoryRepair.NamesOnlyCount(_memory)} scanned for names only)" : string.Empty);
     }
 
 

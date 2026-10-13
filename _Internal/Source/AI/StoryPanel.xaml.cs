@@ -329,6 +329,7 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
             RenderConversation();
         }
         SetGeneratingState(true);
+        _bookkeepingExtractionIncomplete = false;
         string alternateGroupId = StoryActions.IsNarrativeAction(requestedAction) ? _pendingAlternateGroupId : string.Empty;
         _pendingAlternateGroupId = string.Empty;
         if (!retryLast && _editingUserPrompt is not null)
@@ -500,7 +501,11 @@ public partial class StoryPanel : System.Windows.Controls.UserControl
             if (actionResult.ResearchNoteCount > 0)
                 await LoadStoryResearchAsync(_activeProject, _generationCts.Token);
             UpdateProjectSummaryUi();
-            SetStatus(null);
+            SetStatus(_bookkeepingExtractionIncomplete
+                ? "Chapter saved, but structured Memory extraction was incomplete. See Story Memory and Logs."
+                : assistantMessage.ManuscriptCommitted && !_activeProject.AutoBookkeeping
+                    ? "Chapter saved. Auto-bookkeeping is off; enable it in Story Memory for future chapters."
+                    : null);
             AppLogger.Info("STORY",
                 $"Generation completed | project={_activeProject.Id} | chars={response.Length} | action={requestedAction} | pipeline={actionResult.UsedWritingPipeline} | researchNotes={actionResult.ResearchNoteCount} | researchSources={actionResult.ResearchSourceCount} | repaired={actionResult.RepairedAfterFinalCheck} | continuityVerified={actionResult.ContinuityVerified}");
         }
