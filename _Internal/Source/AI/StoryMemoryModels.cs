@@ -70,6 +70,11 @@ public sealed class StoryChapterMemory
     public string Summary { get; set; } = string.Empty;
     public string FileName { get; set; } = string.Empty;
     public DateTimeOffset CreatedUtc { get; set; } = DateTimeOffset.UtcNow;
+    // Persisted per-chapter audit receipt. Legacy chapters deserialize as Unknown.
+    // Reviewed = full available prose submitted to structured extraction (not guaranteed correct).
+    // NamesOnly = conservative repair of name mentions, NOT an audit of events/canon.
+    // Incomplete = extraction failed, was pruned, or only sampled a long chapter.
+    public string BookkeepingStatus { get; set; } = "Unknown";
 }
 
 public sealed class StoryCanonFact

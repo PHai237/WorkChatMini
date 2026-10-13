@@ -599,10 +599,13 @@
                     </StackPanel>
 
                     <!-- Existing project with no conversation yet. -->
-                    <StackPanel x:Name="ProjectWelcomeState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="860">
+                    <ScrollViewer x:Name="ProjectWelcomeScroller" Visibility="Collapsed"
+                                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  Padding="14,14,14,18">
+                    <StackPanel x:Name="ProjectWelcomeState" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="860">
                         <TextBlock x:Name="ProjectWelcomeTitle" Foreground="{StaticResource StoryText}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                         <TextBlock Text="What would you like to work on?" Foreground="{StaticResource StorySub}" FontSize="13" HorizontalAlignment="Center" Margin="0,6,0,0"/>
-                        <WrapPanel HorizontalAlignment="Center" Margin="0,28,0,0">
+                        <WrapPanel x:Name="WelcomeActionCards" HorizontalAlignment="Center" Margin="0,28,0,0">
                             <Button Tag="ContinueStory" Width="146" Height="126" Margin="5" Style="{StaticResource StoryButton}" Background="{StaticResource StoryGoldDim}" BorderBrush="{StaticResource StoryGoldBorder}" Click="SuggestionCard_Click">
                                 <StackPanel HorizontalAlignment="Left"><Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource StoryGoldDim}" BorderBrush="{StaticResource StoryGoldBorder}" BorderThickness="1"><TextBlock Text="▶" Foreground="{StaticResource StoryGold}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Continue Story" Foreground="{StaticResource StoryText}" FontSize="12" FontWeight="SemiBold" Margin="0,12,0,0"/><TextBlock Text="Let AI choose the next beat and remember it" Foreground="{StaticResource StoryMuted}" FontSize="10.5" TextWrapping="Wrap" Margin="0,4,0,0"/></StackPanel>
                             </Button>
@@ -631,6 +634,7 @@
                             <Border Width="58" Height="1" Background="{StaticResource StoryGold}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>
+                    </ScrollViewer>
                 </Grid>
 
                 <ScrollViewer x:Name="NewStoryEditor" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="30,28">
@@ -688,20 +692,28 @@
             <!-- Figma-style large composer. -->
             <Border x:Name="ComposerShell" Grid.Row="2" Background="{StaticResource StoryComposer}" BorderBrush="{StaticResource StoryBorder}" BorderThickness="0,1,0,0" Padding="20,11,20,17">
                 <StackPanel>
-                    <ScrollViewer x:Name="SuggestionStrip" Visibility="Visible" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,9"
-                                  PreviewMouseWheel="SuggestionStrip_PreviewMouseWheel">
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="Discuss ideas · Chat" Style="{StaticResource SuggestionChipButton}" Click="ClearStoryActionButton_Click" ToolTip="Talk through ideas with Gemini. Chat never commits a chapter by itself."/>
-                            <Button Content="Scene Compass" Style="{StaticResource SuggestionChipButton}" Click="SceneCompassChip_Click" ToolTip="Preview committed chapter context and make an editable writing cue; no API call"/>
-                            <Button Tag="ContinueStory" Content="Continue Story" Style="{StaticResource SuggestionChipButton}" Click="SuggestionCard_Click"/>
+                    <!-- Keep the everyday path visible. Optional actions must not stretch
+                         the composer offscreen on a laptop or narrow second display. -->
+                    <StackPanel x:Name="SuggestionStrip" Margin="0,0,0,9">
+                        <WrapPanel x:Name="PrimaryStoryActions">
+                            <Button x:Name="DiscussStoryActionButton" Content="Discuss" Style="{StaticResource SuggestionChipButton}"
+                                    Click="ClearStoryActionButton_Click" ToolTip="Discuss ideas without committing canon"/>
+                            <Button x:Name="ContinueStoryActionButton" Tag="ContinueStory" Content="Continue Story" Style="{StaticResource SuggestionChipButton}"
+                                    Click="SuggestionCard_Click" ToolTip="Write the next chapter; review or commit it to remember events"/>
+                            <Button x:Name="SceneCompassActionButton" Content="Scene Compass" Style="{StaticResource SuggestionChipButton}"
+                                    Click="SceneCompassChip_Click" ToolTip="Show the current scene context from committed chapters"/>
+                            <Button x:Name="AdvancedStoryActionsButton" Content="More tools  ▾" Style="{StaticResource SuggestionChipButton}"
+                                    Click="ToggleAdvancedStoryActions_Click" ToolTip="Show additional story tools"/>
+                        </WrapPanel>
+                        <WrapPanel x:Name="AdvancedStoryActions" Visibility="Collapsed" Margin="0,6,0,0">
                             <Button Tag="DraftScene" Content="Draft Scene" Style="{StaticResource SuggestionChipButton}" Click="SuggestionCard_Click"/>
                             <Button Tag="PlanChapter" Content="Plan Chapter" Style="{StaticResource SuggestionChipButton}" Click="SuggestionCard_Click"/>
                             <Button Tag="BuildCharacter" Content="Build Character" Style="{StaticResource SuggestionChipButton}" Click="SuggestionCard_Click"/>
                             <Button Tag="CheckContinuity" Content="Check Continuity" Style="{StaticResource SuggestionChipButton}" Click="SuggestionCard_Click"/>
                             <Button Tag="ExpandLore" Content="Expand Lore" Style="{StaticResource SuggestionChipButton}" Click="SuggestionCard_Click"/>
                             <Button Tag="ReviseCanon" Content="Revise Canon" Style="{StaticResource SuggestionChipButton}" Click="SuggestionCard_Click"/>
-                        </StackPanel>
-                    </ScrollViewer>
+                        </WrapPanel>
+                    </StackPanel>
 
                     <!-- Story Director is optional. Proposals are ephemeral, never canon. -->
                     <Border x:Name="DirectorPanel" Visibility="Collapsed" Background="{StaticResource StorySurface}"
@@ -823,6 +835,8 @@
                                     Click="SceneCompassUseCue_Click" ToolTip="Copies a suggestion into the composer; does not send, write or commit"/>
                             <WrapPanel x:Name="InspectorMemoryActions" Orientation="Horizontal" Margin="0,12,0,0">
                                 <Button x:Name="InspectorAutoBookkeepingButton" Content="Auto-bookkeeping" Style="{StaticResource StoryButton}" Click="InspectorAutoBookkeepingButton_Click"/>
+                                <Button x:Name="InspectorRecoverMemoryButton" Content="Recover missing Memory…" Margin="6,0,0,0" Visibility="Collapsed" Style="{StaticResource StoryButton}" Click="InspectorRecoverMemoryButton_Click" ToolTip="For empty Memory: rebuild from committed chapters. For partially populated Memory: add only missing character/location names with exact chapter mentions. No existing canon or current state is overwritten; creates a checkpoint."/>
+                                <Button x:Name="InspectorEvidenceAuditButton" Content="Audit sources" Margin="6,0,0,0" Visibility="Collapsed" Style="{StaticResource StoryButton}" Click="InspectorEvidenceAuditButton_Click" ToolTip="Read-only comparison of Memory event/canon references with committed chapter prose. No provider calls or canon edits."/>
                                 <Button x:Name="InspectorApproveButton" Content="Approve proposed" Margin="6,0,0,0" Style="{StaticResource StoryButton}" Click="InspectorApproveButton_Click"/>
                                 <Button x:Name="InspectorDiscardButton" Content="Discard proposed" Margin="6,0,0,0" Style="{StaticResource StoryButton}" Click="InspectorDiscardButton_Click"/>
                             </WrapPanel>

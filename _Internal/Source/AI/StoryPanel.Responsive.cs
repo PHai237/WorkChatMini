@@ -15,7 +15,9 @@ public partial class StoryPanel
 
     private void ApplyResponsiveLayout()
     {
-        if (ChatScroll is null || ComposerShell is null || SidebarColumn is null)
+        if (ChatScroll is null || ComposerShell is null || SidebarColumn is null ||
+            WelcomeActionCards is null || NoProjectState is null ||
+            EditLastPromptButton is null || RetryLastButton is null)
             return;
 
         double width = Math.Max(0, ActualWidth);
@@ -30,7 +32,11 @@ public partial class StoryPanel
 
         if (InspectorPanel.Visibility == Visibility.Visible)
         {
-            double inspectorWidth = narrowWidth ? 300 : compactWidth ? 332 : 372;
+            // Never let the inspector consume the entire conversation on a
+            // narrow laptop/second monitor. Reserve space for chat and composer.
+            double desired = narrowWidth ? 300 : compactWidth ? 332 : 372;
+            double sidebar = _sidebarCollapsed ? 48 : narrowWidth ? 150 : compactWidth ? CompactSidebarWidth : NormalSidebarWidth;
+            double inspectorWidth = Math.Min(desired, Math.Max(220, width - sidebar - 350));
             InspectorColumn.Width = new GridLength(inspectorWidth);
         }
 
@@ -54,6 +60,14 @@ public partial class StoryPanel
         InputBox.MaxHeight = composerMaxHeight;
 
         ContextBar.Height = shortHeight ? 30 : compactHeight ? 32 : 36;
+        // The centered WrapPanel otherwise measures all seven cards in a single
+        // unbounded line and overflows the narrow Story welcome screen.
+        double availableWelcomeWidth = width - SidebarColumn.Width.Value - InspectorColumn.Width.Value - 55;
+        WelcomeActionCards.Width = Math.Clamp(availableWelcomeWidth, 164, 790);
+        NoProjectState.Width = Math.Clamp(availableWelcomeWidth, 230, 430);
+        RoleBox.Width = narrowWidth ? 108 : 126;
+        EditLastPromptButton.Content = narrowWidth ? "Edit" : "✎ Edit prompt";
+        RetryLastButton.Content = narrowWidth ? "↻ Retry" : "↻ Retry AI";
         SuggestionStrip.Margin = new Thickness(0, 0, 0, shortHeight ? 6 : 9);
 
         foreach (Grid row in MessagesPanel.Children.OfType<Grid>().Where(row => Equals(row.Tag, "StoryMessageRow")))
@@ -66,21 +80,23 @@ public partial class StoryPanel
             return;
 
         bool user = string.Equals(bubble.Tag as string, "StoryMessageBubble:user", StringComparison.Ordinal);
-        double workspaceWidth = Math.Max(420, ActualWidth - SidebarColumn.ActualWidth - InspectorColumn.ActualWidth);
-        double contentWidth = Math.Max(320, workspaceWidth - ChatScroll.Padding.Left - ChatScroll.Padding.Right - 26);
+        // Use the actual available width: the old 420px minimum made bubbles
+        // larger than the entire chat column when the inspector was open.
+        double workspaceWidth = Math.Max(200, ActualWidth - SidebarColumn.ActualWidth - InspectorColumn.ActualWidth);
+        double contentWidth = Math.Max(180, workspaceWidth - ChatScroll.Padding.Left - ChatScroll.Padding.Right - 20);
         bool narrow = contentWidth < 720;
         bool medium = contentWidth < 900;
 
         row.MaxWidth = Math.Min(900, contentWidth);
         if (user)
         {
-            bubble.MaxWidth = Math.Min(540, Math.Max(280, contentWidth * (narrow ? 0.92 : 0.76)));
-            bubble.Margin = new Thickness(narrow ? 18 : medium ? 54 : 120, 0, 0, 0);
+            bubble.MaxWidth = Math.Min(540, Math.Max(160, contentWidth * (narrow ? 0.93 : 0.76)));
+            bubble.Margin = new Thickness(contentWidth < 360 ? 5 : narrow ? 18 : medium ? 54 : 120, 0, 0, 0);
         }
         else
         {
-            bubble.MaxWidth = Math.Min(660, Math.Max(300, contentWidth * (narrow ? 0.94 : 0.82)));
-            bubble.Margin = new Thickness(0, 0, narrow ? 12 : medium ? 44 : 100, 0);
+            bubble.MaxWidth = Math.Min(660, Math.Max(160, contentWidth * (narrow ? 0.94 : 0.82)));
+            bubble.Margin = new Thickness(0, 0, contentWidth < 360 ? 5 : narrow ? 12 : medium ? 44 : 100, 0);
         }
     }
 
@@ -138,7 +154,9 @@ public partial class StoryPanel
             {
                 Content = "✎ Edit",
                 ToolTip = "Edit this last uncommitted prompt and regenerate the response",
-                Style = (Style)FindResource("StoryMessageCopyButton")
+                Style = (Style)FindResource("StoryInlineActionButton"),
+                MinWidth = 54,
+                Margin = new Thickness(5, 0, 0, 0)
             };
             editButton.Click += (_, _) => BeginPromptEdit(message);
             meta.Children.Add(editButton);

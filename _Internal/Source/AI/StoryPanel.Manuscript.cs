@@ -164,7 +164,11 @@ public partial class StoryPanel
             RenderConversation();
             if (InspectorPanel.Visibility == Visibility.Visible)
                 RenderMemoryInspector(_activeInspectorSection ?? "Overview");
-            SetStatus(null);
+            SetStatus(_bookkeepingExtractionIncomplete
+                ? "Chapter committed, but automatic Memory extraction was incomplete. See Logs."
+                : !_activeProject.AutoBookkeeping
+                    ? "Chapter committed. Auto-bookkeeping is off; no structured characters/events were extracted."
+                    : null);
             AppLogger.Info("STORY-MANUSCRIPT", $"Draft committed | project={_activeProject.Id} | chapter={chapter.Number}");
         }
         catch (OperationCanceledException)

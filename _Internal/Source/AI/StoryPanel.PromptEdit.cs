@@ -51,7 +51,10 @@ public partial class StoryPanel
         if (EditLastPromptButton is null || CancelPromptEditButton is null) return;
         bool editing = _editingUserPrompt is not null;
         bool available = GetEditablePrompt() is not null;
-        EditLastPromptButton.Visibility = !editing && available ? Visibility.Visible : Visibility.Collapsed;
+        // On narrow layouts the same Edit action is available below the last
+        // user message. Keep the composer footer from covering Send/Retry.
+        EditLastPromptButton.Visibility = !editing && available && ActualWidth >= 940
+            ? Visibility.Visible : Visibility.Collapsed;
         EditLastPromptButton.IsEnabled = available;
         CancelPromptEditButton.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
         CancelPromptEditButton.IsEnabled = editing && _generationCts is null;

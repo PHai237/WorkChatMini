@@ -18,7 +18,12 @@ public sealed class StoryMemoryBookkeeper
         CancellationToken cancellationToken)
     {
         string compactMemory = StoryMemoryRetriever.BuildContext(currentMemory, userInstruction);
-        string responseText = assistantResponse.Length <= 30000 ? assistantResponse : assistantResponse[..30000];
+        // Sample opening, midpoint, and ending of long chapters. This remains
+        // partial evidence coverage; the model must not infer omitted events.
+        // The omitted middle is explicitly marked; it is never evidence for canon.
+        string responseText = BuildBookkeepingExcerpt(assistantResponse);
+        if (assistantResponse.Length > MaxBookkeepingCharacters)
+            AppLogger.Warn("STORY-MEMORY", $"Long chapter excerpted for bookkeeping | originalChars={assistantResponse.Length} | excerptChars={responseText.Length} | partialCoverage=true");
         string raw = await _runner.CompleteAsync(
             providerId,
             model,
@@ -50,6 +55,29 @@ public sealed class StoryMemoryBookkeeper
         }
     }
 
+    internal const int MaxBookkeepingCharacters = 30000;
+
+    internal static string BuildBookkeepingExcerpt(string chapter)
+    {
+        if (chapter.Length <= MaxBookkeepingCharacters)
+            return chapter;
+        // Three evidence windows cover opening, midpoint and ending. Two explicit
+        // gaps prevent the model from inventing transitions across missing prose.
+        const string gap1 = "\n\n[OMITTED PASSAGE 1 — missing prose is not evidence]\n\n";
+        const string gap2 = "\n\n[OMITTED PASSAGE 2 — missing prose is not evidence]\n\n";
+        int remaining = MaxBookkeepingCharacters - gap1.Length - gap2.Length;
+        int headLength = remaining * 2 / 5;
+        int middleLength = remaining * 3 / 10;
+        int tailLength = remaining - headLength - middleLength;
+        // Keep windows disjoint even just above the budget threshold.
+        // Centering without a clamp would duplicate head/tail text for a 30,001-character chapter.
+        int middleStart = Math.Clamp((chapter.Length - middleLength) / 2,
+            headLength, chapter.Length - tailLength - middleLength);
+        return chapter[..headLength] + gap1 +
+            chapter.Substring(middleStart, middleLength) + gap2 +
+            chapter[^tailLength..];
+    }
+
     private static string BuildSystemPrompt(StoryProject project, string compactMemory, StoryActionType action)
     {
         const string template = """
@@ -61,6 +89,7 @@ Your task is NOT to continue the story and NOT to improve the prose. Extract dur
 Rules:
 - Return ONE JSON object only. No markdown fences, no commentary.
 - Treat the final assistant narrative as the source of truth for what actually happened in this generation.
+- When a long chapter contains [OMITTED PASSAGE] markers, each missing passage is NOT available as evidence. Extract only explicitly stated facts from visible excerpts; never infer missing transitions, off-page events or causal links across the gap.
 - Record only facts explicitly established in the final output or explicitly established by the creator instruction.
 - Never record private plans, research possibilities, discarded options, or implied off-page events unless they actually appear in the final narrative.
 - Do not infer hidden motives, romance, knowledge, inventory, power, deaths, or lore that were not actually established.
@@ -73,7 +102,8 @@ Rules:
 - Narrative promise status must be Open, Developing, PaidOff, Abandoned, or Superseded. Use Developing when the setup is revisited/advanced without resolution. Use PaidOff only when the final prose actually delivers the promised reveal/consequence/resolution. Use Abandoned/Superseded only when the prose or creator explicitly invalidates/replaces it.
 - Narrative promise kind must be Setup, Clue, Promise, CharacterPromise, Foreshadowing, Mystery, WorldRuleSetup, ChekhovObject, or Custom. Horizon is Short, Medium, Long, or Unknown; it is planning guidance, never a deadline.
 - Track CAUSAL LINKS only when the final prose explicitly supports a durable causal relation. Allowed relations: CAUSES, ENABLES, BLOCKS, MOTIVATES, REVEALS, RESOLVES, ESCALATES. Do not infer causation merely because two events occur near each other.
-- A causal link should describe why one durable story fact/event/setup leads to another, using compact human-readable from/to labels. Evidence must be a factual paraphrase from the final prose.
+- A causal link should describe why one durable story fact/event/setup leads to another, using compact human-readable from/to labels. Evidence must be supported by the final prose.
+- For events[], narrativePromises[] and causalLinks[], copy a SHORT EXACT TEXT EXCERPT (ideally 12-200 characters) from the VISIBLE narrative into evidence, retaining original spelling. Do not put your own paraphrase inside evidence or pretend it is a quotation. If an exact excerpt is unavailable, leave evidence empty; never make one up. A quote is an audit pointer, not permission to invent implications.
 - ResolvedThreads should reference the title or meaning of an existing open thread that this output clearly resolves.
 - IsChapter should be true only if the assistant output is substantial narrative prose intended as a chapter/scene to keep in the manuscript. Brainstorming, outlines, critique, and discussion are false. For ContinueStory or DraftScene, a successful substantial narrative response should normally be true so the app can stamp chapter provenance.
 - For autonomous continuations, capture the durable AFTER-SCENE state: what changed, who learned what, relationship changes, location/condition/inventory changes, timeline progress, newly opened threads, and clearly resolved threads.
@@ -119,7 +149,7 @@ JSON schema:
     "subject":"character/entity/world", "target":"ability/item/secret/place/thread/etc",
     "summary":"durable change", "before":"", "after":"",
     "importance":"Critical|Major|Minor", "status":"Confirmed|Proposed", "when":"story-relative time if stated",
-    "evidence":"short factual paraphrase", "relatedCharacters":[], "tags":[]
+    "evidence":"short exact excerpt from visible text, or empty", "relatedCharacters":[], "tags":[]
   }],
   "arcs": [{
     "title":"stable arc name", "summary":"what this long-running arc is about", "status":"Active|Paused|Resolved",
@@ -144,14 +174,14 @@ JSON schema:
     "kind":"Setup|Clue|Promise|CharacterPromise|Foreshadowing|Mystery|WorldRuleSetup|ChekhovObject|Custom",
     "title":"stable concise label", "detail":"what has been promised/set up",
     "status":"Open|Developing|PaidOff|Abandoned|Superseded", "importance":"Critical|Major|Minor",
-    "horizon":"Short|Medium|Long|Unknown", "evidence":"what in the final prose establishes or advances it",
+    "horizon":"Short|Medium|Long|Unknown", "evidence":"short exact excerpt from visible text, or empty",
     "payoffSummary":"only when PaidOff", "relatedCharacters":[], "relatedArcs":[], "relatedThreads":[]
   }],
   "causalLinks": [{
     "relation":"CAUSES|ENABLES|BLOCKS|MOTIVATES|REVEALS|RESOLVES|ESCALATES",
     "from":"durable cause/setup/event label", "to":"durable consequence/reveal/event label",
     "summary":"compact causal meaning", "importance":"Critical|Major|Minor",
-    "evidence":"explicit prose support", "relatedCharacters":[]
+    "evidence":"short exact excerpt from visible text, or empty", "relatedCharacters":[]
   }],
   "revisions": []
 }

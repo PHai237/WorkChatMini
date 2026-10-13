@@ -33,6 +33,9 @@ internal static class StoryConversationContextBuilder
             }
 
             StoryMessage message = messages[i];
+            // Archived AI answers remain visible history but are never evidence
+            // for another answer, even when a caller did not prefilter history.
+            if (message.IsSupersededResponse) continue;
             bool isAssistant = string.Equals(message.Role, "assistant", StringComparison.OrdinalIgnoreCase);
             bool uncommittedNarrative = isAssistant && !message.ManuscriptCommitted &&
                 (message.IsNarrativeDraft || message.IsInterruptedResponse);

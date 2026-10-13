@@ -46,9 +46,12 @@ internal static class StoryConversationContextSelfTest
                 IsInterruptedResponse = true },
             new() { Role = "user", Content = "What if the lighthouse is abandoned?" }
         };
+        chat.Insert(2, new StoryMessage { Role = "assistant", Action = "Chat",
+            Content = "Incorrect response that was replaced", IsSupersededResponse = true });
         string chatContext = StoryConversationContextBuilder.Build(chat, "next question");
         if (!chatContext.Contains("harbor is flooded", StringComparison.Ordinal) ||
             chatContext.Contains("Incomplete response", StringComparison.Ordinal) ||
+            chatContext.Contains("Incorrect response that was replaced", StringComparison.Ordinal) ||
             !chatContext.Contains("lighthouse is abandoned", StringComparison.Ordinal))
             throw new InvalidOperationException("Interrupted Chat wrongly removed the creator's question.");
     }

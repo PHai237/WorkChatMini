@@ -462,7 +462,17 @@ public partial class StoryPanel
             ? Visibility.Visible : Visibility.Collapsed;
         if (InspectorVersionExpander.IsExpanded && InspectorVersionExpander.Visibility == Visibility.Visible)
             RenderCheckpointHistory();
-        InspectorMemoryActions.Visibility = InspectorAutoBookkeepingButton.Visibility == Visibility.Visible ||
+        UpdateMemoryRecoveryButton();
+        InspectorEvidenceAuditButton.Visibility = string.Equals(normalized, "Overview", StringComparison.OrdinalIgnoreCase) &&
+            _memory.Chapters.Count > 0 &&
+            (_memory.Events.Count + _memory.CausalLinks.Count + _memory.NarrativePromises.Count +
+             _memory.Timeline.Count + _memory.Canon.Count) > 0
+            ? Visibility.Visible : Visibility.Collapsed;
+        InspectorEvidenceAuditButton.IsEnabled = !_evidenceAuditBusy && _generationCts is null &&
+            !_loadingProject && !_storageAuditBusy && !_checkpointRecoveryFailed;
+        InspectorMemoryActions.Visibility = InspectorEvidenceAuditButton.Visibility == Visibility.Visible ||
+                                            InspectorRecoverMemoryButton.Visibility == Visibility.Visible ||
+                                            InspectorAutoBookkeepingButton.Visibility == Visibility.Visible ||
                                             InspectorApproveButton.Visibility == Visibility.Visible ||
                                             InspectorDiscardButton.Visibility == Visibility.Visible
             ? Visibility.Visible
@@ -490,15 +500,41 @@ public partial class StoryPanel
             int activePromises = _memory.NarrativePromises.Count(StoryCausalMemoryLedger.IsActive);
             int activeCanon = _memory.Canon.Count(x => !IsRetiredCanon(x.Status));
             int pendingDrafts = _messages.Count(x => x.IsNarrativeDraft && !x.ManuscriptCommitted && !x.DraftDiscarded);
+            string recoveryNote = _memory.Chapters.Count > 0 && !StoryMemoryRecovery.HasStructuredMemory(_memory)
+                ? StoryMemoryRecovery.CanRecover(_memory)
+                    ? "\n\nMEMORY CHECK · Your chapters are committed, but structured Memory is empty. Use Recover missing Memory below to extract facts from the saved chapter texts. This will use AI requests and create a checkpoint first."
+                    : "\n\nMEMORY CHECK · Your chapters exist, but structured Memory is empty. " +
+                        (StoryMemoryRepair.CanRepair(_memory)
+                            ? "Large stories can be scanned for names in batches of 20; this does NOT restore complete canon/events."
+                            : "Automatic repair is unavailable for this set; check the chapter count and Storage Health.")
+                : string.Empty;
+            int unreviewed = StoryMemoryRepair.UnreviewedCount(_memory);
+            int namesOnly = StoryMemoryRepair.NamesOnlyCount(_memory);
+            int pendingScan = StoryMemoryRepair.PendingCount(_memory);
+            int repairable = StoryMemoryRepair.PendingChapters(_memory).Count;
+            if (StoryMemoryRecovery.HasStructuredMemory(_memory) && unreviewed > 0)
+                recoveryNote = $"\n\nMEMORY COVERAGE · {unreviewed} chapter(s) lack full extraction " +
+                    $"({namesOnly} already scanned for names only; {pendingScan} awaiting a name scan). " +
+                    (repairable > 0 ? $"Repair names scans up to {repairable} chapters this time. "
+                        : "No more name-only batches are available or the chapter set needs Storage Health inspection. ") +
+                    "Names-only does NOT check events, relationships or canon. Existing state will not be rewritten. " +
+                    "Old chapters remain Unknown until explicitly checked.";
             StoryDeterministicReport integrity = StoryDeterministicContinuity.AnalyzeMemory(_memory);
             int integrityConflicts = integrity.Issues.Count(x => x.Severity == StoryDeterministicSeverity.Conflict);
             int integrityRisks = integrity.Issues.Count(x => x.Severity == StoryDeterministicSeverity.Risk);
             string integrityText = integrityConflicts == 0 && integrityRisks == 0
                 ? "State integrity · clean"
                 : $"State integrity · {integrityConflicts} conflict(s) · {integrityRisks} risk(s)";
+            int extracted = _memory.Chapters.Count(c => c.BookkeepingStatus == "Reviewed");
+            int incomplete = _memory.Chapters.Count(c => c.BookkeepingStatus == "Incomplete");
+            int skipped = _memory.Chapters.Count(c => c.BookkeepingStatus == "Skipped");
+            int unknown = _memory.Chapters.Count(c => c.BookkeepingStatus == "Unknown");
+            string coverage = $"Memory extraction · {extracted} processed · {namesOnly} names-only · " +
+                $"{incomplete} incomplete · {skipped} skipped · {unknown} unknown";
             string recentEvents = BuildRecentEventsText(5);
-            return $"{_memory.Chapters.Count} committed chapters\n{pendingDrafts} uncommitted narrative drafts\n{_memory.Characters.Count} characters\n{activeCanon} current canon facts\n{_memory.Revisions.Count} canon revisions\n{_memory.Relationships.Count} relationships · {_memory.RelationshipHistory.Count} relationship changes\n{_memory.Timeline.Count} timeline events\n{_memory.Events.Count} significant events\n{_memory.Arcs.Count} story arcs · {_memory.CharacterArcs.Count} character arcs\n{_memory.Locations.Count} tracked locations · {_memory.SceneStates.Count} scene-state snapshots\n{openThreads} open threads\n{activePromises} active narrative promises · {_memory.CausalLinks.Count} causal links\n{_memory.Lore.Count} lore entries\n{_researchDocument.Notes.Count} research notes\n{integrityText}\n\nConfirmed memory is recalled automatically before generation. Proposed canon, lore, or events stay uncertain until you approve them. Retconned/Contradicted canon is kept only as revision history and is not treated as current truth. Story Arcs track long-running plot trajectories; Character Arcs track durable personal development. Relationship and scene-state history preserve when changes occurred without replacing current state. Narrative Promises track setups, clues, foreshadowing and character promises until payoff/abandonment; Causal Memory records explicit why-A-led-to-B links. A derived Knowledge Graph expands long-story retrieval but never becomes canon by itself. Deterministic state checks protect structured memory from clear contradictions before merge. Research notes remain reference material and never become canon automatically."
-                + (recentEvents.Length == 0 ? string.Empty : $"\n\nRECENT SIGNIFICANT EVENTS\n{recentEvents}");
+            return $"{_memory.Chapters.Count} committed chapters\n{coverage}\n{pendingDrafts} uncommitted narrative drafts\n{_memory.Characters.Count} characters\n{activeCanon} current canon facts\n{_memory.Revisions.Count} canon revisions\n{_memory.Relationships.Count} relationships · {_memory.RelationshipHistory.Count} relationship changes\n{_memory.Timeline.Count} timeline events\n{_memory.Events.Count} significant events\n{_memory.Arcs.Count} story arcs · {_memory.CharacterArcs.Count} character arcs\n{_memory.Locations.Count} tracked locations · {_memory.SceneStates.Count} scene-state snapshots\n{openThreads} open threads\n{activePromises} active narrative promises · {_memory.CausalLinks.Count} causal links\n{_memory.Lore.Count} lore entries\n{_researchDocument.Notes.Count} research notes\n{integrityText}\n\nConfirmed memory is recalled automatically before generation. Proposed canon, lore, or events stay uncertain until you approve them. Retconned/Contradicted canon is kept only as revision history and is not treated as current truth. Story Arcs track long-running plot trajectories; Character Arcs track durable personal development. Relationship and scene-state history preserve when changes occurred without replacing current state. Narrative Promises track setups, clues, foreshadowing and character promises until payoff/abandonment; Causal Memory records explicit why-A-led-to-B links. A derived Knowledge Graph expands long-story retrieval but never becomes canon by itself. Deterministic state checks protect structured memory from clear contradictions before merge. Research notes remain reference material and never become canon automatically."
+                + (recentEvents.Length == 0 ? string.Empty : $"\n\nRECENT SIGNIFICANT EVENTS\n{recentEvents}")
+                + recoveryNote;
         }
         if (string.Equals(section, "Canon", StringComparison.OrdinalIgnoreCase))
         {

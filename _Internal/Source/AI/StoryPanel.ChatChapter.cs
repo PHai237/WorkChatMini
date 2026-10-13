@@ -30,7 +30,7 @@ public partial class StoryPanel
             Tag = message,
             Padding = new Thickness(10, 5, 10, 5),
             Margin = new Thickness(0, 10, 0, 0),
-            HorizontalAlignment = HorizontalAlignment.Left,
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
             Style = (Style)FindResource("StoryButton"),
             ToolTip = "Only for an actual chapter written in Chat. Will store the full chapter and extract confirmed characters, locations and events when Auto-bookkeeping is on."
         };
@@ -106,9 +106,13 @@ public partial class StoryPanel
             await _store.SaveMessagesAsync(project.Id, _messages);
             if (InspectorPanel.Visibility == Visibility.Visible)
                 RenderMemoryInspector(_activeInspectorSection ?? "Overview");
-            SetStatus(project.AutoBookkeeping && _memory.Characters.Count == charactersBefore
-                ? $"Chapter {chapter.Number} saved. No new characters extracted; inspect Memory/Logs."
-                : $"Chapter {chapter.Number} saved and Story Memory updated.");
+            SetStatus(_bookkeepingExtractionIncomplete
+                ? $"Chapter {chapter.Number} saved; structured Memory extraction was incomplete. See Logs."
+                : !project.AutoBookkeeping
+                    ? $"Chapter {chapter.Number} saved. Auto-bookkeeping is off; structured Memory unchanged."
+                    : project.AutoBookkeeping && _memory.Characters.Count == charactersBefore
+                    ? $"Chapter {chapter.Number} saved. No new characters extracted; inspect Memory/Logs."
+                    : $"Chapter {chapter.Number} saved and Story Memory updated.");
             AppLogger.Info("STORY-MEMORY", $"Creator promoted Chat reply to committed chapter | project={project.Id} | chapter={chapter.Number}");
         }
         catch (Exception ex)

@@ -7,6 +7,10 @@ internal static class StoryReadinessSelfTest
 {
     internal static void Verify()
     {
+        StoryMemoryRecoverySelfTest.Verify();
+        StoryMemoryRepairSelfTest.Verify();
+        StoryMemoryCoverageSelfTest.Verify();
+        StoryEvidenceAuditSelfTest.Verify();
         var memory = new StoryMemoryDocument();
         for (int n = 1; n <= 20; n++)
             memory.Chapters.Add(new StoryChapterMemory
