@@ -212,7 +212,7 @@ public sealed class AppSettings
             if (settings.StoryProvider is not ("Gemini" or "OpenAI"))
                 settings.StoryProvider = "Gemini";
             if (string.IsNullOrWhiteSpace(settings.StoryModel))
-                settings.StoryModel = StoryProviderFactory.DefaultModel(settings.StoryProvider);
+                settings.StoryModel = "gemini-3.8-flash";
 
             settings.SettingsVersion = 2250;
             if (originalSettingsVersion != 2250)

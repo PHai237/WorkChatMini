@@ -27,8 +27,6 @@ public partial class MainWindow
             return "YouTube audio/video is playing. Pause it before restarting for the update.";
         if (_browserTabs.Any(tab => tab.ActiveDownloadCount > 0))
             return "A Web download is active. Finish it before updating.";
-        if (_storyInitialized && StoryPanel.HasPendingWorkForUpdate)
-            return "Story has an AI request, storage operation or recovery in progress. Finish it before updating.";
         return null;
     }
 

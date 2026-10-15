@@ -54,7 +54,6 @@ public partial class MainWindow
         MiniSite.Discord => AppsDiscordMenuItem,
         MiniSite.Zalo => AppsZaloMenuItem,
         MiniSite.Web => AppsWebMenuItem,
-        MiniSite.Story => AppsStoryMenuItem,
         _ => AppsMessengerMenuItem
     };
 

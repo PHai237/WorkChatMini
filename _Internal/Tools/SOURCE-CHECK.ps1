@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $source = Join-Path $root '_Internal\Source'
 $errors = [System.Collections.Generic.List[string]]::new()
@@ -7,6 +7,19 @@ $xmlCount = 0
 $largest = 0
 $maxFile = ''
 $ambiguousTypes = '(?<![\w.])new\s+(?:TextBox|Button|ComboBox|Label|Control|Timer)\s*(?:\{|\()'
+# A slim Core source package MUST NOT include abandoned Story UI/code.
+# This also catches extracting a new ZIP over an old, non-empty folder.
+$legacyStorySources = @(
+    (Join-Path $source 'MainWindow.Story.cs'),
+    (Join-Path $source 'AI'),
+    (Join-Path $source 'StoryPanel.xaml'),
+    (Join-Path $source 'StoryPanel.xaml.cs')
+)
+foreach ($old in $legacyStorySources) {
+    if (Test-Path -LiteralPath $old) {
+        $errors.Add("Retired AI Story source still exists: $old. Extract WorkChat Core into an EMPTY folder before PUSH.")
+    }
+}
 $sourceFiles = @(Get-ChildItem -LiteralPath $source -File -Recurse | Where-Object {
     $_.FullName -notmatch '[\\/](bin|obj)[\\/]' -and $_.Extension -in @('.cs','.xaml')
 })
@@ -21,32 +34,6 @@ foreach ($f in $sourceFiles) {
               while ($reader.Read()) { }
               $reader.Dispose(); $xmlCount++ }
         catch { $errors.Add("Invalid XML/XAML $($f.Name): $($_.Exception.Message)") }
-    }
-    if ($f.Extension -eq '.cs' -and $f.FullName -match '[\\/]AI[\\/]StoryPanel\.' -and
-        [regex]::IsMatch($body, $ambiguousTypes)) {
-        $errors.Add("Possible WPF/WinForms type ambiguity in $($f.Name): qualify the control namespace or use Wpf aliases")
-    }
-    if ($f.Extension -eq '.cs' -and $f.FullName -match '[\\/]AI[\\/]StoryPanel\.' -and
-        [regex]::IsMatch($body, '(?<![\w.])Orientation\s*=\s*Orientation\.')) {
-        $errors.Add("Ambiguous Orientation enum in $($f.Name): qualify System.Windows.Controls.Orientation")
-    }
-    # CS0176: a WPF control's HorizontalAlignment property shadows the enum
-    # name in an object initializer; fully qualify it (v2.40.2 regression).
-    if ($f.Extension -eq '.cs' -and $f.FullName -match '[\\/]AI[\\/]StoryPanel\.' -and
-        [regex]::IsMatch($body, '(?<![\w.])HorizontalAlignment\s*=\s*HorizontalAlignment\.')) {
-        $errors.Add("Unqualified HorizontalAlignment enum in $($f.Name): use System.Windows.HorizontalAlignment")
-    }
-    # WPF+WinForms makes Brushes ambiguous via System.Drawing/System.Windows.Media.
-    # Regression gate for the CS0104 found in StoryPanel.xaml.cs of v2.40.0.
-    if ($f.Extension -eq '.cs' -and $f.FullName -match '[\\/]AI[\\/]StoryPanel\.' -and
-        [regex]::IsMatch($body, '(?<![\w.])Brushes\.')) {
-        $errors.Add("Ambiguous Brushes in $($f.Name): qualify System.Windows.Media.Brushes")
-    }
-    # WPF Point and System.Drawing.Point are both in scope in this WinForms+WPF project.
-    # Catch unqualified constructor use in StoryPanel UI (preview16 CS0104 regression).
-    if ($f.Extension -eq '.cs' -and $f.FullName -match '[\\/]AI[\\/]StoryPanel\.' -and
-        [regex]::IsMatch($body, '(?<![\w.])new\s+Point\s*\(')) {
-        $errors.Add("Ambiguous Point constructor in $($f.Name): use System.Windows.Point or System.Drawing.Point explicitly")
     }
     # WPF C# implicit usings do not guarantee System.IO is in scope for all
     # source files. 2.43.0 failed Windows compile with missing InvalidDataException.

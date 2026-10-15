@@ -43,7 +43,6 @@
         <SolidColorBrush x:Key="DiscordBrandBrush" Color="#5865F2"/>
         <SolidColorBrush x:Key="ZaloBrandBrush" Color="#0068FF"/>
         <SolidColorBrush x:Key="WebBrandBrush" Color="#10B977"/>
-        <SolidColorBrush x:Key="StoryBrandBrush" Color="#9A6A2E"/>
         <!-- Pixel app icons are embedded WPF resources. Nearest-neighbor scaling is used at render time. -->
         <BitmapImage x:Key="MessengerPixelIcon" UriSource="Assets/Icons/messenger.png" DecodePixelWidth="48"/>
         <BitmapImage x:Key="FacebookPixelIcon" UriSource="Assets/Icons/facebook.png" DecodePixelWidth="48"/>
@@ -51,7 +50,6 @@
         <BitmapImage x:Key="DiscordPixelIcon" UriSource="Assets/Icons/discord.png" DecodePixelWidth="48"/>
         <BitmapImage x:Key="ZaloPixelIcon" UriSource="Assets/Icons/zalo.png" DecodePixelWidth="48"/>
         <BitmapImage x:Key="WebPixelIcon" UriSource="Assets/Icons/web.png" DecodePixelWidth="48"/>
-        <BitmapImage x:Key="StoryPixelIcon" UriSource="Assets/Icons/story.png" DecodePixelWidth="48"/>
         <Style x:Key="AppIconButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="#141922"/>
@@ -448,9 +446,6 @@
                                        RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
-                        <Button x:Name="StoryButton" Style="{StaticResource AppIconButtonStyle}" Click="StoryButton_Click" ToolTip="Story Companion">
-                            <Image Source="{StaticResource StoryPixelIcon}" Width="24" Height="24" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"/>
-                        </Button>
                     </StackPanel>
 
                     <StackPanel x:Name="TinyAppSwitcherPanel" Orientation="Horizontal" Visibility="Collapsed" VerticalAlignment="Center">
@@ -485,7 +480,6 @@
                                     <MenuItem x:Name="AppsDiscordMenuItem" Header="Discord" Tag="Discord" Style="{StaticResource DarkMenuItemStyle}" Click="DiscordButton_Click"><MenuItem.Icon><Image Source="{StaticResource DiscordPixelIcon}" Width="18" Height="18" RenderOptions.BitmapScalingMode="NearestNeighbor"/></MenuItem.Icon></MenuItem>
                                     <MenuItem x:Name="AppsZaloMenuItem" Header="Zalo" Tag="Zalo" Style="{StaticResource DarkMenuItemStyle}" Click="ZaloButton_Click"><MenuItem.Icon><Image Source="{StaticResource ZaloPixelIcon}" Width="18" Height="18" RenderOptions.BitmapScalingMode="NearestNeighbor"/></MenuItem.Icon></MenuItem>
                                     <MenuItem x:Name="AppsWebMenuItem" Header="Web" Tag="Web" Style="{StaticResource DarkMenuItemStyle}" Click="WebButton_Click"><MenuItem.Icon><Image Source="{StaticResource WebPixelIcon}" Width="18" Height="18" RenderOptions.BitmapScalingMode="NearestNeighbor"/></MenuItem.Icon></MenuItem>
-                                    <MenuItem x:Name="AppsStoryMenuItem" Header="Story" Tag="Story" Style="{StaticResource DarkMenuItemStyle}" Click="StoryButton_Click"><MenuItem.Icon><Image Source="{StaticResource StoryPixelIcon}" Width="18" Height="18" RenderOptions.BitmapScalingMode="NearestNeighbor"/></MenuItem.Icon></MenuItem>
                                 </ContextMenu>
                             </Button.ContextMenu>
                         </Button>
@@ -953,9 +947,6 @@
                 </Grid>
             </Grid>
 
-            <Grid x:Name="StorySurfaceGrid" Visibility="Collapsed" Background="#0F0E0D">
-                <local:StoryPanel x:Name="StoryPanel"/>
-            </Grid>
 
             <Border x:Name="LoadingOverlay" Background="#0D0F14" Visibility="Visible">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="250">

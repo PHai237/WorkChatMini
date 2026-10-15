@@ -278,7 +278,7 @@ public partial class MainWindow
             MiniSite.Discord => "DiscordBrandBrush",
             MiniSite.Zalo => "ZaloBrandBrush",
             MiniSite.Web => "WebBrandBrush",
-            MiniSite.Story => "StoryBrandBrush",
+            MiniSite.Story => "MessengerBrandBrush",
             _ => "MessengerBrandBrush"
         };
         CurrentAppButton.Background = (System.Windows.Media.Brush)FindResource(resourceKey);
@@ -290,7 +290,7 @@ public partial class MainWindow
             MiniSite.Discord => "DiscordPixelIcon",
             MiniSite.Zalo => "ZaloPixelIcon",
             MiniSite.Web => "WebPixelIcon",
-            MiniSite.Story => "StoryPixelIcon",
+            MiniSite.Story => "MessengerPixelIcon",
             _ => "MessengerPixelIcon"
         };
         CurrentAppIconImage.Source = (System.Windows.Media.ImageSource)FindResource(iconResourceKey);
@@ -308,7 +308,6 @@ public partial class MainWindow
         SetAppsMenuItemState(AppsDiscordMenuItem, MiniSite.Discord);
         SetAppsMenuItemState(AppsZaloMenuItem, MiniSite.Zalo);
         SetAppsMenuItemState(AppsWebMenuItem, MiniSite.Web);
-        SetAppsMenuItemState(AppsStoryMenuItem, MiniSite.Story);
     }
 
     private void SetAppsMenuItemState(MenuItem item, MiniSite site)
@@ -483,7 +482,6 @@ public partial class MainWindow
         MiniSite.Discord => DiscordButton,
         MiniSite.Zalo => ZaloButton,
         MiniSite.Web => WebButton,
-        MiniSite.Story => StoryButton,
         _ => MessengerButton
     };
 
@@ -495,7 +493,7 @@ public partial class MainWindow
         MiniSite.Discord => _discordInitialized,
         MiniSite.Zalo => _zaloInitialized,
         MiniSite.Web => _browserInitialized,
-        MiniSite.Story => _storyInitialized,
+        MiniSite.Story => false,
         _ => false
     };
     private void ScheduleResponsiveZoom(string reason, int delayMilliseconds = 90)

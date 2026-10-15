@@ -178,11 +178,6 @@ public partial class MainWindow
         AppLogger.Info("UI", $"Reload requested | site={_activeSite}");
         try
         {
-            if (_activeSite == MiniSite.Story)
-            {
-                StoryPanel.FocusComposer();
-                return;
-            }
             if (_activeSite == MiniSite.Web)
             {
                 ReloadActiveBrowserTab();
@@ -356,8 +351,6 @@ public partial class MainWindow
         _interactiveProbeEpoch++;
         StopPerformanceDiagnostics();
         ReleaseSystemAwakeGuard("app-exit");
-        if (_storyInitialized)
-            StoryPanel.CancelGeneration();
         PersistWindowSettings();
         MuteAllWebViews();
 
@@ -506,7 +499,8 @@ public partial class MainWindow
         if (e.Key == Key.Tab && control)
         {
             AppLogger.Info("UI", "Ctrl+Tab app cycle");
-            IReadOnlyList<MiniSite> sites = Enum.GetValues<MiniSite>();
+            IReadOnlyList<MiniSite> sites = Enum.GetValues<MiniSite>()
+                .Where(site => site != MiniSite.Story).ToArray();
             int index = sites.ToList().IndexOf(_activeSite);
             MiniSite next = sites[(index + 1 + sites.Count) % sites.Count];
             try

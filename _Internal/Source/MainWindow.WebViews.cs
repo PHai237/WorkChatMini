@@ -155,7 +155,7 @@ public partial class MainWindow
     private Task EnsureSiteInitializedAsync(MiniSite site)
     {
         if (site == MiniSite.Story)
-            return EnsureStoryInitializedAsync();
+            throw new NotSupportedException("AI Story was removed from WorkChat.");
         if (site == MiniSite.Web)
             return EnsureBrowserInitializedAsync();
         if (IsSiteInitialized(site))
@@ -594,6 +594,9 @@ public partial class MainWindow
 
     private async Task SwitchToSiteAsync(MiniSite site)
     {
+        // Legacy enum value is reserved for old settings only; no Story UI is loaded.
+        if (site == MiniSite.Story)
+            return;
         long interactiveStart = Stopwatch.GetTimestamp();
         var switchTimer = Stopwatch.StartNew();
         int switchEpoch = ++_siteSwitchEpoch;
@@ -614,11 +617,7 @@ public partial class MainWindow
             }
         }
 
-        if (site == MiniSite.Story)
-        {
-            await EnsureStoryInitializedAsync();
-        }
-        else if (site == MiniSite.Web)
+        if (site == MiniSite.Web)
         {
             await EnsureBrowserInitializedAsync();
             await WakeActiveBrowserTabAsync();
@@ -662,7 +661,6 @@ public partial class MainWindow
             GetWebView(candidate).Visibility = candidate == site ? Visibility.Visible : Visibility.Collapsed;
 
         BrowserSurfaceGrid.Visibility = site == MiniSite.Web ? Visibility.Visible : Visibility.Collapsed;
-        StorySurfaceGrid.Visibility = site == MiniSite.Story ? Visibility.Visible : Visibility.Collapsed;
         if (site == MiniSite.Web && _activeBrowserTab is not null)
         {
             foreach (BrowserTabState tab in _browserTabs)
@@ -684,11 +682,7 @@ public partial class MainWindow
 
         _ = Dispatcher.BeginInvoke(new Action(() =>
         {
-            if (site == MiniSite.Story)
-            {
-                StoryPanel.FocusComposer();
-            }
-            else if (site == MiniSite.Web)
+            if (site == MiniSite.Web)
             {
                 if (_activeBrowserTab?.IsBlank == true)
                 {

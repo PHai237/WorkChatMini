@@ -29,7 +29,7 @@ $files = @(Get-ChildItem -LiteralPath $root -File -Force -Recurse | Where-Object
     $_.FullName -notmatch '[\\/](bin|obj|Build|Releases|Logs|CrashReports)[\\/]' -and
     $_.Extension -in $allowedExts -and $_.Name -notin @('desktop.ini','Thumbs.db')
 })
-if ($files.Count -lt 200) { throw 'Source package looks incomplete. Publishing stopped.' }
+if ($files.Count -lt 120) { throw 'Source package looks incomplete. Publishing stopped.' }
 $repoWork = Join-Path ([IO.Path]::GetTempPath()) ('WorkChatShip-' + [Guid]::NewGuid().ToString('N'))
 $preflightBranch = ''
 $preflightPushed = $false
@@ -107,6 +107,45 @@ try {
         if (-not (Test-Path -LiteralPath $targetDir)) { New-Item -ItemType Directory -Force -Path $targetDir | Out-Null }
         Copy-Item -LiteralPath $file.FullName -Destination $target -Force
     }
+    # The shipped source tree is authoritative for _Internal/Source.
+    # Merely copying a slimmer Core package over the GitHub checkout leaves
+    # compiled old AI Story .cs files behind. Those orphan files are still
+    # included by the SDK-style csproj and break the Windows compile.
+    # Prune ONLY tracked source files in the temporary clone, never AppData,
+    # the installed app, or files outside _Internal/Source.
+    $expectedSource = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($file in $files) {
+        $relativePath = $file.FullName.Substring($root.TrimEnd([char]92, [char]47).Length).TrimStart([char]92, [char]47)
+        $gitPath = $relativePath.Replace([char]92, [char]47)
+        if ($gitPath.StartsWith('_Internal/Source/', [StringComparison]::OrdinalIgnoreCase)) {
+            [void]$expectedSource.Add($gitPath)
+        }
+    }
+    if ($expectedSource.Count -lt 45) {
+        throw "Source file manifest incomplete ($($expectedSource.Count) files); refusing to prune GitHub source."
+    }
+    $trackedSource = @(& git -C $repoWork ls-files -- '_Internal/Source')
+    if ($LASTEXITCODE -ne 0) { throw 'Unable to list tracked GitHub source files; refusing source cleanup.' }
+    $removedLegacySource = [System.Collections.Generic.List[string]]::new()
+    foreach ($trackedFile in $trackedSource) {
+        $gitPath = ([string]$trackedFile).Trim()
+        if (-not $gitPath.StartsWith('_Internal/Source/', [StringComparison]::Ordinal)) { continue }
+        if ($expectedSource.Contains($gitPath)) { continue }
+        $staleFile = Join-Path $repoWork ($gitPath.Replace([char]47, [IO.Path]::DirectorySeparatorChar))
+        if (Test-Path -LiteralPath $staleFile -PathType Leaf) {
+            Remove-Item -LiteralPath $staleFile -Force
+        }
+        $removedLegacySource.Add($gitPath)
+    }
+    if ($removedLegacySource.Count -gt 0) {
+        Write-Host "Pruned $($removedLegacySource.Count) obsolete tracked source files from temporary GitHub checkout." -ForegroundColor Cyan
+        foreach ($old in @($removedLegacySource | Select-Object -First 12)) {
+            Write-Host "  REMOVE $old" -ForegroundColor DarkGray
+        }
+    }
+    # Validate source inventory after staging. No stale Story .cs file may
+    # remain in the compiler's default glob, even if the repository had it
+    # previously. This is not a blanket git clean and never touches AppData.
     # Remove only obsolete top-level developer BATs from the old release bridge.
     foreach ($obsolete in @('INSTALL-APP.bat','RESTORE-PREVIOUS.bat','UPDATE-NOW.bat',
                            'FIRST-AND-LAST-LOCAL-BUILD.bat','PUBLISH-GITHUB-ONCE.bat')) {
@@ -116,6 +155,18 @@ try {
     & git -C $repoWork add -A
     if ($LASTEXITCODE -ne 0) { throw 'git add failed' }
     $staged = @(& git -C $repoWork diff --cached --name-only)
+    $stagedSource = @(& git -C $repoWork ls-files -- '_Internal/Source')
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot verify staged source inventory.' }
+    foreach ($trackedFile in $stagedSource) {
+        $gitPath = ([string]$trackedFile).Trim()
+        if (-not $expectedSource.Contains($gitPath)) {
+            throw "Obsolete tracked source survived the cleanup: $gitPath. Refusing preflight."
+        }
+    }
+    if ($stagedSource.Count -ne $expectedSource.Count) {
+        throw "Staged source inventory mismatch: GitHub=$($stagedSource.Count), package=$($expectedSource.Count). Refusing preflight."
+    }
+    Write-Host "CORE SOURCE SYNC VERIFIED: $($stagedSource.Count) source files match package." -ForegroundColor Green
     if ($staged.Count -eq 0) {
         $checkedOutVersion = (& git -C $repoWork show 'HEAD:_Internal/VERSION.txt').Trim()
         if ($LASTEXITCODE -ne 0 -or $checkedOutVersion -ne $version) {
