@@ -93,6 +93,21 @@ foreach ($workflowFile in @(Get-ChildItem -LiteralPath $workflowDir -File | Wher
     }
 }
 
+# Core retired one legacy Story scenario. The runner must verify actual
+# case/result counts rather than requiring the old, fixed 22-case report.
+$testRunner = [IO.File]::ReadAllText((Join-Path $root '_Internal/Updater/Run-WorkChatSelfTest.ps1'))
+if ($testRunner -match '22 PASS / 0 FAIL / 0 WARN' -or
+    $testRunner -notmatch 'passLines' -or
+    $testRunner -notmatch 'failed -ne 0' -or
+    $testRunner -notmatch 'process.ExitCode') {
+    $errors.Add('Self-test runner must validate real case counts, zero FAIL/WARN and process exit code (no fixed 22-PASS contract).')
+}
+$testCaseSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.SelfTest.cs'))
+$testCaseCount = [regex]::Matches($testCaseSource, 'await\s+RunCase\s*\(').Count
+if ($testCaseCount -lt 21) {
+    $errors.Add("Core self-test scenario count unexpectedly dropped to $testCaseCount (minimum 21).")
+}
+
 $testBatch = [System.IO.File]::ReadAllText((Join-Path $root 'AUTO-TEST.bat'))
 if ($testBatch -match '(?im)^\s*(?:call\s+)?BUILD\.bat') { $errors.Add('AUTO-TEST.bat must not call BUILD.bat') }
 # Public source root deliberately stays small: the old one-click local BUILD

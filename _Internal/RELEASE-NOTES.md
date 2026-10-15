@@ -25,7 +25,7 @@
 
 - Added a deterministic StoryReadinessSelfTest inside the **existing** Story memory Quick/Stress case: 20-chapter fixture, duplicate chapter numbers, confirmed vs proposed canon, orphan thread provenance, 24K-character context budget, rejected draft exclusion and Chat/Review safety.
 - Tests do **not** call Gemini; writing quality and end-to-end generation must still be validated using real chapters.
-- No extra top-level self-test was added; Run-WorkChatSelfTest.ps1 still expects 22 PASS for Quick and Stress.
+- No extra top-level self-test was added; WorkChat Core uses 21 self-test scenarios; the test runner now checks actual case counts, at least 21 PASS, zero FAIL/WARN, and prints the full report on failure.
 - No schema changes, extra API calls, UI widgets, updates workflow changes, or user data migrations.
 
 ## Readiness policy
