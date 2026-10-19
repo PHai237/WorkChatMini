@@ -29,14 +29,15 @@ public partial class MainWindow
         AppLogger.Info("SELFTEST", $"Starting | mode={mode} | startupMs={startupMs}");
         CrashDiagnostics.UpdateContext("SelfTest", string.Empty, $"selftest-{mode}-start");
 
-        async Task RunCase(string name, Func<Task> action)
+        async Task RunCase(string name, Func<Task> action, Func<string>? resultDetails = null)
         {
             Stopwatch sw = Stopwatch.StartNew();
             try
             {
                 await action().WaitAsync(TimeSpan.FromSeconds(AppRuntime.IsStressSelfTest ? 30 : 20));
                 sw.Stop();
-                results.Add(new SelfTestCaseResult { Name = name, Status = "PASS", ElapsedMs = sw.ElapsedMilliseconds });
+                results.Add(new SelfTestCaseResult { Name = name, Status = "PASS", ElapsedMs = sw.ElapsedMilliseconds,
+                    Details = resultDetails?.Invoke() ?? string.Empty });
                 AppLogger.Info("SELFTEST", $"PASS | {name} | {sw.ElapsedMilliseconds}ms");
             }
             catch (Exception ex)
@@ -443,19 +444,58 @@ public partial class MainWindow
                 }
             });
 
+            string suspendOutcome = string.Empty;
             await RunCase("Suspend and resume", async () =>
             {
                 BrowserTabState? target = _browserTabs.FirstOrDefault(t => t.Initialized && t != _activeBrowserTab);
                 if (target?.WebView.CoreWebView2 is not CoreWebView2 core)
                     throw new InvalidOperationException("No inactive initialized tab available.");
-                target.WebView.Visibility = System.Windows.Visibility.Collapsed;
-                bool suspended = core.IsSuspended || await core.TrySuspendAsync();
-                if (!suspended && !core.IsSuspended)
-                    throw new InvalidOperationException("TrySuspendAsync returned false.");
-                target.Sleeping = true;
-                core.Resume();
-                target.Sleeping = false;
-            });
+
+                // WebView2 suspension is best-effort: false is an allowed response
+                // for an invisible page that cannot currently be suspended. Only
+                // mark the tab Sleeping and test Resume if suspension succeeds.
+                var originalVisibility = target.WebView.Visibility;
+                bool originalSleeping = target.Sleeping;
+                try
+                {
+                    target.WebView.Visibility = System.Windows.Visibility.Collapsed;
+                    await Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.Render);
+                    if (target.WebView.IsVisible)
+                        throw new InvalidOperationException("Inactive WebView remained visible before suspend.");
+
+                    bool suspended = core.IsSuspended || await core.TrySuspendAsync();
+                    if (!suspended)
+                    {
+                        // The runtime declined the best-effort request. This does
+                        // not mean the app's suspend/resume logic failed. Never
+                        // fake a sleeping state or invoke Resume in this case.
+                        if (core.IsSuspended || target.Sleeping != originalSleeping)
+                            throw new InvalidOperationException("Declined suspend left an inconsistent state.");
+                        suspendOutcome = "WebView2 declined best-effort suspend; Resume not exercised.";
+                        AppLogger.Info("SELFTEST", suspendOutcome);
+                        return;
+                    }
+
+                    target.Sleeping = true;
+                    core.Resume();
+                    if (core.IsSuspended)
+                    {
+                        await Task.Delay(100);
+                        if (core.IsSuspended)
+                            throw new InvalidOperationException("WebView2 remained suspended after Resume.");
+                    }
+                    suspendOutcome = "WebView2 suspended and resumed successfully.";
+                }
+                finally
+                {
+                    // Always restore the test tab; a failed assertion must not
+                    // contaminate subsequent hibernation/cleanup tests.
+                    if (core.IsSuspended)
+                        core.Resume();
+                    target.Sleeping = originalSleeping;
+                    target.WebView.Visibility = originalVisibility;
+                }
+            }, () => suspendOutcome);
 
             await RunCase("Pinned tab hibernation guard", async () =>
             {

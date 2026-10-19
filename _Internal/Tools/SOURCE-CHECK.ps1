@@ -230,6 +230,17 @@ if ($testCaseCount -lt 21) {
     $errors.Add("Core self-test scenario count unexpectedly dropped to $testCaseCount (minimum 21).")
 }
 
+# WebView2 TrySuspendAsync is explicitly best-effort. Returning false is
+# permitted when an invisible page cannot suspend. Quick/Stress must preserve
+# a truthful diagnostic and must NOT mark the browser tab Sleeping or call
+# Resume as though suspension succeeded (2.50.0 release gate regression).
+if ($testCaseSource -match 'throw\s+new\s+InvalidOperationException\("TrySuspendAsync returned false\.' -or
+    $testCaseSource -notmatch 'WebView2 declined best-effort suspend' -or
+    $testCaseSource -notmatch 'suspendOutcome' -or
+    $testCaseSource -notmatch 'target.Sleeping = originalSleeping') {
+    $errors.Add('Suspend self-test must handle WebView2 best-effort decline without a false FAIL, preserving state and reporting the outcome.')
+}
+
 $testBatch = [System.IO.File]::ReadAllText((Join-Path $root 'AUTO-TEST.bat'))
 if ($testBatch -match '(?im)^\s*(?:call\s+)?BUILD\.bat') { $errors.Add('AUTO-TEST.bat must not call BUILD.bat') }
 # Public source root deliberately stays small: the old one-click local BUILD
