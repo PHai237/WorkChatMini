@@ -96,7 +96,7 @@ public partial class MainWindow
             if (_hibernatedSites.Contains(site) || !IsSiteInitialized(site))
                 continue;
 
-            if (site == _activeSite && IsWindowPresented)
+            if (IsForegroundSite(site))
                 continue;
 
             // Voice calls are real-time activity even while the user switches to Messenger,
@@ -202,7 +202,7 @@ public partial class MainWindow
         if (IsYouTubePlaybackProtectionActive())
             return;
 
-        bool activeVisible = site == _activeSite && IsWindowPresented;
+        bool activeVisible = IsForegroundSite(site);
         bool awayCandidate = activeVisible && _userAwayMode;
         if (activeVisible && !awayCandidate)
             return;
@@ -302,7 +302,7 @@ public partial class MainWindow
                 if (core is null || core.IsSuspended)
                     continue;
 
-                bool foreground = IsWindowPresented && _activeSite == site;
+                bool foreground = IsForegroundSite(site);
                 bool realtimeCall = site == MiniSite.Discord && IsDiscordCallProtectionActive();
                 CoreWebView2MemoryUsageTargetLevel desired = foreground || realtimeCall
                     ? CoreWebView2MemoryUsageTargetLevel.Normal

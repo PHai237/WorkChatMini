@@ -1,6 +1,6 @@
 ﻿# Publishes this checked source to the EXISTING public WorkChatMini repository.
 # Does not build locally, alter the installed WorkChat app, or touch Story data.
-param([Parameter(Mandatory=$true)][string]$SourceRoot)
+param([Parameter(Mandatory = $true)][string]$SourceRoot)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 # This BAT runs in an interactive terminal. Never launch Git/gh's `less`
@@ -12,7 +12,7 @@ $root = [IO.Path]::GetFullPath($SourceRoot)
 $repository = 'PHai237/WorkChatMini'
 $version = (Get-Content -LiteralPath (Join-Path $root '_Internal/VERSION.txt') -Raw).Trim()
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Release version must be x.y.z without a preview suffix.' }
-foreach ($name in @('gh','git')) {
+foreach ($name in @('gh', 'git')) {
     if (-not (Get-Command $name -ErrorAction SilentlyContinue)) { throw "Missing $name. Install Git and GitHub CLI first." }
 }
 & gh auth status
@@ -21,18 +21,19 @@ if (-not (Test-Path -LiteralPath (Join-Path $root '.github/workflows/release-win
     throw 'Run PUSH.bat only from the extracted WorkChat.zip source root.'
 }
 # Explicit allowlist. Never publish local .git or user data, even if placed in this folder.
-$allowedRoots = @('.github','_Internal','docs','.gitignore','README.md','BUILD.bat','AUTO-TEST.bat','SOURCE-CHECK.bat','PUSH.bat')
+$allowedRoots = @('.github', '_Internal', 'docs', '.gitignore', 'README.md', 'BUILD.bat', 'AUTO-TEST.bat', 'SOURCE-CHECK.bat', 'PUSH.bat')
 $unexpected = @(Get-ChildItem -LiteralPath $root -Force | Where-Object { $_.Name -notin $allowedRoots })
 if ($unexpected.Count -gt 0) { throw ('Unexpected files at source root: ' + (($unexpected | ForEach-Object Name) -join ', ')) }
-$allowedExts = @('.cs','.xaml','.csproj','.md','.ps1','.bat','.txt','.json','.yml','.yaml','.ico','.png','.iss','.manifest','.gitignore')
+$allowedExts = @('.cs', '.xaml', '.csproj', '.md', '.ps1', '.bat', '.txt', '.json', '.yml', '.yaml', '.ico', '.png', '.iss', '.manifest', '.gitignore')
 $files = @(Get-ChildItem -LiteralPath $root -File -Force -Recurse | Where-Object {
-    $_.FullName -notmatch '[\\/](bin|obj|Build|Releases|Logs|CrashReports)[\\/]' -and
-    $_.Extension -in $allowedExts -and $_.Name -notin @('desktop.ini','Thumbs.db')
-})
+        $_.FullName -notmatch '[\\/](bin|obj|Build|Releases|Logs|CrashReports)[\\/]' -and
+        $_.Extension -in $allowedExts -and $_.Name -notin @('desktop.ini', 'Thumbs.db')
+    })
 if ($files.Count -lt 120) { throw 'Source package looks incomplete. Publishing stopped.' }
 $repoWork = Join-Path ([IO.Path]::GetTempPath()) ('WorkChatShip-' + [Guid]::NewGuid().ToString('N'))
 $preflightBranch = ''
 $preflightPushed = $false
+$preflightOutcomeVerified = $false
 
 # Isolate API result parsing so its empty/malformed cases can be tested offline.
 . (Join-Path $PSScriptRoot 'Ship-GitHub.RunDiscovery.ps1')
@@ -41,9 +42,9 @@ $preflightPushed = $false
 # Match the exact SHA on the remote before deciding success or failure.
 function Assert-RemoteRefAfterPush {
     param(
-        [Parameter(Mandatory=$true)][string]$BranchName,
-        [Parameter(Mandatory=$true)][string]$ExpectedSha,
-        [Parameter(Mandatory=$true)][string]$Description
+        [Parameter(Mandatory = $true)][string]$BranchName,
+        [Parameter(Mandatory = $true)][string]$ExpectedSha,
+        [Parameter(Mandatory = $true)][string]$Description
     )
     $refName = "refs/heads/$BranchName"
     $pushCode = 1
@@ -77,12 +78,12 @@ function Assert-RemoteRefAfterPush {
     }
     if ($observedSha -ne $ExpectedSha) {
         throw ("$Description was NOT verified on GitHub. gitExit=$pushCode " +
-               "lsRemoteExit=$remoteQueryCode remoteSha=$observedSha " +
-               "expectedSha=$ExpectedSha. Stop safely; do not force push.")
+            "lsRemoteExit=$remoteQueryCode remoteSha=$observedSha " +
+            "expectedSha=$ExpectedSha. Stop safely; do not force push.")
     }
     if ($pushCode -ne 0) {
         Write-Warning ("Git reported exit $pushCode but remote '$refName' points to " +
-                       "the EXACT expected SHA $ExpectedSha. Continuing safely.")
+            "the EXACT expected SHA $ExpectedSha. Continuing safely.")
     }
     Write-Host "REMOTE SHA VERIFIED: $refName = $ExpectedSha" -ForegroundColor Green
 }
@@ -147,8 +148,8 @@ try {
     # remain in the compiler's default glob, even if the repository had it
     # previously. This is not a blanket git clean and never touches AppData.
     # Remove only obsolete top-level developer BATs from the old release bridge.
-    foreach ($obsolete in @('INSTALL-APP.bat','RESTORE-PREVIOUS.bat','UPDATE-NOW.bat',
-                           'FIRST-AND-LAST-LOCAL-BUILD.bat','PUBLISH-GITHUB-ONCE.bat')) {
+    foreach ($obsolete in @('INSTALL-APP.bat', 'RESTORE-PREVIOUS.bat', 'UPDATE-NOW.bat',
+            'FIRST-AND-LAST-LOCAL-BUILD.bat', 'PUBLISH-GITHUB-ONCE.bat')) {
         $old = Join-Path $repoWork $obsolete
         if (Test-Path -LiteralPath $old -PathType Leaf) { Remove-Item -LiteralPath $old -Force }
     }
@@ -213,11 +214,8 @@ try {
     $runsApi = "repos/$repository/actions/runs?branch=$encodedBranch&event=push&per_page=100"
     $apiFailures = 0
     for ($attempt = 0; $attempt -lt 90; $attempt++) {
-        # GitHub CLI's --json run listing may return null/partial objects while a
-        # newly-created workflow is becoming visible. The REST API returns a
-        # named workflow_runs array, and the parser safely skips partial rows.
-        # Native tools may write progress/errors to stderr. In Windows
-        # PowerShell 5.1 those must not bypass our explicit exit-code retry.
+        # A temporary HTTP 502/503 from GitHub does not mean that Actions
+        # failed to start. Retry discovery as well as status polling.
         $pollPreference = $ErrorActionPreference
         try {
             $ErrorActionPreference = 'Continue'
@@ -225,18 +223,25 @@ try {
             $apiExitCode = $LASTEXITCODE
         }
         finally { $ErrorActionPreference = $pollPreference }
+        $discoveryError = ''
         if ($apiExitCode -ne 0) {
-            $apiFailures++
-            if ($apiFailures -ge 3) {
-                throw "GitHub Actions API failed $apiFailures times while checking Windows preflight. main is unchanged."
-            }
-            Write-Warning "GitHub Actions API request failed (attempt $apiFailures/3); retrying."
+            $discoveryError = "GitHub Actions run listing returned exit $apiExitCode"
         }
         else {
-            $apiFailures = 0
-            $runsText = $runsJson -join "`n"
-            $preflightRunId = Find-WorkChatPreflightRunId -Json $runsText -ExpectedSha $testedSha -ExpectedWorkflowName $preflightWorkflow
+            try {
+                $runsText = $runsJson -join "`n"
+                $preflightRunId = Find-WorkChatPreflightRunId -Json $runsText -ExpectedSha $testedSha -ExpectedWorkflowName $preflightWorkflow
+            }
+            catch { $discoveryError = "Unverifiable run listing: $($_.Exception.Message)" }
         }
+        if ($discoveryError) {
+            $apiFailures++
+            Write-Warning "$discoveryError ($apiFailures/18); retrying, main unchanged."
+            if ($apiFailures -ge 18) {
+                throw "Cannot VERIFY GitHub preflight run listing because the GitHub API is unavailable. main remains unchanged; the temporary branch is retained."
+            }
+        }
+        else { $apiFailures = 0 }
         if ($preflightRunId) { break }
         Start-Sleep -Seconds 6
     }
@@ -244,11 +249,75 @@ try {
         throw 'GitHub did not start Windows compile preflight. main is unchanged. Check Actions settings.'
     }
     Write-Host "Windows preflight run: https://github.com/$repository/actions/runs/$preflightRunId"
-    & gh run watch $preflightRunId --repo $repository --exit-status
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host 'GitHub compilation failed; showing compiler errors automatically...' -ForegroundColor Red
-        & gh run view $preflightRunId --repo $repository --log-failed
-        throw "Windows compile preflight FAILED (run $preflightRunId). main remains unchanged."
+    # Do NOT use `gh run watch --exit-status` as the release gate. `gh run
+    # watch` can exit nonzero on a transient GitHub API 502 even while the
+    # compile job remains queued/running. Poll authoritative run status instead.
+    $runEndpoint = "repos/$repository/actions/runs/$preflightRunId"
+    $runOutcome = $null
+    $consecutiveApiFailures = 0
+    $maxConsecutiveApiFailures = 18
+    for ($poll = 0; $poll -lt 180; $poll++) {
+        $statusPreference = $ErrorActionPreference
+        try {
+            # Windows PowerShell 5.1 may turn native stderr into ErrorRecords.
+            # Capture it without short-circuiting our retry logic.
+            $ErrorActionPreference = 'Continue'
+            $runJsonLines = @(& gh api $runEndpoint 2>&1)
+            $statusExitCode = $LASTEXITCODE
+        }
+        finally { $ErrorActionPreference = $statusPreference }
+        $responseProblem = ''
+        if ($statusExitCode -ne 0) {
+            $responseProblem = "GitHub API command returned exit $statusExitCode"
+        }
+        else {
+            try {
+                $runOutcome = Get-WorkChatPreflightRunState `
+                    -Json ($runJsonLines -join "`n") `
+                    -ExpectedRunId ([string]$preflightRunId) `
+                    -ExpectedSha $testedSha `
+                    -ExpectedWorkflowName $preflightWorkflow
+            }
+            catch {
+                $runOutcome = $null
+                $responseProblem = "Unverifiable GitHub API response: $($_.Exception.Message)"
+            }
+        }
+        if ($responseProblem) {
+            $consecutiveApiFailures++
+            Write-Warning "$responseProblem ($consecutiveApiFailures/$maxConsecutiveApiFailures). Run outcome UNKNOWN; retrying."
+            if ($consecutiveApiFailures -ge $maxConsecutiveApiFailures) {
+                throw "Cannot VERIFY Windows preflight after repeated GitHub API errors (run $preflightRunId). main remains unchanged. Check the run URL and retry later."
+            }
+        }
+        else {
+            $consecutiveApiFailures = 0
+            if ($runOutcome.State -eq 'Passed') {
+                $preflightOutcomeVerified = $true
+                break
+            }
+            if ($runOutcome.State -eq 'Failed') {
+                $preflightOutcomeVerified = $true
+                Write-Host "GitHub preflight concluded '$($runOutcome.Conclusion)' (run $preflightRunId)." -ForegroundColor Red
+                # Logs are diagnostic only. Failure to fetch logs cannot change
+                # the authoritative terminal status we just verified.
+                $logPreference = $ErrorActionPreference
+                try {
+                    $ErrorActionPreference = 'Continue'
+                    & gh run view $preflightRunId --repo $repository --log-failed 2>&1 | ForEach-Object { Write-Host ([string]$_) }
+                }
+                catch { Write-Warning "Could not retrieve failed-job logs: $($_.Exception.Message)" }
+                finally { $ErrorActionPreference = $logPreference }
+                throw "Windows compile preflight concluded '$($runOutcome.Conclusion)' (run $preflightRunId). main remains unchanged."
+            }
+            if ($poll -eq 0 -or $poll % 6 -eq 0) {
+                Write-Host "Windows preflight is $($runOutcome.Status) (run $preflightRunId); checking again..." -ForegroundColor DarkCyan
+            }
+        }
+        Start-Sleep -Seconds 10
+    }
+    if (-not $preflightOutcomeVerified) {
+        throw "Windows preflight did not reach a VERIFIED result within the polling window (run $preflightRunId). main remains unchanged."
     }
     Write-Host 'WINDOWS COMPILE PREFLIGHT PASSED.' -ForegroundColor Green
     if ($hasSourceChanges) {
@@ -294,7 +363,13 @@ finally {
     # Git writes routine progress to stderr even on success. Windows PowerShell
     # 5.1 can promote redirected native stderr to NativeCommandError when
     # ErrorActionPreference is Stop. Cleanup must NEVER hide the original error.
-    if ($preflightPushed -and $preflightBranch -and (Test-Path -LiteralPath $repoWork)) {
+    # If GitHub never provided a terminal status (for example prolonged 502),
+    # retain the disposable branch for inspection. Removing it while a job is
+    # running makes diagnosing/resuming the incident much harder.
+    if ($preflightPushed -and (-not $preflightOutcomeVerified)) {
+        Write-Warning "Preserving preflight branch ${preflightBranch}: GitHub run result not verified. main was NOT promoted."
+    }
+    if ($preflightPushed -and $preflightOutcomeVerified -and $preflightBranch -and (Test-Path -LiteralPath $repoWork)) {
         $cleanupExitCode = 1
         $originalErrorPreference = $ErrorActionPreference
         try {

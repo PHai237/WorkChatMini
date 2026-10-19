@@ -33,3 +33,59 @@ foreach ($invalid in @('', 'null', '42', '{}', '{bad}', '{"workflow_runs":null}'
     $passed++
 }
 Write-Host "PREFLIGHT DISCOVERY TEST PASS ($passed/$passed)" -ForegroundColor Green
+
+# Regression: a gh run watch HTTP 502 cannot be interpreted as a compile failure.
+# Status checks must distinguish queued/in_progress from terminal failure, and
+# must not accept a success recorded for a different SHA/run/workflow.
+$runId = '39278918776'
+$baseRunJson = ('{"id":' + $runId + ',"head_sha":"' + $sha + '","name":"' + $workflow + '","status":"STATUS","conclusion":CONCLUSION}')
+$states = @(
+    @{ Name='Queued'; Status='queued'; Conclusion='null'; Expected='Pending' },
+    @{ Name='Requested'; Status='requested'; Conclusion='null'; Expected='Pending' },
+    @{ Name='Waiting'; Status='waiting'; Conclusion='null'; Expected='Pending' },
+    @{ Name='Running (HTTP 502 from jobs API is irrelevant)'; Status='in_progress'; Conclusion='null'; Expected='Pending' },
+    @{ Name='Completed success'; Status='completed'; Conclusion='"success"'; Expected='Passed' },
+    @{ Name='Completed failure'; Status='completed'; Conclusion='"failure"'; Expected='Failed' },
+    @{ Name='Completed cancelled'; Status='completed'; Conclusion='"cancelled"'; Expected='Failed' },
+    @{ Name='Completed timed_out'; Status='completed'; Conclusion='"timed_out"'; Expected='Failed' }
+)
+foreach ($case in $states) {
+    $sample = $baseRunJson.Replace('STATUS',$case.Status).Replace('CONCLUSION',$case.Conclusion)
+    $outcome = Get-WorkChatPreflightRunState -Json $sample -ExpectedRunId $runId -ExpectedSha $sha -ExpectedWorkflowName $workflow
+    if ($outcome.State -cne $case.Expected) {
+        throw ("FAIL " + $case.Name + ': ' + $outcome.State)
+    }
+    $passed++
+}
+$correctRun = $baseRunJson.Replace('STATUS','completed').Replace('CONCLUSION','"success"')
+$invalidStatuses = @(
+    @{ Name='Bad SHA'; Json=$correctRun.Replace($sha,'different') },
+    @{ Name='Bad run id'; Json=$correctRun.Replace($runId,'888888') },
+    @{ Name='Bad workflow'; Json=$correctRun.Replace($workflow,'Other workflow') },
+    @{ Name='Missing conclusion'; Json=$correctRun.Replace('"conclusion":"success"','"conclusion":null') },
+    @{ Name='Missing status'; Json=$correctRun.Replace('"status":"completed",','') },
+    @{ Name='Unknown status'; Json=$correctRun.Replace('completed','strange') },
+    @{ Name='Malformed JSON'; Json='{broken' },
+    @{ Name='HTTP error message'; Json='HTTP 502: Server Error' }
+)
+foreach ($case in $invalidStatuses) {
+    $rejected = $false
+    try {
+        $ignored = Get-WorkChatPreflightRunState -Json $case.Json -ExpectedRunId $runId -ExpectedSha $sha -ExpectedWorkflowName $workflow
+    }
+    catch { $rejected = $true }
+    if (-not $rejected) { throw ('FAIL: invalid run status was accepted: ' + $case.Name) }
+    $passed++
+}
+Write-Host "PREFLIGHT STATUS TEST PASS ($passed/$passed)" -ForegroundColor Green
+
+# Regression gate: the legacy watch command treats HTTP 502 as a FAILED build.
+$shippingText = [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'Ship-GitHub.ps1'))
+if ($shippingText -match '(?m)^\s*&\s*gh\s+run\s+watch\b') {
+    throw 'Unsafe gh run watch exit-status gate is still present.'
+}
+if ($shippingText -notmatch 'Get-WorkChatPreflightRunState' -or
+    $shippingText -notmatch 'Cannot VERIFY Windows preflight') {
+    throw 'Safe workflow status verifier is missing from Ship-GitHub.ps1.'
+}
+Write-Host 'PREFLIGHT HTTP 502 SAFETY GUARD PASS' -ForegroundColor Green

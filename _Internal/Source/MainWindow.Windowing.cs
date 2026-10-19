@@ -47,7 +47,7 @@ public partial class MainWindow
         var workArea = GetWorkingAreaDip(screen);
 
         string preset = IsKnownPreset(_settings.WindowSizePreset) ? _settings.WindowSizePreset : "1/4";
-        string restorePreset = preset == "1" && _settings.LastNormalWindowSizePreset is ("1/16" or "1/8" or "1/4" or "1/2")
+        string restorePreset = preset == "1" && _settings.LastNormalWindowSizePreset is ("1/8" or "1/4" or "1/2")
             ? _settings.LastNormalWindowSizePreset
             : preset == "1" ? "1/4" : preset;
         (double width, double height) = CalculatePresetSize(workArea, AreaFraction(restorePreset));
@@ -95,12 +95,11 @@ public partial class MainWindow
     }
 
     private static bool IsKnownPreset(string? preset) =>
-        preset is "1" or "1/16" or "1/8" or "1/4" or "1/2";
+        preset is "1" or "1/8" or "1/4" or "1/2";
 
     private static double AreaFraction(string preset) => preset switch
     {
         "1" => 1.0,
-        "1/16" => 1.0 / 16.0,
         "1/8" => 1.0 / 8.0,
         "1/4" => 1.0 / 4.0,
         "1/2" => 1.0 / 2.0,
@@ -166,7 +165,7 @@ public partial class MainWindow
 
         if (preset == "1")
         {
-            if (_settings.WindowSizePreset is ("1/16" or "1/8" or "1/4" or "1/2"))
+            if (_settings.WindowSizePreset is ("1/8" or "1/4" or "1/2"))
                 _settings.LastNormalWindowSizePreset = _settings.WindowSizePreset;
             _settings.WindowSizePreset = "1";
             _settings.ScreenDeviceName = screen.DeviceName;

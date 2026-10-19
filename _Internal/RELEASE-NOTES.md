@@ -1,3 +1,48 @@
+# WorkChat Core 2.50.0 — On-demand companion windows
+
+- **Window riêng:** nhấp phải icon Messenger/Facebook/YouTube/Discord/Zalo rồi chọn "Open ... in another window". Hoặc More → New companion window.
+- **Ctrl+Shift+O:** mở cửa sổ riêng cho ứng dụng hiện hành (nếu là dịch vụ hỗ trợ).
+- Cửa sổ phụ chia sẻ profile đăng nhập hiện tại nhưng tạo WebView2 mới khi được yêu cầu; không di chuyển WebView đang phát nhạc/đang gọi.
+- Đóng cửa sổ phụ để giải phóng WebView; tối đa 2 cửa sổ phụ tránh tăng RAM vô hạn.
+- Bảo vệ cuộc gọi Discord: không tạo cửa sổ Discord thứ hai khi WorkChat đã phát hiện một cuộc gọi đang diễn ra.
+- Ghi thời gian tạo cửa sổ và snapshot tài nguyên vào log, không ghi nội dung chat/URL nhạy cảm.
+- Thêm bài Quick Self-Test xác minh launch policy mà không mở browser thật.
+
+> Lưu ý: Đây là giải pháp companion (WebView2 thứ hai dùng chung profile), **không phải reparent** tab đang phát video. Khi mở cửa sổ phụ có thể tăng RAM và trang trong cửa sổ phụ bắt đầu từ URL dịch vụ, không kế thừa chính xác vị trí/phát lại đang mở.
+
+---
+
+### 2.47.0 — Responsive UI audit
+- Limit diagnostic, VPN and health panels on short windows; retain scrolling and close controls.
+- Wrap panel action rows instead of letting controls overflow narrow windows.
+- Bound Updates and Clear browsing data dialogs to their owner window while scrolling content.
+- Prevent fixed-width browser history suggestions and new-tab content from spilling outside narrow panes.
+- Add Quick Self-Test for window size / DPI boundary logic; no additional WebView2 instances.
+
+# WorkChat Mini 2.47.0 — Split View Core
+
+- Side-by-side YouTube + Messenger/Discord/Zalo/Facebook using existing WebView2 controls and one shared login profile.
+- Split toolbar button and Ctrl+Shift+2; right-click Split to choose the second app. Click again to close.
+- Adjustable divider, automatic single-pane fallback below 760px; no new browser process created just by enabling layout.
+- Resource Saver, YouTube audio, and Discord call guard honor the second visible app.
+- Quick Self-Test now validates the split layout without external network calls.
+- Detachable windows deferred to a later release so that active playback and calls are not affected by WebView2 HWND reparenting risks.
+
+## Previous updates
+
+### 2.45.0 — UI & Performance Core
+
+- Desktop app switcher moved to a left vertical rail, keeping browser/service content separate from the toolbar.
+- Compact fallback at widths below 520px uses the existing Apps selector; short windows can scroll the rail.
+- Fixed active Messenger highlight being overwritten by the retired Story enum fallback.
+- Reduced unnecessary WebView2 zoom requests on height-only window resize.
+- Suspended speculative hover wake when system memory pressure is elevated/critical; click navigation and Discord/YouTube keep-alive paths stay unchanged.
+- Added a Windows UI self-test for the active app and responsive rail layout.
+
+No changes to profile folders, credentials, browser cookies, user stories, or update packaging. Build/test on Windows required before release.
+
+---
+
 # WorkChat Mini 2.40.2 — AI Story bugfix (source candidate)
 
 - Edit & Regenerate the latest uncommitted creator message, keeping a local pre-edit checkpoint and preserving the previous AI reply as view-only history (excluded from future prompts).
