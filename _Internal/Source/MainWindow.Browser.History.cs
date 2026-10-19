@@ -94,7 +94,7 @@ public partial class MainWindow
         RebuildBrowserHistoryRows();
         if (_browserHistoryPopup is not null)
         {
-            _browserHistoryPopup.Width = Math.Clamp(BrowserAddressBox.ActualWidth, 220, 620);
+            _browserHistoryPopup.Width = Math.Max(120, Math.Min(BrowserAddressBox.ActualWidth, 620));
             _browserHistoryPopup.IsOpen = true;
         }
     }

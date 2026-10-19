@@ -59,7 +59,10 @@ public partial class MainWindow
 
     private void BeginSmartWakeHover(MiniSite site)
     {
-        if (site is MiniSite.Web or MiniSite.Story)
+        // Hover is speculative, not an explicit request. Under RAM pressure,
+        // only an actual click should resume or initialize a background site.
+        if (site is MiniSite.Web or MiniSite.Story ||
+            _memoryPressureLevel != MemoryPressureLevel.Normal)
             return;
         bool canWake = _sleepingSites.Contains(site) && !_hibernatedSites.Contains(site);
         bool canPrewarm = _memoryPressureLevel == MemoryPressureLevel.Normal &&
@@ -87,7 +90,8 @@ public partial class MainWindow
         _smartWakeHoverTimer.Stop();
         MiniSite? site = _smartWakeHoverSite;
         _smartWakeHoverSite = null;
-        if (site is null || site.Value is MiniSite.Web or MiniSite.Story)
+        if (site is null || site.Value is MiniSite.Web or MiniSite.Story ||
+            _memoryPressureLevel != MemoryPressureLevel.Normal)
             return;
 
         if (_sleepingSites.Contains(site.Value) && !_hibernatedSites.Contains(site.Value))

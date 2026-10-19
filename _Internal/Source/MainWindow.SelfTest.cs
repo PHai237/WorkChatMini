@@ -57,6 +57,203 @@ public partial class MainWindow
         {
             await RunCase("Environment", AppUpdateSelfTest.RunAsync);
 
+            await RunCase("Core navigation rail", () =>
+            {
+                UpdateResponsiveCommandBar();
+                UpdateToolbarStateCore();
+                if (MessengerButton.Tag is not string state || state != "Active")
+                    throw new InvalidOperationException("Active Messenger button lost its selected state.");
+
+                bool narrow = WorkChatResponsiveLayout.UseAppMenu(ActualWidth > 0 ? ActualWidth : Width);
+                if (narrow && (SidebarRail.Visibility != System.Windows.Visibility.Collapsed ||
+                               TinyAppSwitcherPanel.Visibility != System.Windows.Visibility.Visible ||
+                               SidebarColumn.Width.Value != 0))
+                    throw new InvalidOperationException("Compact app selector/rail geometry is inconsistent.");
+                if (!narrow && (SidebarRail.Visibility != System.Windows.Visibility.Visible ||
+                                AppSwitcherExpandedPanel.Visibility != System.Windows.Visibility.Visible ||
+                                TinyAppSwitcherPanel.Visibility != System.Windows.Visibility.Collapsed ||
+                                SidebarColumn.Width.Value < 53))
+                    throw new InvalidOperationException("Desktop app rail is not visible or sized correctly.");
+                return Task.CompletedTask;
+            });
+
+            await RunCase("Companion window launch policy (no eager WebView)", () =>
+            {
+                if (_companions.Count != 0)
+                    throw new InvalidOperationException("Companion WebViews were eagerly created on startup.");
+                foreach (MiniSite site in new[] { MiniSite.Messenger, MiniSite.Facebook, MiniSite.YouTube, MiniSite.Discord, MiniSite.Zalo })
+                {
+                    if (!WorkChatCompanionPolicy.TryGetHome(site.ToString(), out Uri? uri) || uri?.Scheme != "https")
+                        throw new InvalidOperationException($"Unsafe or missing companion URL: {site}");
+                    if (!string.Equals(uri.ToString(), GetSiteHomeUrl(site), StringComparison.Ordinal))
+                        throw new InvalidOperationException($"Companion home disagrees with main URL: {site}");
+                    if (GetSiteButton(site).ContextMenu?.Items.Count != 1)
+                        throw new InvalidOperationException($"Companion menu missing from rail: {site}");
+                }
+                if (!WorkChatCompanionPolicy.WasDraggedOut(new System.Windows.Point(45, 45),
+                        new System.Windows.Point(-75, 45), 850, 650) ||
+                    WorkChatCompanionPolicy.WasDraggedOut(new System.Windows.Point(45, 45),
+                        new System.Windows.Point(80, 45), 850, 650) ||
+                    WorkChatCompanionPolicy.WasDraggedOut(new System.Windows.Point(45, 45),
+                        new System.Windows.Point(860, 45), 850, 650))
+                    throw new InvalidOperationException("Companion drag-out threshold regressed.");
+                if (WorkChatCompanionPolicy.TryGetHome("Web", out _) ||
+                    WorkChatCompanionPolicy.TryGetHome("Story", out _) ||
+                    WorkChatCompanionPolicy.IsSafeWebNavigation("file:///C:/test") ||
+                    WorkChatCompanionPolicy.IsSafeWebNavigation("javascript:alert(1)") ||
+                    !WorkChatCompanionPolicy.IsSafeWebNavigation("https://chat.zalo.me/") ||
+                    WorkChatCompanionPolicy.MaxWindows > 2)
+                    throw new InvalidOperationException("Companion allowed-origin/limit policy regressed.");
+                return Task.CompletedTask;
+            });
+
+            await RunCase("Modern shell tokens and retired size preset", () =>
+            {
+                if (IsKnownPreset("1/16") || AreaFraction("1/8") != 0.125)
+                    throw new InvalidOperationException("Retired window size 1/16 remains selectable.");
+                if (FindResource("ShellAccentBrush") is not System.Windows.Media.SolidColorBrush ||
+                    FindResource("ShellCanvasBrush") is not System.Windows.Media.SolidColorBrush ||
+                    FindResource("ShellChromeGradientBrush") is not System.Windows.Media.LinearGradientBrush)
+                    throw new InvalidOperationException("Core design-system resources were not loaded.");
+                foreach (string iconKey in new[] { "MessengerPixelIcon", "FacebookPixelIcon", "YouTubePixelIcon", "DiscordPixelIcon", "ZaloPixelIcon", "WebPixelIcon" })
+                    if (FindResource(iconKey) is not System.Windows.Media.DrawingImage)
+                        throw new InvalidOperationException($"Vector navigation icon is unavailable: {iconKey}");
+                if (SidebarColumn.Width.Value != (WorkChatResponsiveLayout.UseAppMenu(ActualWidth > 0 ? ActualWidth : Width) ? 0 : 60))
+                    throw new InvalidOperationException("Modern app rail width does not match the responsive controller.");
+                return Task.CompletedTask;
+            });
+
+            await RunCase("Responsive layout at 100–200% DPI", () =>
+            {
+                // Test physical screen sizes mapped to WPF DIPs. Live WebViews
+                // are not resized here; we only exercise the runtime geometry rules.
+                double[] scales = { 1.0, 1.25, 1.5, 1.75, 2.0 };
+                double[] widths = { 320, 360, 480, 640, 768, 1024, 1366, 1920, 2560, 3840 };
+                double[] heights = { 240, 360, 540, 720, 1080, 1440, 2160 };
+                foreach (double scale in scales)
+                foreach (double physicalWidth in widths)
+                foreach (double physicalHeight in heights)
+                {
+                    // Windows minimum sizes are in device-independent pixels.
+                    double width = Math.Max(330, physicalWidth / scale);
+                    double height = Math.Max(220, physicalHeight / scale);
+                    bool tiny = WorkChatResponsiveLayout.UseAppMenu(width);
+                    bool split = WorkChatResponsiveLayout.CanShowSplit(width);
+                    double titleLimit = WorkChatResponsiveLayout.TitleMaxWidth(width);
+                    if (titleLimit < 105 || titleLimit > 220 || (!tiny && titleLimit >= width))
+                        throw new InvalidOperationException("Toolbar title exceeds its responsive bounds.");
+                    if (tiny && split)
+                        throw new InvalidOperationException("Split view was enabled inside the tiny app-menu layout.");
+                    double panel = WorkChatResponsiveLayout.PanelHeight(height);
+                    if (panel < 72 || panel > 270 || panel > height - 148)
+                        throw new InvalidOperationException($"Panel consumes WebView area: {width:0}x{height:0} at {scale:0.##}x DPI.");
+                    double updateWidth = WorkChatResponsiveLayout.DialogWidth(width, 590);
+                    double clearWidth = WorkChatResponsiveLayout.DialogWidth(width, 424);
+                    double updateHeight = WorkChatResponsiveLayout.DialogHeight(height, 515);
+                    if (updateWidth > width || clearWidth > width || updateHeight > height)
+                        throw new InvalidOperationException("A dialog exceeds the available owner geometry.");
+                }
+                UpdateResponsivePanelBounds();
+                double actualHeight = ActualHeight > 0 ? ActualHeight : Height;
+                if (Math.Abs(SessionHealthPanel.MaxHeight - WorkChatResponsiveLayout.PanelHeight(actualHeight)) > 0.01)
+                    throw new InvalidOperationException("Session Health panel did not receive responsive height bounds.");
+                return Task.CompletedTask;
+            });
+
+            await RunCase("Split layout (existing WebViews, no duplicate)", () =>
+            {
+                if (_splitSecondarySite.HasValue)
+                    throw new InvalidOperationException("Split view must start disabled.");
+                _splitSecondarySite = MiniSite.YouTube;
+                ApplySplitSurfaces();
+                try
+                {
+                    if (!IsSplitVisible || SplitDivider.Visibility != System.Windows.Visibility.Visible ||
+                        System.Windows.Controls.Grid.GetColumn(YouTubeWebView) != 2 ||
+                        System.Windows.Controls.Grid.GetColumn(MessengerWebView) != 0 ||
+                        YouTubeWebView.Visibility != System.Windows.Visibility.Visible ||
+                        MessengerWebView.Visibility != System.Windows.Visibility.Visible ||
+                        !ReferenceEquals(YouTubeWebView.Parent, WebViewHostGrid))
+                        throw new InvalidOperationException("Split view did not display both existing WebViews.");
+                }
+                finally
+                {
+                    _splitSecondarySite = null;
+                    ApplySplitSurfaces();
+                }
+                if (SplitDivider.Visibility != System.Windows.Visibility.Collapsed ||
+                    YouTubeWebView.Visibility != System.Windows.Visibility.Collapsed)
+                    throw new InvalidOperationException("Closing split did not restore single-view layout.");
+                return Task.CompletedTask;
+            });
+
+            await RunCase("Split ratio and swap remain usable", () =>
+            {
+                foreach ((double requested, double expected) in new[]
+                {
+                    (0.01, 0.30), (0.36, 0.36), (0.50, 0.50),
+                    (0.64, 0.64), (0.95, 0.70), (double.NaN, 0.50),
+                    (double.PositiveInfinity, 0.50)
+                })
+                {
+                    if (Math.Abs(WorkChatSplitRatio.Clamp(requested) - expected) > 0.0001)
+                        throw new InvalidOperationException("Split pane ratio clamp is inconsistent.");
+                }
+                var savedPrimary = _activeSite;
+                var savedSecondary = _splitSecondarySite;
+                var savedRatio = _splitLeftRatio;
+                var savedSetting = _settings.ActiveSite;
+                try
+                {
+                    _activeSite = MiniSite.Messenger;
+                    _splitSecondarySite = MiniSite.YouTube;
+                    _splitLeftRatio = 0.64;
+                    ApplySplitSurfaces();
+                    if (!IsSplitVisible || Math.Abs(SplitLeftColumn.Width.Value - 0.64) > 0.001 ||
+                        Math.Abs(SplitRightColumn.Width.Value - 0.36) > 0.001)
+                        throw new InvalidOperationException("Split ratio was not applied to the existing surfaces.");
+                    SwapSplitSides();
+                    if (_activeSite != MiniSite.YouTube || _splitSecondarySite != MiniSite.Messenger ||
+                        System.Windows.Controls.Grid.GetColumn(MessengerWebView) != 2 ||
+                        System.Windows.Controls.Grid.GetColumn(YouTubeWebView) != 0)
+                        throw new InvalidOperationException("Swapping panes changed the wrong surface.");
+                }
+                finally
+                {
+                    _activeSite = savedPrimary;
+                    _splitSecondarySite = savedSecondary;
+                    _splitLeftRatio = savedRatio;
+                    _settings.ActiveSite = savedSetting;
+                    ApplySplitSurfaces();
+                    UpdateToolbarState();
+                }
+                return Task.CompletedTask;
+            });
+
+            await RunCase("Split background init does not hide foreground", () =>
+            {
+                // Secondary initialization must never cover Messenger with a modal
+                // loading overlay. An explicit primary click still forces its own.
+                var originalVisibility = LoadingOverlay.Visibility;
+                var originalText = LoadingText.Text;
+                try
+                {
+                    LoadingOverlay.Visibility = System.Windows.Visibility.Collapsed;
+                    ShowSiteLoadingOverlay(MiniSite.YouTube, "Secondary startup");
+                    if (LoadingOverlay.Visibility != System.Windows.Visibility.Collapsed)
+                        throw new InvalidOperationException("Split startup covered the foreground app.");
+                    ShowSiteLoadingOverlay(MiniSite.Messenger, "Primary startup", force: true);
+                    if (LoadingOverlay.Visibility != System.Windows.Visibility.Visible)
+                        throw new InvalidOperationException("Foreground startup overlay was suppressed.");
+                }
+                finally
+                {
+                    LoadingOverlay.Visibility = originalVisibility;
+                    LoadingText.Text = originalText;
+                }
+                return Task.CompletedTask;
+            });
+
             await RunCase("Browser initialize", async () =>
             {
                 await EnsureBrowserInitializedAsync();

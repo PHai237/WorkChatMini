@@ -75,15 +75,22 @@ public sealed class AppSettings
             AppSettings settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
             int originalSettingsVersion = settings.SettingsVersion;
 
-            if (settings.WindowSizePreset is not ("1" or "1/16" or "1/8" or "1/4" or "1/2"))
+            // Retire the 1/16 preset without losing existing users' window preferences.
+            // Migrate both saved size values before validating the supported set.
+            if (settings.WindowSizePreset == "1/16")
+                settings.WindowSizePreset = "1/8";
+            if (settings.LastNormalWindowSizePreset == "1/16")
+                settings.LastNormalWindowSizePreset = "1/8";
+
+            if (settings.WindowSizePreset is not ("1" or "1/8" or "1/4" or "1/2"))
                 settings.WindowSizePreset = "1/4";
 
             if (settings.WindowPositionMode is not ("TopLeft" or "TopRight" or "BottomLeft" or "BottomRight" or "Center" or "Custom"))
                 settings.WindowPositionMode = "BottomRight";
 
-            if (originalSettingsVersion < 2244 && settings.WindowSizePreset is ("1/16" or "1/8" or "1/4" or "1/2"))
+            if (originalSettingsVersion < 2244 && settings.WindowSizePreset is ("1/8" or "1/4" or "1/2"))
                 settings.LastNormalWindowSizePreset = settings.WindowSizePreset;
-            else if (settings.LastNormalWindowSizePreset is not ("1/16" or "1/8" or "1/4" or "1/2"))
+            else if (settings.LastNormalWindowSizePreset is not ("1/8" or "1/4" or "1/2"))
                 settings.LastNormalWindowSizePreset = "1/4";
 
             settings.MonitorMemory ??= new List<MonitorMemoryEntry>();

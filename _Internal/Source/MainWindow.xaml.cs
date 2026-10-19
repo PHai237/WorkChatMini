@@ -181,6 +181,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ConfigureSplitButton();
+        ConfigureCompanionButtons();
 
         _settings = AppSettings.Load();
         if (AppRuntime.IsSelfTest)

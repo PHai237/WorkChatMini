@@ -21,9 +21,9 @@ internal sealed class BrowserClearDataDialog : Window
     {
         Owner = owner;
         Title = "Clear browsing data";
-        Width = 424;
+        Width = WorkChatResponsiveLayout.DialogWidth(owner.ActualWidth, 424);
         SizeToContent = SizeToContent.Height;
-        MaxHeight = 640;
+        MaxHeight = WorkChatResponsiveLayout.DialogHeight(owner.ActualHeight, 640);
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         WindowStyle = WindowStyle.None;
@@ -114,7 +114,12 @@ internal sealed class BrowserClearDataDialog : Window
                 Color = System.Windows.Media.Colors.Black,
                 BlurRadius = 22, ShadowDepth = 5, Opacity = 0.36
             },
-            Child = panel
+            Child = new ScrollViewer
+            {
+                Content = panel,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+            }
         };
 
         KeyDown += (_, e) =>

@@ -55,6 +55,7 @@ public partial class MainWindow
     private void MainWindow_SourceInitialized(object? sender, EventArgs e)
     {
         _windowHandle = new WindowInteropHelper(this).Handle;
+        TryUseModernWindowChrome();
         if (AppRuntime.IsSelfTest)
             return;
         _hwndSource = HwndSource.FromHwnd(_windowHandle);
@@ -123,9 +124,8 @@ public partial class MainWindow
                 try
                 {
                     await EnsureSiteInitializedAsync(_activeSite);
-                    MiniSite[] webViewSites = { MiniSite.Messenger, MiniSite.Facebook, MiniSite.YouTube, MiniSite.Discord, MiniSite.Zalo, MiniSite.Web };
-                    foreach (MiniSite candidate in webViewSites)
-                        GetWebView(candidate).Visibility = candidate == _activeSite ? Visibility.Visible : Visibility.Collapsed;
+                    // The single ApplySplitSurfaces pass below restores all visible
+                    // panes, avoiding a hide/show flicker for the split companion.
                 }
                 catch (Exception ex)
                 {
@@ -134,6 +134,13 @@ public partial class MainWindow
             }
 
             WakeSiteIfNeeded(_activeSite);
+            if (IsSplitVisible && _splitSecondarySite is { } side)
+            {
+                WakeSiteIfNeeded(side);
+                if (!IsSiteInitialized(side))
+                    _ = RestoreSplitPaneAfterResizeAsync(side);
+            }
+            ApplySplitSurfaces();
             _lastSiteUsedAt[_activeSite] = DateTimeOffset.UtcNow;
             Activate();
             Focus();
@@ -209,6 +216,7 @@ public partial class MainWindow
     private void UpdateAudioState()
     {
         ApplyLiveMemoryTargets();
+        UpdateCompanionAudioState();
 
         if (_settings.BackgroundAudioEnabled)
         {
@@ -232,11 +240,16 @@ public partial class MainWindow
         if (_discordCallActive)
             SetSiteMuted(MiniSite.Discord, false);
 
-        if (!IsVisible || !IsActive)
+        // A focused WorkChat companion counts as foreground for the main
+        // window: YouTube must not be silenced while typing in Messenger next to it.
+        if (!IsVisible || (!IsActive && !HasActiveCompanion))
             return;
 
         if (_activeSite == MiniSite.Story)
             return;
+
+        if (IsSplitVisible && _splitSecondarySite is { } second)
+            SetSiteMuted(second, false);
 
         if (_activeSite == MiniSite.Web)
         {
@@ -353,6 +366,7 @@ public partial class MainWindow
         ReleaseSystemAwakeGuard("app-exit");
         PersistWindowSettings();
         MuteAllWebViews();
+        CloseCompanionWindows();
 
         if (_windowHandle != IntPtr.Zero)
             UnregisterHotKey(_windowHandle, HotKeyId);
@@ -419,7 +433,7 @@ public partial class MainWindow
             // converge here. Windows is the geometry authority; WorkChat only remembers it.
             if (_settings.WindowSizePreset != "1")
             {
-                if (_settings.WindowSizePreset is ("1/16" or "1/8" or "1/4" or "1/2"))
+                if (_settings.WindowSizePreset is ("1/8" or "1/4" or "1/2"))
                     _settings.LastNormalWindowSizePreset = _settings.WindowSizePreset;
                 _settings.WindowSizePreset = "1";
             }
@@ -437,7 +451,7 @@ public partial class MainWindow
         {
             // Windows restored a maximized window (drag-down / restore button / title double-click).
             // Keep the actual restored frame and return the UI to the last fractional preset label.
-            string restoredPreset = _settings.LastNormalWindowSizePreset is ("1/16" or "1/8" or "1/4" or "1/2")
+            string restoredPreset = _settings.LastNormalWindowSizePreset is ("1/8" or "1/4" or "1/2")
                 ? _settings.LastNormalWindowSizePreset
                 : "1/4";
             _settings.WindowSizePreset = restoredPreset;
@@ -453,6 +467,18 @@ public partial class MainWindow
     private async void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
         ModifierKeys modifiers = Keyboard.Modifiers;
+        if (modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.D2)
+        {
+            SplitButton_Click(SplitButton, new RoutedEventArgs());
+            e.Handled = true;
+            return;
+        }
+        if (modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.O)
+        {
+            OpenCompanionWindow(_activeSite);
+            e.Handled = true;
+            return;
+        }
         bool control = modifiers.HasFlag(ModifierKeys.Control);
         bool shift = modifiers.HasFlag(ModifierKeys.Shift);
 

@@ -13,13 +13,13 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="9">
+                        <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="12">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#242A33"/>
-                                <Setter Property="Foreground" Value="#F6F8FB"/>
+                                <Setter TargetName="Root" Property="Background" Value="#263854"/>
+                                <Setter Property="Foreground" Value="#F6F8FF"/>
                             </Trigger>
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="Root" Property="Background" Value="#222F42"/>
@@ -38,9 +38,9 @@
         </Style>
 
         <Style x:Key="BrowserQuickLaunchButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="#DDE3EC"/>
-            <Setter Property="Background" Value="#191E26"/>
-            <Setter Property="BorderBrush" Value="#333B47"/>
+            <Setter Property="Foreground" Value="#E5EBF9"/>
+            <Setter Property="Background" Value="#19253A"/>
+            <Setter Property="BorderBrush" Value="#2B3C56"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="13,7"/>
             <Setter Property="Margin" Value="4"/>
@@ -54,13 +54,13 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="10"
+                                CornerRadius="14"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#242B35"/>
+                                <Setter TargetName="Root" Property="Background" Value="#263854"/>
                                 <Setter TargetName="Root" Property="BorderBrush" Value="#64758E"/>
                             </Trigger>
                             <Trigger Property="IsKeyboardFocused" Value="True">
@@ -122,8 +122,8 @@
     </Style>
 
     <Style x:Key="BrowserAddressBorderStyle" TargetType="Border">
-        <Setter Property="Background" Value="#1D222B"/>
-        <Setter Property="BorderBrush" Value="#353E4C"/>
+        <Setter Property="Background" Value="#19253A"/>
+        <Setter Property="BorderBrush" Value="#2B3C56"/>
         <Style.Triggers>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
                 <Setter Property="Background" Value="#202734"/>

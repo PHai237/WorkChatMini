@@ -57,7 +57,7 @@ public partial class MainWindow
         {
             _awaySuspendedYouTube = false;
             WakeSiteIfNeeded(MiniSite.YouTube, markUsed: false);
-            if (_activeSite == MiniSite.YouTube && IsWindowPresented)
+            if (IsForegroundSite(MiniSite.YouTube))
                 YouTubeWebView.Visibility = System.Windows.Visibility.Visible;
         }
 

@@ -32,7 +32,9 @@ public partial class MainWindow
         // Intent prewarm happens behind the currently visible surface. Do not flash a loading
         // overlay just because the pointer hovered an unopened app. A real click can force the
         // overlay while it awaits the same shared initialization task.
-        if (!force && _intentPrewarmSites.Contains(site) && _activeSite != site)
+        // Only an explicit primary-app click may paint a loading overlay on top of
+        // the foreground surface. Opening a secondary split/prefetch must not steal it.
+        if (!force && _activeSite != site)
             return;
 
         LoadingText.Text = text;
@@ -82,7 +84,7 @@ public partial class MainWindow
         FacebookWebView.NavigationCompleted += FacebookWebView_NavigationCompleted;
 
         // The mobile Facebook surface is deliberately used here. It stays single-column
-        // and usable at the 1/16 and 1/8 presets instead of squeezing desktop Facebook's
+        // and usable at the 1/8 preset instead of squeezing desktop Facebook's
         // left navigation + feed + right contacts into a tiny window.
         string targetUrl = _hibernateRestoreUrl.TryGetValue(MiniSite.Facebook, out string? restoreUrl) &&
                            !string.IsNullOrWhiteSpace(restoreUrl) && IsFacebookUri(restoreUrl)
@@ -653,14 +655,9 @@ public partial class MainWindow
         CrashDiagnostics.UpdateContext(site.ToString(), crashHost, $"site-switch-{previousSite}-to-{site}");
         _lastSiteUsedAt[site] = DateTimeOffset.UtcNow;
 
-        MiniSite[] pinnedSites =
-        {
-            MiniSite.Messenger, MiniSite.Facebook, MiniSite.YouTube, MiniSite.Discord, MiniSite.Zalo
-        };
-        foreach (MiniSite candidate in pinnedSites)
-            GetWebView(candidate).Visibility = candidate == site ? Visibility.Visible : Visibility.Collapsed;
-
-        BrowserSurfaceGrid.Visibility = site == MiniSite.Web ? Visibility.Visible : Visibility.Collapsed;
+        // Keep the existing secondary pane visible while switching the primary.
+        // ApplySplitSurfaces performs one consistent layout/visibility pass below;
+        // the old hide-all-then-reshow loop caused flicker and extra WebView work.
         if (site == MiniSite.Web && _activeBrowserTab is not null)
         {
             foreach (BrowserTabState tab in _browserTabs)
@@ -668,6 +665,14 @@ public partial class MainWindow
         }
 
         LoadingOverlay.Visibility = Visibility.Collapsed;
+        // Two existing surfaces can remain visible; switching the primary never hides the pinned side.
+        if (_splitSecondarySite == site)
+            _splitSecondarySite = previousSite is MiniSite.Web or MiniSite.Story
+                ? (site == MiniSite.YouTube ? MiniSite.Messenger : MiniSite.YouTube)
+                : previousSite;
+        if (_splitSecondarySite == _activeSite)
+            _splitSecondarySite = null;
+        ApplySplitSurfaces();
         UpdateToolbarState();
         if (site != MiniSite.Story)
             ScheduleResponsiveZoom("site-switch", 45);

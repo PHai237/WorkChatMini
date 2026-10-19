@@ -51,8 +51,22 @@ public partial class MainWindow
             _ => "WorkChat Mini"
         };
 
+        // Story was removed from Core. Its legacy fallback maps to MessengerButton:
+        // visiting that value last used to erase Messenger's active highlight.
         foreach (MiniSite site in Enum.GetValues<MiniSite>())
-            SetButtonState(GetSiteButton(site), site, _activeSite == site);
+        {
+            if (site == MiniSite.Story)
+                continue;
+            SetButtonState(GetSiteButton(site), site,
+                _activeSite == site || (IsSplitVisible && _splitSecondarySite == site));
+        }
+        if (ShellSiteTitle is not null)
+        {
+            ShellSiteTitle.Text = IsSplitVisible && _splitSecondarySite is { } right
+                ? $"{_activeSite} + {right}"
+                : _activeSite.ToString();
+            ShellSiteTitle.ToolTip = ShellSiteTitle.Text;
+        }
         AdBlockerMenuText.Text = string.IsNullOrWhiteSpace(_settings.SelectedAdBlocker) ? "AdBlock" : _settings.SelectedAdBlocker;
 
         UpdateZoomMenuState();
@@ -68,7 +82,6 @@ public partial class MainWindow
         PositionMenuText.Text = PositionModeLabel(_positionMode);
 
         Size1MenuItem.IsChecked = size == "1";
-        Size116MenuItem.IsChecked = size == "1/16";
         Size18MenuItem.IsChecked = size == "1/8";
         Size14MenuItem.IsChecked = size == "1/4";
         Size12MenuItem.IsChecked = size == "1/2";
@@ -224,13 +237,56 @@ public partial class MainWindow
 
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
     {
+        // Height-only resizes still need to bound open panels. Never queue a
+        // costly WebView2 zoom pass for these layout-only adjustments.
+        UpdateResponsivePanelBounds();
+        if (e.WidthChanged && _splitSecondarySite.HasValue)
+        {
+            bool wasSplit = _splitColumnsActive;
+            ApplySplitSurfaces();
+            if (wasSplit != _splitColumnsActive)
+            {
+                // A pane hidden by compact mode must be muted again immediately.
+                UpdateAudioState();
+                if (_splitColumnsActive && _splitSecondarySite is { } side)
+                    _ = RestoreSplitPaneAfterResizeAsync(side);
+            }
+        }
+        // Auto zoom depends on available width; height-only changes must not schedule
+        // a WebView2 ZoomFactor/layout pass.
+        if (!e.WidthChanged)
+            return;
         UpdateResponsiveCommandBar();
         ScheduleResponsiveZoom("window-resize", 110);
     }
 
+    private void UpdateResponsivePanelBounds()
+    {
+        if (DiagnosticsPanel is null || VpnPanel is null || SessionHealthPanel is null)
+            return;
+
+        double width = ActualWidth > 0 ? ActualWidth : Width;
+        double height = ActualHeight > 0 ? ActualHeight : Height;
+        double limit = WorkChatResponsiveLayout.PanelHeight(height);
+        if (Math.Abs(DiagnosticsPanel.MaxHeight - limit) > 0.01)
+            DiagnosticsPanel.MaxHeight = limit;
+        if (Math.Abs(VpnPanel.MaxHeight - limit) > 0.01)
+            VpnPanel.MaxHeight = limit;
+        if (Math.Abs(SessionHealthPanel.MaxHeight - limit) > 0.01)
+            SessionHealthPanel.MaxHeight = limit;
+        Visibility statusVisibility = width < 540 ? Visibility.Collapsed : Visibility.Visible;
+        if (DiagnosticsStatusBorder.Visibility != statusVisibility)
+            DiagnosticsStatusBorder.Visibility = statusVisibility;
+    }
+
     private void UpdateResponsiveCommandBar()
     {
-        if (ToolbarBorder is null || AppSwitcherExpandedPanel is null || TinyAppSwitcherPanel is null)
+        // A generated WPF field may be reassigned during calls below. Capture it
+        // into a local and use that local throughout this method: Roslyn can
+        // prove its non-null state after the guard (CS8602 / warnings-as-errors).
+        var shellSiteTitle = ShellSiteTitle;
+        if (ToolbarBorder is null || AppSwitcherExpandedPanel is null ||
+            TinyAppSwitcherPanel is null || shellSiteTitle is null)
             return;
 
         double width = ActualWidth > 0 ? ActualWidth : Width;
@@ -242,6 +298,12 @@ public partial class MainWindow
             _ => CommandBarMode.Large
         };
 
+        // Text must adapt inside a layout mode too (e.g. 745 -> 525 px), not
+        // only when the breakpoint changes. Keep updates bounded and cheap.
+        double titleWidth = WorkChatResponsiveLayout.TitleMaxWidth(width);
+        if (Math.Abs(shellSiteTitle.MaxWidth - titleWidth) > 0.5)
+            shellSiteTitle.MaxWidth = titleWidth;
+
         if (_responsiveCommandBarInitialized && _commandBarMode == next)
             return;
 
@@ -251,10 +313,14 @@ public partial class MainWindow
         if (modeChanged)
             AppLogger.Info("UI", $"Command bar mode changed | mode={next} | width={width:0}");
 
-        bool tiny = next == CommandBarMode.Tiny;
+        bool tiny = WorkChatResponsiveLayout.UseAppMenu(width);
+        // The rail uses its own grid column so WebView2 always gets the full
+        // remaining width. At 330-519px the menu replaces it completely.
+        SidebarRail.Visibility = tiny ? Visibility.Collapsed : Visibility.Visible;
+        SidebarColumn.Width = new GridLength(tiny ? 0 : 60);
         AppSwitcherExpandedPanel.Visibility = tiny ? Visibility.Collapsed : Visibility.Visible;
         TinyAppSwitcherPanel.Visibility = tiny ? Visibility.Visible : Visibility.Collapsed;
-
+        shellSiteTitle.Visibility = tiny ? Visibility.Collapsed : Visibility.Visible;
 
         BackgroundAudioButton.Visibility = next == CommandBarMode.Large
             ? Visibility.Visible : Visibility.Collapsed;
@@ -262,12 +328,14 @@ public partial class MainWindow
             ? Visibility.Visible : Visibility.Collapsed;
 
         MoreMenuButton.Visibility = Visibility.Visible;
+        UpdateResponsivePanelBounds();
         UpdateCurrentAppIndicator();
     }
 
     private void UpdateCurrentAppIndicator()
     {
-        if (CurrentAppButton is null || CurrentAppIconImage is null)
+        if (CurrentAppButton is null || CurrentAppIconImage is null ||
+            TinyAppSwitcherPanel.Visibility != Visibility.Visible)
             return;
 
         string resourceKey = _activeSite switch
@@ -330,6 +398,7 @@ public partial class MainWindow
     {
         bool collapsed = _settings.ToolbarCollapsed;
         ToolbarBorder.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
+        SplitHandleButton.Visibility = collapsed ? Visibility.Visible : Visibility.Collapsed;
         ToolbarRow.Height = collapsed ? new GridLength(0) : new GridLength(54);
         if (collapsed)
         {

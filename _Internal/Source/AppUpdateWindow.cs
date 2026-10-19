@@ -15,11 +15,11 @@ namespace WorkChatMini;
 
 internal sealed class AppUpdateWindow : Window
 {
-    private static readonly Brush BackgroundBrush = Brush("#111B2A");
-    private static readonly Brush PanelBrush = Brush("#1B2A3B");
-    private static readonly Brush TextBrush = Brush("#E7EDF5");
-    private static readonly Brush MutedBrush = Brush("#A9B8CB");
-    private static readonly Brush AccentBrush = Brush("#79B6F3");
+    private static readonly Brush BackgroundBrush = Brush("#0B1020");
+    private static readonly Brush PanelBrush = Brush("#19253A");
+    private static readonly Brush TextBrush = Brush("#F6F8FF");
+    private static readonly Brush MutedBrush = Brush("#B2C0D6");
+    private static readonly Brush AccentBrush = Brush("#86A7FF");
     private const string OfficialFeedUrl = "https://phai237.github.io/WorkChatMini/latest.json";
     private readonly Action _exitApp;
     private readonly Func<string?> _updateBlocker;
@@ -49,8 +49,8 @@ internal sealed class AppUpdateWindow : Window
         Title = "WorkChat Mini · Updates";
         Width = 590;
         Height = 515;
-        MinWidth = 450;
-        MinHeight = 465;
+        MinWidth = 300;
+        MinHeight = 190;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ResizeMode = ResizeMode.CanResize;
         Background = BackgroundBrush;
@@ -61,7 +61,7 @@ internal sealed class AppUpdateWindow : Window
         var content = new StackPanel { Margin = new Thickness(22, 20, 22, 22) };
         var heading = Label("Keep WorkChat up to date", 20, TextBrush, FontWeights.SemiBold);
         content.Children.Add(heading);
-        content.Children.Add(Label($"Installed: {InstalledVersion}  ·  In-place updates preserve your Story, WebView2 profile and settings.", 12, MutedBrush));
+        content.Children.Add(Label($"Installed: {InstalledVersion}  ·  In-place updates preserve your WebView2 profile and settings.", 12, MutedBrush));
         content.Children.Add(Label("Updates check the official GitHub release feed automatically. Installation always requires your confirmation.", 12, MutedBrush));
 
         content.Children.Add(Label("GitHub updates · Recommended", 13, AccentBrush, FontWeights.SemiBold, top: 18));
@@ -124,7 +124,12 @@ internal sealed class AppUpdateWindow : Window
         content.Children.Add(actions);
         content.Children.Add(Label("Security: Official HTTPS feed + SHA-256 validation. Binaries are not yet code-signed; use only trusted releases.", 11, MutedBrush, top: 13));
 
-        var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = content };
+        var scroll = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            Content = content
+        };
         Content = scroll;
         _chooseButton.Click += Choose_Click;
         _checkButton.Click += Check_Click;
@@ -142,6 +147,11 @@ internal sealed class AppUpdateWindow : Window
         // Only an opened Updates window fetches the release feed; never installs silently.
         Loaded += (_, _) =>
         {
+            if (Owner is { } owner)
+            {
+                Width = WorkChatResponsiveLayout.DialogWidth(owner.ActualWidth, 590);
+                Height = WorkChatResponsiveLayout.DialogHeight(owner.ActualHeight, 515);
+            }
             if (AppUpdateFeed.IsHttps(OfficialFeedUrl) && !_working)
                 Check_Click(this, new RoutedEventArgs());
         };

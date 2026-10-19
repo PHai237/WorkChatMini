@@ -34,6 +34,12 @@ foreach ($f in $sourceFiles) {
               while ($reader.Read()) { }
               $reader.Dispose(); $xmlCount++ }
         catch { $errors.Add("Invalid XML/XAML $($f.Name): $($_.Exception.Message)") }
+        # 2.50.0 MC2000: keyed StaticResourceExtension elements in the
+        # dictionary passed XML parsing but crashed the WPF markup compiler.
+        # Use {StaticResource ExistingBrush} at usage sites, not keyed aliases.
+        if ([regex]::IsMatch($body, '<\s*StaticResourceExtension\b[^>]*\bx:Key\s*=')) {
+            $errors.Add("WPF BAML-unsafe resource alias in $($f.Name): use the original resource key directly (2.50.0 MC2000).")
+        }
     }
     # WPF C# implicit usings do not guarantee System.IO is in scope for all
     # source files. 2.43.0 failed Windows compile with missing InvalidDataException.
@@ -42,6 +48,35 @@ foreach ($f in $sourceFiles) {
         -not [regex]::IsMatch($body, '(?m)^\s*using\s+System\.IO\s*;') -and
         -not [regex]::IsMatch($body, 'System\.IO\.InvalidDataException')) {
         $errors.Add("Unqualified InvalidDataException without System.IO import in $($f.Name)")
+    }
+    # WPF + WinForms implicit imports both expose Point (System.Windows and
+    # System.Drawing). 2.50.0 failed CI with CS0104 in the drag-out API.
+    # Enforce a qualified type or an explicit alias such as WpfPoint instead.
+    # This intentionally recognizes common Point declarations and constructors;
+    # the actual WPF compile in GitHub Actions remains the source of truth.
+    if ($f.Extension -eq '.cs' -and
+        [regex]::IsMatch($body, '(?<![\w.])\bPoint\s+[A-Za-z_]\w*\b|(?<![\w.])\bnew\s+Point\s*\(')) {
+        $errors.Add("Ambiguous Point type in $($f.Name): use System.Windows.Point / System.Drawing.Point or a named alias (2.50.0 CS0104).")
+    }
+    # This project enables both UseWPF and UseWindowsForms. Their implicit imports
+    # expose conflicting UI names. Keep mixed-framework references explicit so
+    # CS0104 is detected BEFORE creating a temporary GitHub preflight branch.
+    # An exact alias (e.g. using Button = System.Windows.Controls.Button) is
+    # permitted; method calls must not rely on conflicting implicit imports.
+    if ($f.Extension -eq '.cs') {
+        $collisions = @(
+            @{ Name='Color'; Pattern='(?<![\w.])\bColor\s*\.' },
+            @{ Name='Brushes'; Pattern='(?<![\w.])\bBrushes\s*\.' },
+            @{ Name='MessageBox'; Pattern='(?<![\w.])\bMessageBox\s*\.' },
+            @{ Name='Button'; Pattern='(?<![\w.])\bnew\s+Button\s*(?:\{|\()' }
+        )
+        foreach ($entry in $collisions) {
+            $name = $entry.Name
+            $hasAlias = [regex]::IsMatch($body, '(?m)^\s*using\s+' + $name + '\s*=\s*[\w.]+\s*;')
+            if (-not $hasAlias -and [regex]::IsMatch($body, $entry.Pattern)) {
+                $errors.Add("Ambiguous WPF/WinForms $name in $($f.Name): use a fully qualified type or explicit WPF/Forms alias (2.50.0 CS0104).")
+            }
+        }
     }
     # Catch the preview2 StringReader failure pattern without pretending this is a compiler.
     if ($f.Extension -eq '.cs' -and
@@ -63,6 +98,93 @@ foreach ($name in @('BUILD.bat')) {
     if ((Get-Content -LiteralPath (Join-Path $root $name) -Raw) -notmatch [regex]::Escape($expected)) {
         $errors.Add("Version label missing/mismatched in $name")
     }
+}
+
+# Core shell UX invariants: the 2.45 rail and narrow-window fallback both
+# need to remain reachable. Story must never reset the Messenger active state.
+$shellXaml = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.xaml'))
+$shellUi = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.Ui.cs'))
+$shellWake = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.SmartWake.cs'))
+if ($shellXaml -notmatch 'x:Name="SidebarRail"' -or
+    $shellXaml -notmatch 'x:Name="SidebarColumn"' -or
+    $shellXaml -notmatch 'x:Name="TinyAppSwitcherPanel"') {
+    $errors.Add('Core shell must contain the app rail and narrow-window Apps fallback.')
+}
+if ($shellUi -notmatch 'if \(site == MiniSite\.Story\)' -or
+    $shellUi -notmatch 'if \(!e\.WidthChanged\)') {
+    $errors.Add('Core shell active-state and width-only resize guards are missing.')
+}
+if ($shellWake -notmatch '_memoryPressureLevel != MemoryPressureLevel\.Normal') {
+    $errors.Add('Passive Smart Wake must respect memory pressure.')
+}
+
+# 2.50 CS8602: A null check on a generated WPF FIELD is insufficient when
+# later statements/calls can invalidate the compiler's field flow state.
+# Ensure the responsive method captures a stable local, guards it, and uses
+# only that guarded local for title properties. This specifically catches R2,
+# which had a field null check yet still failed Windows compilation.
+$responsiveStart = $shellUi.IndexOf('private void UpdateResponsiveCommandBar()', [StringComparison]::Ordinal)
+$responsiveEnd = if ($responsiveStart -ge 0) {
+    $shellUi.IndexOf('private void UpdateCurrentAppIndicator()', $responsiveStart, [StringComparison]::Ordinal)
+} else { -1 }
+if ($responsiveStart -lt 0 -or $responsiveEnd -le $responsiveStart) {
+    $errors.Add('Cannot inspect responsive command bar nullable handling.')
+} else {
+    $responsiveBody = $shellUi.Substring($responsiveStart, $responsiveEnd - $responsiveStart)
+    # PowerShell -match is case-insensitive by default. Use the case-sensitive
+    # variants here: ShellSiteTitle is a FIELD and shellSiteTitle is a LOCAL.
+    if ($responsiveBody -cnotmatch '(?m)^\s*var\s+shellSiteTitle\s*=\s*ShellSiteTitle\s*;' -or
+        $responsiveBody -cnotmatch 'shellSiteTitle is null' -or
+        $responsiveBody -cnotmatch 'shellSiteTitle\.Visibility\s*=' -or
+        $responsiveBody -cmatch '\bShellSiteTitle\s*\.(?:MaxWidth|Visibility)\b') {
+        $errors.Add('Responsive command bar must use a guarded local ShellSiteTitle snapshot (2.50.0 CS8602).')
+    }
+}
+
+# 2.49: split compact/restore must synchronize audio, and split initialization
+# must never cover the foreground with a secondary WebView loading overlay.
+$splitSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.SplitView.cs'))
+$webSwitchSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.WebViews.cs'))
+$webSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.WebViews.cs'))
+if ($shellUi -notmatch 'wasSplit != _splitColumnsActive' -or
+    $shellUi -notmatch 'RestoreSplitPaneAfterResizeAsync' -or
+    $splitSource -notmatch 'SplitDivider_DragCompleted' -or
+    $splitSource -notmatch 'SwapSplitSides' -or
+    $webSource -notmatch 'if \(!force && _activeSite != site\)' -or
+    $webSwitchSource -match 'GetWebView\(candidate\)\.Visibility = candidate == site') {
+    $errors.Add('Core split view lost its compact/audio/resume/ratio safeguards.')
+}
+
+# 2.48: obsolete 1/16 size option must never appear in the UI or selection code.
+if ($shellXaml -match 'Size116MenuItem|Header="1/16"' -or
+    $shellUi -match 'Size116MenuItem') {
+    $errors.Add('Retired 1/16 size remains in UI.')
+}
+$sizeLogic = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.Windowing.cs'))
+if ($sizeLogic -match '"1/16"' -or
+    $shellXaml -notmatch 'Source="WorkChatControls.xaml"' -or
+    $shellXaml -notmatch 'Source="WorkChatIcons.xaml"' -or
+    -not (Test-Path -LiteralPath (Join-Path $source 'WorkChatTheme.xaml'))) {
+    $errors.Add('Modern shell resources or supported-size list are inconsistent.')
+}
+$settingsSource = [IO.File]::ReadAllText((Join-Path $source 'AppSettings.cs'))
+if ($settingsSource -notmatch 'settings.WindowSizePreset == "1/16"' -or
+    $settingsSource -notmatch 'settings.LastNormalWindowSizePreset == "1/16"') {
+    $errors.Add('The old 1/16 preference must be migrated instead of discarded.')
+}
+
+# 2.50 companion windows: launch is lazy, disposal is explicit, and no
+# existing WPF HwndHost/WebView is reparented across windows.
+$companionSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.Companion.cs'))
+$companionWindow = [IO.File]::ReadAllText((Join-Path $source 'WorkChatCompanionWindow.cs'))
+$companionPolicy = [IO.File]::ReadAllText((Join-Path $source 'WorkChatCompanionPolicy.cs'))
+if ($companionSource -notmatch 'WorkChatCompanionPolicy.MaxWindows' -or
+    $companionSource -notmatch 'CloseCompanionWindows' -or
+    $companionSource -notmatch 'PreviewMouseLeftButtonUp' -or
+    $companionWindow -notmatch '_view.Dispose\(' -or
+    $companionWindow -notmatch 'EnsureCoreWebView2Async\(_environment\)' -or
+    $companionPolicy -notmatch 'MaxWindows = 2') {
+    $errors.Add('Companion window guardrails, shared environment, drag-out or disposal were removed.')
 }
 
 # Release-bridge invariants: maintain two-entry compatibility and a self-repairing updater.
