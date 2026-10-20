@@ -102,10 +102,10 @@ public partial class MainWindow
         ResourcePolicy policy = GetResourcePolicy(_activeSite);
         MoreResourcePolicyMenuItem.Header = _activeSite switch
         {
-            MiniSite.YouTube => "Resource policy · Smart keep alive",
-            MiniSite.Web => "Resource policy · Adaptive tabs",
-            MiniSite.Story => "Resource policy · Native AI",
-            _ => $"Resource policy · {PolicyLabel(policy)}"
+            MiniSite.YouTube => "Policy · Smart",
+            MiniSite.Web => "Policy · Adaptive",
+            MiniSite.Story => "Policy · Native",
+            _ => $"Policy · {PolicyLabel(policy)}"
         };
         MoreResourcePolicyMenuItem.IsEnabled = _activeSite is not MiniSite.YouTube and not MiniSite.Web and not MiniSite.Story;
         ResourceKeepAliveMenuItem.IsChecked = policy == ResourcePolicy.KeepAlive;

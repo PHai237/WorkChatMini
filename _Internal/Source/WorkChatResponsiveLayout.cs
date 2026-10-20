@@ -10,6 +10,8 @@ internal static class WorkChatResponsiveLayout
 
     internal static bool UseAppMenu(double width) => width < CompactRailBreakpoint;
     internal static bool CanShowSplit(double width) => width >= SplitBreakpoint;
+    // Compact screens keep the app rail; only its width changes (no redundant top Apps menu).
+    internal static double RailWidth(double width) => UseAppMenu(width) ? 48 : 60;
     internal static double TitleMaxWidth(double width) => Math.Clamp(width * 0.27, 105, 220);
 
     internal static double PanelHeight(double windowHeight) =>

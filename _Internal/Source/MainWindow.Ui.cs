@@ -94,7 +94,7 @@ public partial class MainWindow
         CustomMenuItem.IsChecked = _positionMode == WindowPositionMode.Custom;
 
         if (MoreSizeMenuItem is not null)
-            MoreSizeMenuItem.Header = $"Window size · {size}";
+            MoreSizeMenuItem.Header = $"Size · {size}";
         if (MorePositionMenuItem is not null)
             MorePositionMenuItem.Header = $"Position · {PositionModeLabel(_positionMode)}";
     }
@@ -200,7 +200,7 @@ public partial class MainWindow
         SessionHealthButton.Tag = issues > 0 ? "Active" : null;
         SessionHealthButton.ToolTip = issues > 0 ? $"Session health: {issues} issue(s)" : "Session health";
         if (MoreHealthMenuItem is not null)
-            MoreHealthMenuItem.Header = issues > 0 ? $"Session health · {issues} issue(s)" : "Session health";
+            MoreHealthMenuItem.Header = issues > 0 ? $"Health · {issues}" : "Health";
         if (SessionHealthPanel is null || SessionHealthPanel.Visibility != Visibility.Visible)
             return;
 
@@ -314,18 +314,15 @@ public partial class MainWindow
             AppLogger.Info("UI", $"Command bar mode changed | mode={next} | width={width:0}");
 
         bool tiny = WorkChatResponsiveLayout.UseAppMenu(width);
-        // The rail uses its own grid column so WebView2 always gets the full
-        // remaining width. At 330-519px the menu replaces it completely.
-        SidebarRail.Visibility = tiny ? Visibility.Collapsed : Visibility.Visible;
-        SidebarColumn.Width = new GridLength(tiny ? 0 : 60);
-        AppSwitcherExpandedPanel.Visibility = tiny ? Visibility.Collapsed : Visibility.Visible;
-        TinyAppSwitcherPanel.Visibility = tiny ? Visibility.Visible : Visibility.Collapsed;
-        shellSiteTitle.Visibility = tiny ? Visibility.Collapsed : Visibility.Visible;
-
-        BackgroundAudioButton.Visibility = next == CommandBarMode.Large
-            ? Visibility.Visible : Visibility.Collapsed;
-        AlwaysOnTopCheckBox.Visibility = next == CommandBarMode.Large
-            ? Visibility.Visible : Visibility.Collapsed;
+        // Keep exactly one navigation surface at all sizes: the left pixel-art rail.
+        SidebarRail.Visibility = Visibility.Visible;
+        SidebarColumn.Width = new GridLength(WorkChatResponsiveLayout.RailWidth(width));
+        AppSwitcherExpandedPanel.Visibility = Visibility.Visible;
+        TinyAppSwitcherPanel.Visibility = Visibility.Collapsed;
+        shellSiteTitle.Visibility = Visibility.Collapsed;
+        // These live only in the Settings menu; the old toolbar is retired.
+        BackgroundAudioButton.Visibility = Visibility.Collapsed;
+        AlwaysOnTopCheckBox.Visibility = Visibility.Collapsed;
 
         MoreMenuButton.Visibility = Visibility.Visible;
         UpdateResponsivePanelBounds();
@@ -387,7 +384,8 @@ public partial class MainWindow
 
     private void ToolbarToggleButton_Click(object sender, RoutedEventArgs e)
     {
-        _settings.ToolbarCollapsed = !_settings.ToolbarCollapsed;
+        // Legacy event hook retained for old XAML names, but the header is retired.
+        _settings.ToolbarCollapsed = true;
         AppLogger.Info("UI", $"Toolbar toggled | collapsed={_settings.ToolbarCollapsed}");
         ApplyToolbarVisibility();
         _settings.Save();
@@ -396,10 +394,12 @@ public partial class MainWindow
 
     private void ApplyToolbarVisibility()
     {
-        bool collapsed = _settings.ToolbarCollapsed;
-        ToolbarBorder.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
-        SplitHandleButton.Visibility = collapsed ? Visibility.Visible : Visibility.Collapsed;
-        ToolbarRow.Height = collapsed ? new GridLength(0) : new GridLength(54);
+        // Top command bar retired. Maintain the setting for backward compatibility,
+        // but never spend vertical screen space showing a second toolbar.
+        bool collapsed = true;
+        ToolbarBorder.Visibility = Visibility.Collapsed;
+        SplitHandleButton.Visibility = Visibility.Collapsed;
+        ToolbarRow.Height = new GridLength(0);
         if (collapsed)
         {
             DiagnosticsProgressBar.Visibility = Visibility.Collapsed;
@@ -409,8 +409,7 @@ public partial class MainWindow
         }
         ToolbarToggleGlyph.Text = collapsed ? "▼" : "▲";
         ToolbarToggleButton.ToolTip = collapsed ? "Show toolbar" : "Hide toolbar";
-        if (!collapsed)
-            UpdateResponsiveCommandBar();
+        UpdateResponsiveCommandBar();
     }
 
     private void AlwaysOnTopCheckBox_Changed(object sender, RoutedEventArgs e)
@@ -479,7 +478,8 @@ public partial class MainWindow
         if (menu is null)
             return;
         menu.PlacementTarget = placementTarget;
-        menu.Placement = PlacementMode.Bottom;
+        menu.Placement = placementTarget.Name == "MoreMenuButton"
+            ? PlacementMode.Right : PlacementMode.Bottom;
         menu.HorizontalOffset = 0;
         menu.VerticalOffset = 4;
         menu.IsOpen = true;
@@ -492,17 +492,17 @@ public partial class MainWindow
 
         double zoom = GetStoredZoom(_activeSite);
         string zoomLabel = zoom == 0 ? "Auto" : $"{zoom * 100:0}%";
-        MoreZoomMenuItem.Header = _activeSite == MiniSite.Story ? "Zoom · Native" : $"Zoom · {zoomLabel}";
-        MoreSizeMenuItem.Header = $"Window size · {_settings.WindowSizePreset}";
+        MoreZoomMenuItem.Header = _activeSite == MiniSite.Story ? "Zoom" : $"Zoom · {zoomLabel}";
+        MoreSizeMenuItem.Header = $"Size · {_settings.WindowSizePreset}";
         MorePositionMenuItem.Header = $"Position · {PositionModeLabel(_positionMode)}";
         MoreBackgroundAudioMenuItem.IsChecked = _settings.BackgroundAudioEnabled;
         MoreAlwaysOnTopMenuItem.IsChecked = _settings.AlwaysOnTop;
-        MoreAdBlockMenuItem.Header = $"Ad blocker · {_settings.SelectedAdBlocker}";
+        MoreAdBlockMenuItem.Header = "Ad blocker";
         UpdateVpnMenuState();
         UpdateResourcePolicyMenuState();
 
         int healthErrors = _siteHealth.Where(pair => pair.Key != MiniSite.Story).Count(pair => pair.Value.State == "Error");
-        MoreHealthMenuItem.Header = healthErrors > 0 ? $"Session health · {healthErrors} issue(s)" : "Session health";
+        MoreHealthMenuItem.Header = healthErrors > 0 ? $"Health · {healthErrors}" : "Health";
     }
 
     private void SizeMenuButton_Click(object sender, RoutedEventArgs e)

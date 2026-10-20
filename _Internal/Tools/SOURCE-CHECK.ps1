@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $source = Join-Path $root '_Internal\Source'
 $errors = [System.Collections.Generic.List[string]]::new()
@@ -78,6 +78,14 @@ foreach ($f in $sourceFiles) {
             }
         }
     }
+    # A 2.51.0 self-test used WPF StackPanel without importing the controls
+    # namespace. Fail early instead of waiting for CI error CS0103.
+    if ($f.Extension -eq '.cs' -and
+        [regex]::IsMatch($body, '(?<![\w.])\b(?:is\s+(?:not\s+)?|new\s+)StackPanel\b') -and
+        -not [regex]::IsMatch($body, '(?m)^\s*using\s+System\.Windows\.Controls\s*;') -and
+        -not [regex]::IsMatch($body, '(?m)^\s*using\s+StackPanel\s*=\s*System\.Windows\.Controls\.StackPanel\s*;')) {
+        $errors.Add("Unqualified WPF StackPanel without controls namespace in $($f.Name) (2.51.0 CS0103).")
+    }
     # Catch the preview2 StringReader failure pattern without pretending this is a compiler.
     if ($f.Extension -eq '.cs' -and
         [regex]::IsMatch($body, '(?<![\w.])new\s+StringReader\s*\(') -and
@@ -116,6 +124,28 @@ if ($shellUi -notmatch 'if \(site == MiniSite\.Story\)' -or
 }
 if ($shellWake -notmatch '_memoryPressureLevel != MemoryPressureLevel\.Normal') {
     $errors.Add('Passive Smart Wake must respect memory pressure.')
+}
+
+# 2.51 pixel rail: avoid a second top toolbar and accidental replacement of
+# the user's custom PNG art by vector glyphs. Keep these layout checks simple;
+# XAML parsing and Release WPF compilation remain the authoritative gates.
+$pixelIcons = [IO.File]::ReadAllText((Join-Path $source 'WorkChatIcons.xaml'))
+if ($pixelIcons -match '<DrawingImage' -or
+    $shellXaml -notmatch 'x:Name="MoreMenuButton"' -or
+    $shellXaml -notmatch 'ToolTip="Settings"' -or
+    $shellXaml -notmatch 'x:Name="SplitButton"' -or
+    $shellXaml -notmatch '<RowDefinition x:Name="ToolbarRow" Height="0"' -or
+    $shellUi -notmatch 'SidebarRail.Visibility = Visibility.Visible;' -or
+    $shellUi -notmatch 'ToolbarBorder.Visibility = Visibility.Collapsed;' -or
+    $shellUi -notmatch 'BackgroundAudioButton.Visibility = Visibility.Collapsed;' -or
+    $shellUi -notmatch 'AlwaysOnTopCheckBox.Visibility = Visibility.Collapsed;') {
+    $errors.Add('Minimal pixel-art rail, bottom Settings/Split or retired top toolbar regressed.')
+}
+foreach ($name in @('messenger','facebook','youtube','discord','zalo','web')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $source "Assets/Icons/$name.png") -PathType Leaf) -or
+        $pixelIcons -notmatch [regex]::Escape("/Assets/Icons/$name.png")) {
+        $errors.Add("Original pixel-art icon missing: $name")
+    }
 }
 
 # 2.50 CS8602: A null check on a generated WPF FIELD is insufficient when

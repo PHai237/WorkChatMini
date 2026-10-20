@@ -65,16 +65,21 @@ public partial class MainWindow
                 if (MessengerButton.Tag is not string state || state != "Active")
                     throw new InvalidOperationException("Active Messenger button lost its selected state.");
 
-                bool narrow = WorkChatResponsiveLayout.UseAppMenu(ActualWidth > 0 ? ActualWidth : Width);
-                if (narrow && (SidebarRail.Visibility != System.Windows.Visibility.Collapsed ||
-                               TinyAppSwitcherPanel.Visibility != System.Windows.Visibility.Visible ||
-                               SidebarColumn.Width.Value != 0))
-                    throw new InvalidOperationException("Compact app selector/rail geometry is inconsistent.");
-                if (!narrow && (SidebarRail.Visibility != System.Windows.Visibility.Visible ||
-                                AppSwitcherExpandedPanel.Visibility != System.Windows.Visibility.Visible ||
-                                TinyAppSwitcherPanel.Visibility != System.Windows.Visibility.Collapsed ||
-                                SidebarColumn.Width.Value < 53))
-                    throw new InvalidOperationException("Desktop app rail is not visible or sized correctly.");
+                double width = ActualWidth > 0 ? ActualWidth : Width;
+                if (SidebarRail.Visibility != System.Windows.Visibility.Visible ||
+                    AppSwitcherExpandedPanel.Visibility != System.Windows.Visibility.Visible ||
+                    TinyAppSwitcherPanel.Visibility != System.Windows.Visibility.Collapsed ||
+                    SidebarColumn.Width.Value != WorkChatResponsiveLayout.RailWidth(width))
+                    throw new InvalidOperationException("Single left app rail geometry is inconsistent.");
+                if (ToolbarBorder.Visibility != System.Windows.Visibility.Collapsed ||
+                    ToolbarRow.Height.Value != 0 || SplitHandleButton.Visibility != System.Windows.Visibility.Collapsed)
+                    throw new InvalidOperationException("Retired top toolbar still consumes display space.");
+                if (BackgroundAudioButton.Visibility != System.Windows.Visibility.Collapsed ||
+                    AlwaysOnTopCheckBox.Visibility != System.Windows.Visibility.Collapsed)
+                    throw new InvalidOperationException("Settings-only switches leaked onto the shell.");
+                if (SplitButton.Parent is not System.Windows.Controls.StackPanel || MoreMenuButton.Parent is not System.Windows.Controls.StackPanel ||
+                    !ReferenceEquals(SplitButton.Parent, MoreMenuButton.Parent))
+                    throw new InvalidOperationException("Split and Settings must share pinned rail footer.");
                 return Task.CompletedTask;
             });
 
@@ -117,9 +122,11 @@ public partial class MainWindow
                     FindResource("ShellChromeGradientBrush") is not System.Windows.Media.LinearGradientBrush)
                     throw new InvalidOperationException("Core design-system resources were not loaded.");
                 foreach (string iconKey in new[] { "MessengerPixelIcon", "FacebookPixelIcon", "YouTubePixelIcon", "DiscordPixelIcon", "ZaloPixelIcon", "WebPixelIcon" })
-                    if (FindResource(iconKey) is not System.Windows.Media.DrawingImage)
-                        throw new InvalidOperationException($"Vector navigation icon is unavailable: {iconKey}");
-                if (SidebarColumn.Width.Value != (WorkChatResponsiveLayout.UseAppMenu(ActualWidth > 0 ? ActualWidth : Width) ? 0 : 60))
+                    if (FindResource(iconKey) is not System.Windows.Media.Imaging.BitmapImage bitmap ||
+                        bitmap.UriSource is not Uri iconUri ||
+                        !iconUri.AbsoluteUri.Contains("/Assets/Icons/", StringComparison.Ordinal))
+                        throw new InvalidOperationException($"Original pixel navigation icon is unavailable: {iconKey}");
+                if (SidebarColumn.Width.Value != WorkChatResponsiveLayout.RailWidth(ActualWidth > 0 ? ActualWidth : Width))
                     throw new InvalidOperationException("Modern app rail width does not match the responsive controller.");
                 return Task.CompletedTask;
             });
@@ -140,6 +147,8 @@ public partial class MainWindow
                     double height = Math.Max(220, physicalHeight / scale);
                     bool tiny = WorkChatResponsiveLayout.UseAppMenu(width);
                     bool split = WorkChatResponsiveLayout.CanShowSplit(width);
+                    if (WorkChatResponsiveLayout.RailWidth(width) != (tiny ? 48 : 60))
+                        throw new InvalidOperationException("Compact pixel rail has incorrect width.");
                     double titleLimit = WorkChatResponsiveLayout.TitleMaxWidth(width);
                     if (titleLimit < 105 || titleLimit > 220 || (!tiny && titleLimit >= width))
                         throw new InvalidOperationException("Toolbar title exceeds its responsive bounds.");

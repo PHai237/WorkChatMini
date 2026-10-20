@@ -38,7 +38,7 @@
         <SolidColorBrush x:Key="DiscordBrandBrush" Color="#5865F2"/>
         <SolidColorBrush x:Key="ZaloBrandBrush" Color="#0068FF"/>
         <SolidColorBrush x:Key="WebBrandBrush" Color="#10B977"/>
-        <!-- Smooth DrawingImages in WorkChatIcons.xaml replace raster pixel-art icons. -->
+        <!-- Original pixel-art assets: use nearest-neighbor scaling (no vector replacements). -->
         <Style x:Key="DropdownButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
             <Setter Property="Background" Value="{StaticResource ShellElevatedBrush}"/>
@@ -318,17 +318,19 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition x:Name="ToolbarRow" Height="54" />
+            <RowDefinition x:Name="ToolbarRow" Height="0" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="18" />
+            <RowDefinition Height="0" />
             <RowDefinition Height="4" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <!-- Core 2.45: vertical app rail. Collapses at narrow window sizes, leaving the Apps menu. -->
+        <!-- Pixel-art app rail: always present; Split and Settings pinned to the bottom. -->
         <Border x:Name="SidebarRail" Grid.Row="0" Grid.RowSpan="5" Grid.Column="0"
                 Background="{StaticResource ShellChromeGradientBrush}" BorderBrush="{StaticResource ShellLineBrush}"
                 BorderThickness="0,0,1,0" Panel.ZIndex="21">
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden"
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+            <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden"
                           CanContentScroll="True" Focusable="False">
                     <StackPanel x:Name="AppSwitcherExpandedPanel" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0">
                         <Button x:Name="MessengerButton"
@@ -337,7 +339,7 @@
                                 Click="MessengerButton_Click"
                                 ToolTip="Messenger">
                             <Grid Width="24" Height="24">
-                                <Image Source="{StaticResource MessengerPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource MessengerPixelIcon}" Width="24" Height="24" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
@@ -348,7 +350,7 @@
                                 Click="FacebookButton_Click"
                                 ToolTip="Facebook">
                             <Grid Width="24" Height="24">
-                                <Image Source="{StaticResource FacebookPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource FacebookPixelIcon}" Width="24" Height="24" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
@@ -359,7 +361,7 @@
                                 Click="YouTubeButton_Click"
                                 ToolTip="YouTube">
                             <Grid Width="24" Height="24">
-                                <Image Source="{StaticResource YouTubePixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource YouTubePixelIcon}" Width="24" Height="24" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
@@ -370,7 +372,7 @@
                                 Click="DiscordButton_Click"
                                 ToolTip="Discord">
                             <Grid Width="24" Height="24">
-                                <Image Source="{StaticResource DiscordPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource DiscordPixelIcon}" Width="24" Height="24" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
@@ -381,7 +383,7 @@
                                 Click="ZaloButton_Click"
                                 ToolTip="Zalo">
                             <Grid Width="24" Height="24">
-                                <Image Source="{StaticResource ZaloPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource ZaloPixelIcon}" Width="24" Height="24" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
@@ -391,16 +393,61 @@
                                 Click="WebButton_Click"
                                 ToolTip="Web browser">
                             <Grid Width="24" Height="24">
-                                <Image Source="{StaticResource WebPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource WebPixelIcon}" Width="24" Height="24" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
                     </StackPanel>
 
             </ScrollViewer>
+            <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,6,0,12">
+                <Separator Width="32" Background="{StaticResource ShellLineBrush}" Margin="0,0,0,10"/>
+                    <Button x:Name="SplitButton" Style="{StaticResource UtilityIconButtonStyle}" Width="40" Height="40" Margin="0,0,0,8" Click="SplitButton_Click" ToolTip="Split screen (Ctrl+Shift+2)"><TextBlock Text="◫" FontSize="22" VerticalAlignment="Center" HorizontalAlignment="Center"/></Button>
+                    <Button x:Name="MoreMenuButton"
+                            Style="{StaticResource UtilityIconButtonStyle}"
+                            Width="40" Height="40" Margin="0"
+                            ToolTip="Settings"
+                            Click="MoreMenuButton_Click">
+                        <TextBlock Text="⚙" FontFamily="Segoe UI Symbol" FontSize="25" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Button.ContextMenu>
+                            <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Right">
+                                <MenuItem Header="Pop out" Style="{StaticResource DarkMenuItemStyle}" Click="OpenActiveCompanion_Click"/>
+                                <MenuItem Header="New window" Style="{StaticResource DarkMenuItemStyle}">
+                                    <MenuItem Header="Messenger" Tag="Messenger" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
+                                    <MenuItem Header="Facebook" Tag="Facebook" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
+                                    <MenuItem Header="YouTube" Tag="YouTube" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
+                                    <MenuItem Header="Discord" Tag="Discord" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
+                                    <MenuItem Header="Zalo" Tag="Zalo" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
+                                </MenuItem>
+                                <Separator/>
+                                <MenuItem x:Name="MoreZoomMenuItem" Header="Zoom" Style="{StaticResource DarkMenuItemStyle}" Click="MoreZoomMenuItem_Click"/>
+                                <MenuItem Header="Playback" Style="{StaticResource DarkMenuItemStyle}">
+                                    <MenuItem x:Name="MoreBackgroundAudioMenuItem" Header="Background audio" Style="{StaticResource DarkMenuItemStyle}" IsCheckable="True" Click="BackgroundAudioButton_Click"/>
+                                    <MenuItem x:Name="MoreResourcePolicyMenuItem" Header="Resource policy" Style="{StaticResource DarkMenuItemStyle}">
+                                        <MenuItem x:Name="ResourceKeepAliveMenuItem" IsCheckable="True" Header="Keep alive" Tag="KeepAlive" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
+                                        <MenuItem x:Name="ResourceBalancedMenuItem" IsCheckable="True" Header="Balanced" Tag="Balanced" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
+                                        <MenuItem x:Name="ResourceAggressiveMenuItem" IsCheckable="True" Header="Aggressive" Tag="Aggressive" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
+                                    </MenuItem>
+                                </MenuItem>
+                                <MenuItem Header="Window" Style="{StaticResource DarkMenuItemStyle}">
+                                    <MenuItem x:Name="MoreSizeMenuItem" Header="Size" Style="{StaticResource DarkMenuItemStyle}" Click="MoreSizeMenuItem_Click"/>
+                                    <MenuItem x:Name="MorePositionMenuItem" Header="Position" Style="{StaticResource DarkMenuItemStyle}" Click="MorePositionMenuItem_Click"/>
+                                    <MenuItem x:Name="MoreAlwaysOnTopMenuItem" Header="Always on top" Style="{StaticResource DarkMenuItemStyle}" IsCheckable="True" Click="MoreAlwaysOnTopMenuItem_Click"/>
+                                </MenuItem>
+                                <MenuItem Header="Tools" Style="{StaticResource DarkMenuItemStyle}">
+                                    <MenuItem x:Name="MoreAdBlockMenuItem" Header="Ad blocker" Style="{StaticResource DarkMenuItemStyle}" Click="AdBlockButton_Click"/>
+                                    <MenuItem x:Name="MoreVpnMenuItem" Header="VPN" Style="{StaticResource DarkMenuItemStyle}" Click="VpnMenuItem_Click"/>
+                                    <MenuItem x:Name="MoreHealthMenuItem" Header="Health" Style="{StaticResource DarkMenuItemStyle}" Click="SessionHealthButton_Click"/>
+                                    <MenuItem Header="Updates" Style="{StaticResource DarkMenuItemStyle}" Click="UpdatesMenuItem_Click"/>
+                                </MenuItem>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+            </StackPanel>
+            </Grid>
         </Border>
 
-        <Border x:Name="ToolbarBorder" Grid.Column="1" Grid.Row="0" Panel.ZIndex="20" ClipToBounds="True" Background="{StaticResource ShellChromeGradientBrush}" BorderBrush="{StaticResource ShellLineBrush}" BorderThickness="0,0,0,1">
+        <Border x:Name="ToolbarBorder" Grid.Column="1" Grid.Row="0" Panel.ZIndex="20" Visibility="Collapsed" ClipToBounds="True" Background="{StaticResource ShellChromeGradientBrush}" BorderBrush="{StaticResource ShellLineBrush}" BorderThickness="0,0,0,1">
             <Grid Margin="9,7">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -411,7 +458,7 @@
                 <!-- App strip. The responsive controller switches between the full icon strip
                      and the tiny current-app + Apps menu layout. -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock x:Name="ShellSiteTitle" Text="Messenger" TextTrimming="CharacterEllipsis" MaxWidth="220" ToolTip="Current apps" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource ShellTextBrush}" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                    <TextBlock x:Name="ShellSiteTitle" Visibility="Collapsed" Text="Messenger" TextTrimming="CharacterEllipsis" MaxWidth="220" ToolTip="Current apps" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource ShellTextBrush}" VerticalAlignment="Center" Margin="6,0,0,0"/>
 
                     <StackPanel x:Name="TinyAppSwitcherPanel" Orientation="Horizontal" Visibility="Collapsed" VerticalAlignment="Center">
                         <Button x:Name="CurrentAppButton"
@@ -420,7 +467,7 @@
                                 IsHitTestVisible="False"
                                 ToolTip="Current app">
                             <Grid Width="24" Height="24">
-                                <Image x:Name="CurrentAppIconImage" Source="{StaticResource MessengerPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" x:Name="CurrentAppIconImage" Source="{StaticResource MessengerPixelIcon}" Width="24" Height="24" Stretch="Uniform"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
@@ -439,12 +486,12 @@
                             </Grid>
                             <Button.ContextMenu>
                                 <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Bottom">
-                                    <MenuItem x:Name="AppsMessengerMenuItem" Header="Messenger" Tag="Messenger" Style="{StaticResource DarkMenuItemStyle}" Click="MessengerButton_Click"><MenuItem.Icon><Image Source="{StaticResource MessengerPixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
-                                    <MenuItem x:Name="AppsFacebookMenuItem" Header="Facebook" Tag="Facebook" Style="{StaticResource DarkMenuItemStyle}" Click="FacebookButton_Click"><MenuItem.Icon><Image Source="{StaticResource FacebookPixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
-                                    <MenuItem x:Name="AppsYouTubeMenuItem" Header="YouTube" Tag="YouTube" Style="{StaticResource DarkMenuItemStyle}" Click="YouTubeButton_Click"><MenuItem.Icon><Image Source="{StaticResource YouTubePixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
-                                    <MenuItem x:Name="AppsDiscordMenuItem" Header="Discord" Tag="Discord" Style="{StaticResource DarkMenuItemStyle}" Click="DiscordButton_Click"><MenuItem.Icon><Image Source="{StaticResource DiscordPixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
-                                    <MenuItem x:Name="AppsZaloMenuItem" Header="Zalo" Tag="Zalo" Style="{StaticResource DarkMenuItemStyle}" Click="ZaloButton_Click"><MenuItem.Icon><Image Source="{StaticResource ZaloPixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
-                                    <MenuItem x:Name="AppsWebMenuItem" Header="Web" Tag="Web" Style="{StaticResource DarkMenuItemStyle}" Click="WebButton_Click"><MenuItem.Icon><Image Source="{StaticResource WebPixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsMessengerMenuItem" Header="Messenger" Tag="Messenger" Style="{StaticResource DarkMenuItemStyle}" Click="MessengerButton_Click"><MenuItem.Icon><Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource MessengerPixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsFacebookMenuItem" Header="Facebook" Tag="Facebook" Style="{StaticResource DarkMenuItemStyle}" Click="FacebookButton_Click"><MenuItem.Icon><Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource FacebookPixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsYouTubeMenuItem" Header="YouTube" Tag="YouTube" Style="{StaticResource DarkMenuItemStyle}" Click="YouTubeButton_Click"><MenuItem.Icon><Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource YouTubePixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsDiscordMenuItem" Header="Discord" Tag="Discord" Style="{StaticResource DarkMenuItemStyle}" Click="DiscordButton_Click"><MenuItem.Icon><Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource DiscordPixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsZaloMenuItem" Header="Zalo" Tag="Zalo" Style="{StaticResource DarkMenuItemStyle}" Click="ZaloButton_Click"><MenuItem.Icon><Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource ZaloPixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem x:Name="AppsWebMenuItem" Header="Web" Tag="Web" Style="{StaticResource DarkMenuItemStyle}" Click="WebButton_Click"><MenuItem.Icon><Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource WebPixelIcon}" Width="18" Height="18"/></MenuItem.Icon></MenuItem>
                                 </ContextMenu>
                             </Button.ContextMenu>
                         </Button>
@@ -452,7 +499,6 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button x:Name="SplitButton" Style="{StaticResource UtilityIconButtonStyle}" Width="36" Height="36" Margin="0,0,4,0" Click="SplitButton_Click" ToolTip="Split screen (Ctrl+Shift+2)"><TextBlock Text="◫" FontSize="22" VerticalAlignment="Center" HorizontalAlignment="Center"/></Button>
                     <Button x:Name="BackgroundAudioButton"
                             Style="{StaticResource UtilityIconButtonStyle}"
                             ToolTip="Background audio: Off"
@@ -472,44 +518,6 @@
                               ToolTip="Always on top"
                               Checked="AlwaysOnTopCheckBox_Changed"
                               Unchecked="AlwaysOnTopCheckBox_Changed"/>
-
-                    <Button x:Name="MoreMenuButton"
-                            Style="{StaticResource UtilityIconButtonStyle}"
-                            Width="36" Height="36" Margin="0"
-                            ToolTip="More"
-                            Click="MoreMenuButton_Click">
-                        <TextBlock Text="•••" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        <Button.ContextMenu>
-                            <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Bottom">
-                                <MenuItem Header="Split screen (Ctrl+Shift+2)" Style="{StaticResource DarkMenuItemStyle}" Click="SplitButton_Click"/>
-                                <MenuItem Header="Open current app in a window (Ctrl+Shift+O)" Style="{StaticResource DarkMenuItemStyle}" Click="OpenActiveCompanion_Click"/>
-                                <MenuItem Header="New companion window" Style="{StaticResource DarkMenuItemStyle}">
-                                    <MenuItem Header="Messenger" Tag="Messenger" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
-                                    <MenuItem Header="Facebook" Tag="Facebook" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
-                                    <MenuItem Header="YouTube" Tag="YouTube" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
-                                    <MenuItem Header="Discord" Tag="Discord" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
-                                    <MenuItem Header="Zalo" Tag="Zalo" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
-                                </MenuItem>
-
-                                <MenuItem x:Name="MoreZoomMenuItem" Header="Zoom · Auto" Style="{StaticResource DarkMenuItemStyle}" Click="MoreZoomMenuItem_Click"/>
-                                <Separator/>
-                                <MenuItem x:Name="MoreAdBlockMenuItem" Header="Ad blocker settings" Style="{StaticResource DarkMenuItemStyle}" Click="AdBlockButton_Click"/>
-                                <MenuItem x:Name="MoreVpnMenuItem" Header="VPN · checking" Style="{StaticResource DarkMenuItemStyle}" Click="VpnMenuItem_Click"/>
-                                <MenuItem x:Name="MoreHealthMenuItem" Header="Session health" Style="{StaticResource DarkMenuItemStyle}" Click="SessionHealthButton_Click"/>
-                                <MenuItem Header="Updates…" Style="{StaticResource DarkMenuItemStyle}" Click="UpdatesMenuItem_Click"/>
-                                <MenuItem x:Name="MoreResourcePolicyMenuItem" Header="Resource policy · Balanced" Style="{StaticResource DarkMenuItemStyle}">
-                                    <MenuItem x:Name="ResourceKeepAliveMenuItem" IsCheckable="True" Header="Keep alive" Tag="KeepAlive" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
-                                    <MenuItem x:Name="ResourceBalancedMenuItem" IsCheckable="True" Header="Balanced" Tag="Balanced" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
-                                    <MenuItem x:Name="ResourceAggressiveMenuItem" IsCheckable="True" Header="Aggressive" Tag="Aggressive" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
-                                </MenuItem>
-                                <Separator/>
-                                <MenuItem x:Name="MoreSizeMenuItem" Header="Window size · 1/4" Style="{StaticResource DarkMenuItemStyle}" Click="MoreSizeMenuItem_Click"/>
-                                <MenuItem x:Name="MorePositionMenuItem" Header="Position · Bottom right" Style="{StaticResource DarkMenuItemStyle}" Click="MorePositionMenuItem_Click"/>
-                                <MenuItem x:Name="MoreBackgroundAudioMenuItem" Header="Background audio" Style="{StaticResource DarkMenuItemStyle}" IsCheckable="True" Click="BackgroundAudioButton_Click"/>
-                                <MenuItem x:Name="MoreAlwaysOnTopMenuItem" Header="Always on top" Style="{StaticResource DarkMenuItemStyle}" IsCheckable="True" Click="MoreAlwaysOnTopMenuItem_Click"/>
-                            </ContextMenu>
-                        </Button.ContextMenu>
-                    </Button>
 
                     <!-- Hidden command hosts preserve the existing submenus and their stateful items.
                          The More menu opens these menus using itself as the placement target. -->
@@ -774,7 +782,7 @@
         </Border>
 
         <!-- This dedicated handle row remains visible even when the toolbar is collapsed. -->
-        <Grid Grid.Column="1" Grid.Row="2" Panel.ZIndex="20" Background="{StaticResource ShellCanvasBrush}">
+        <Grid Grid.Column="1" Grid.Row="2" Panel.ZIndex="20" Visibility="Collapsed" Background="{StaticResource ShellCanvasBrush}">
             <Button x:Name="ToolbarToggleButton"
                     Style="{StaticResource ToolbarToggleButtonStyle}"
                     Width="38" Height="18"

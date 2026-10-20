@@ -1,4 +1,12 @@
-# WorkChat Core 2.50.0 — On-demand companion windows
+# WorkChat Core 2.51.0 — Original Pixel Icons & Minimal Shell
+
+- Restore original custom pixel-art icon assets and crisp scaling.
+- Use only the vertical app rail; retire duplicate top toolbar/title/loose controls.
+- Pin Split above the Settings gear at the bottom left.
+- Put background audio and always-on-top solely inside settings; group options into concise menus.
+- Preserve Split View, companion windows, session data and updater unchanged.
+
+## Previous: On-demand companion windows
 
 - **Window riêng:** nhấp phải icon Messenger/Facebook/YouTube/Discord/Zalo rồi chọn "Open ... in another window". Hoặc More → New companion window.
 - **Ctrl+Shift+O:** mở cửa sổ riêng cho ứng dụng hiện hành (nếu là dịch vụ hỗ trợ).

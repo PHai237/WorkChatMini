@@ -1,4 +1,8 @@
-# WorkChat Mini Core 2.50.0 — Companion Windows
+# WorkChat Mini Core 2.51.0 — Pixel Rail & Minimal Shell
+
+**UI refresh based on feedback:** Restored all six original 128×128 pixel-art PNG icons (no substitute vector drawings), kept a single left-hand app rail at every window width (48 DIP on narrow windows, 60 DIP normally), pinned **Split** directly above the bottom **Settings gear**, and removed the duplicate 54-DIP top toolbar plus its 18-DIP handle row. Background audio and Always on top stay available as settings-only switches. The former toolbar title and audio/switch controls are hidden compatibility hosts, not visible chrome. Settings are grouped as Pop out, New window, Zoom, Playback, Window and Tools; no long rows of status text. Nothing changes the saved browser profiles, call protection, WebView2 lifetime or Story data.
+
+## Earlier changes: Companion Windows
 
 **New:** drag a service icon outside the WorkChat window and release to open a *separate companion window*, or right-click an app icon and select **Open ... in another window**. Also available at **More → New companion window**, **Ctrl+Shift+O** (current pinned service), and right-click **Split → Open right app in another window**. The existing Split View remains available.
 
@@ -16,11 +20,11 @@ Companion windows use a fresh WebView2 **only on demand**, with the same authent
 
 # Previous Core versions
 
-**2.48.0 Modern UI:** 1/16 window size retired and migrated to 1/8, crisp vector app icons, consistent dark theme, rounded controls/dialogs and Windows-managed dark window chrome where supported.
+**2.48.0 Modern UI:** 1/16 window size retired and migrated to 1/8, original pixel-art app icons, consistent dark theme, rounded controls/dialogs and Windows-managed dark window chrome where supported.
 
 **2.46.0 Split View:** Two existing pinned WebViews can sit side by side with a draggable divider, controlled by Split / Ctrl+Shift+2 or the context menu. The secondary pane remains foreground for suspend, memory targets and audio; no duplicate WebViews or profile changes. The window automatically returns to single-pane under 760px. Separate-window detachment is intentionally deferred pending Windows WebView2 safety testing.
 
-**2.45.0 UI & performance update:** A narrow vertical app rail replaces the desktop icon strip. Under 520px width the rail collapses to the original Apps menu; no extra WebViews are created. The active Messenger highlight is fixed after retiring Story, height-only window resizes no longer trigger zoom updates, and passive hover wake is disabled during elevated/critical memory pressure (click still wakes the site). Includes a new Core navigation rail self-test.
+**2.45.0 UI & performance update:** A narrow vertical app rail replaces the desktop icon strip. Under 520px the rail originally collapsed to an Apps menu (replaced by always-visible compact rail in 2.51.0); no extra WebViews are created. The active Messenger highlight is fixed after retiring Story, height-only window resizes no longer trigger zoom updates, and passive hover wake is disabled during elevated/critical memory pressure (click still wakes the site). Includes a new Core navigation rail self-test.
 
 
 This source retires the built-in AI Story feature and keeps WorkChat as a lightweight multi-site desktop app (Messenger, Facebook, Discord, YouTube, Zalo, Web).
