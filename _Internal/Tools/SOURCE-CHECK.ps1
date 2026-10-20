@@ -301,9 +301,31 @@ $badNames = @(Get-ChildItem -LiteralPath $source -File -Recurse | Where-Object {
 })
 if ($badNames.Count -gt 0) { $errors.Add("Built binary or generated artifact in source: $($badNames.Count)") }
 Write-Host "Source: $checked C#/XAML files; $xmlCount XML files parsed; max $largest lines ($maxFile)"
+# 2.52: submenu templates need PART_Popup; the custom flat style must never
+# be used by any MenuItem with children. Prevent the 2.51 Settings regression.
+try {
+    [xml]$menuXml = $shellXaml
+    $nsm = [System.Xml.XmlNamespaceManager]::new($menuXml.NameTable)
+    $nsm.AddNamespace('w', 'http://schemas.microsoft.com/winfx/2006/xaml/presentation')
+    $badParents = @($menuXml.SelectNodes('//w:MenuItem[w:MenuItem]', $nsm) | Where-Object { $_.Style -like '*DarkMenuItemStyle*' })
+    if ($badParents.Count -gt 0) {
+        $errors.Add('Settings submenu parent uses flat MenuItem template and cannot open child commands.')
+    }
+} catch { $errors.Add('Could not check Settings submenu templates.') }
+$notificationSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.Notifications.cs'))
+$resourceProfiles = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.ResourceProfiles.cs'))
+if ($notificationSource -notmatch 'ChatAlertOriginMatches' -or
+    $notificationSource -notmatch 'CoreWebView2PermissionState.Allow' -or
+    $notificationSource -notmatch 'EnsureChatAlertSitesReadyAsync' -or
+    $resourceProfiles -notmatch 'ChatAlertsKeepAlive' -or
+    $shellXaml -notmatch 'MoreChatNotificationsMenuItem') {
+    $errors.Add('Chat notification policy, menu switch or background keep-alive guard is missing.')
+}
+
 if ($errors.Count -gt 0) {
     foreach ($issue in $errors) { Write-Host "FAIL: $issue" -ForegroundColor Red }
     exit 1
 }
 Write-Host 'SOURCE CHECK PASS (static only; Windows BUILD + selftest still required)' -ForegroundColor Green
 exit 0
+

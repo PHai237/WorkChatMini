@@ -299,7 +299,7 @@ public partial class MainWindow
         _configuredWebViewSites[webView] = site;
         core.PermissionRequested += Core_PermissionRequested;
         core.NotificationReceived += ConfiguredCore_NotificationReceived;
-        _ = ConfigureBlockedNotificationPermissionAsync(core, site);
+        _ = ApplyChatAlertPermissionsAsync(core, site);
         core.NewWindowRequested += ConfiguredCore_NewWindowRequested;
         core.NavigationStarting += ConfiguredCore_NavigationStarting;
         core.ProcessFailed += ConfiguredCore_ProcessFailed;

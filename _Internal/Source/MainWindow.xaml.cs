@@ -130,7 +130,7 @@ public partial class MainWindow : Window
     private static readonly TimeSpan ResourceLogInterval = TimeSpan.FromMinutes(5);
 
     // Smart Wake: hover/click intent can pre-wake a sleeping or not-yet-created app.
-    // Notification permission is hard-denied, so wake behavior never depends on OS/web notifications.
+    // Chat WebView notifications are permitted only for Messenger/Discord/Zalo when enabled; other sites stay silent.
     private static readonly TimeSpan SmartWakeHoverDelay = TimeSpan.FromMilliseconds(275);
     private static readonly TimeSpan IntentPrewarmHoverDelay = TimeSpan.FromMilliseconds(450);
     private static readonly TimeSpan SmartWakeGracePeriod = TimeSpan.FromMinutes(1);
@@ -293,8 +293,17 @@ public partial class MainWindow : Window
             if (_isExiting)
                 return;
 
-            await InitializeAdBlockFromCachedProfileAsync();
-            AppLogger.Info("APP", $"Post-startup cache init completed | elapsedMs={_startupStopwatch.ElapsedMilliseconds} | adblockScan=deferred-to-user | vpnProbe=on-demand");
+            try
+            {
+                await InitializeAdBlockFromCachedProfileAsync();
+            }
+            catch (Exception ex)
+            {
+                // AdBlock initialization must not prevent chat alerts from starting.
+                AppLogger.Warn("APP", $"Deferred blocker initialization failed | {ex.Message}");
+            }
+            await EnsureChatAlertSitesReadyAsync();
+            AppLogger.Info("APP", $"Post-startup work completed | elapsedMs={_startupStopwatch.ElapsedMilliseconds} | chatAlerts={_settings.ChatNotificationsEnabled} | vpnProbe=on-demand");
         }
         catch (Exception ex)
         {

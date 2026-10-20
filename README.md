@@ -1,4 +1,12 @@
-# WorkChat Mini Core 2.51.0 — Pixel Rail & Minimal Shell
+# WorkChat Mini Core 2.52.0 — Working Settings & Chat Alerts
+
+- Restores functional nested Settings menus (Playback, Window, Tools, New window).
+- Chat alerts for Messenger, Discord, Zalo when WorkChat is running, including minimized/tray.
+- Default enabled, toggle at Settings > Chat alerts; keeping 3 chat WebViews active uses additional RAM.
+- WorkChat must still be running and the services must be signed in. Full Exit disables alerts.
+- Service WebView2/Windows notification delivery varies by service and Windows notification settings.
+
+## Previous: 2.51.0 — Pixel Rail & Minimal Shell
 
 **UI refresh based on feedback:** Restored all six original 128×128 pixel-art PNG icons (no substitute vector drawings), kept a single left-hand app rail at every window width (48 DIP on narrow windows, 60 DIP normally), pinned **Split** directly above the bottom **Settings gear**, and removed the duplicate 54-DIP top toolbar plus its 18-DIP handle row. Background audio and Always on top stay available as settings-only switches. The former toolbar title and audio/switch controls are hidden compatibility hosts, not visible chrome. Settings are grouped as Pop out, New window, Zoom, Playback, Window and Tools; no long rows of status text. Nothing changes the saved browser profiles, call protection, WebView2 lifetime or Story data.
 

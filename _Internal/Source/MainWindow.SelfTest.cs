@@ -381,13 +381,65 @@ public partial class MainWindow
                 return Task.CompletedTask;
             });
 
-            await RunCase("Notification quiet policy", () =>
+            await RunCase("Settings submenu templates", () =>
             {
-                if (!IsNotificationPermissionBlocked(CoreWebView2PermissionKind.Notifications))
-                    throw new InvalidOperationException("Notification permission is not hard-blocked.");
+                var nativeSubmenuStyle = FindResource("DarkSubmenuItemStyle") as System.Windows.Style;
+                if (nativeSubmenuStyle is null ||
+                    nativeSubmenuStyle.Setters.OfType<System.Windows.Setter>().Any(
+                        setter => setter.Property == System.Windows.Controls.Control.TemplateProperty))
+                    throw new InvalidOperationException("Settings submenu must keep WPF native popup template.");
+                var settingsMenu = MoreMenuButton.ContextMenu;
+                if (settingsMenu is null)
+                    throw new InvalidOperationException("Settings button has no context menu.");
+                foreach (string label in new[] { "New window", "Playback", "Window", "Tools" })
+                {
+                    var parent = settingsMenu.Items.OfType<System.Windows.Controls.MenuItem>()
+                        .FirstOrDefault(item => Equals(item.Header, label));
+                    if (parent is null || parent.Items.Count == 0 ||
+                        !ReferenceEquals(parent.Style, nativeSubmenuStyle))
+                        throw new InvalidOperationException($"Settings group {label} is not submenu-capable.");
+                }
+                return Task.CompletedTask;
+            });
+
+            await RunCase("Chat notification origin and toggle policy", () =>
+            {
+                UpdateMoreMenuState();
+                if (!IsNotificationPermissionBlocked(CoreWebView2PermissionKind.Notifications) ||
+                    !ChatAlertOriginMatches(MiniSite.Messenger, "https://www.messenger.com/t/123") ||
+                    !ChatAlertOriginMatches(MiniSite.Discord, "https://discord.com/app") ||
+                    !ChatAlertOriginMatches(MiniSite.Zalo, "https://chat.zalo.me/") ||
+                    ChatAlertOriginMatches(MiniSite.Messenger, "https://messenger.com.evil.test/") ||
+                    ChatAlertOriginMatches(MiniSite.Discord, "http://discord.com/app") ||
+                    ChatAlertOriginMatches(MiniSite.Discord, "https://discord.com.evil.test/") ||
+                    ChatAlertOriginMatches(MiniSite.Facebook, "https://facebook.com/") ||
+                    ChatAlertOriginMatches(MiniSite.YouTube, "https://youtube.com/"))
+                    throw new InvalidOperationException("Chat notification origin allowlist is invalid.");
                 if (FindName("MessengerUnreadDot") is not null || FindName("DiscordUnreadDot") is not null ||
                     FindName("ZaloUnreadDot") is not null || FindName("CurrentAppUnreadDot") is not null)
-                    throw new InvalidOperationException("Unread badge UI still exists in the visual tree.");
+                    throw new InvalidOperationException("Unexpected legacy notification badges.");
+                if (MoreChatNotificationsMenuItem is null ||
+                    MoreChatNotificationsMenuItem.IsChecked != _settings.ChatNotificationsEnabled)
+                    throw new InvalidOperationException("Notification Settings toggle does not match stored value.");
+                bool previous = _settings.ChatNotificationsEnabled;
+                try
+                {
+                    _settings.ChatNotificationsEnabled = true;
+                    if (!ChatAlertsKeepAlive(MiniSite.Messenger) ||
+                        !ChatAlertsKeepAlive(MiniSite.Discord) ||
+                        !ChatAlertsKeepAlive(MiniSite.Zalo) ||
+                        ChatAlertsKeepAlive(MiniSite.Facebook) ||
+                        ChatAlertsKeepAlive(MiniSite.YouTube) ||
+                        ChatAlertsKeepAlive(MiniSite.Web))
+                        throw new InvalidOperationException("Chat keep-alive policy is too broad or incomplete.");
+                    _settings.ChatNotificationsEnabled = false;
+                    if (ChatAlertsKeepAlive(MiniSite.Messenger) || ChatAlertsKeepAlive(MiniSite.Zalo))
+                        throw new InvalidOperationException("Chat keep-alive policy ignored disabled alerts.");
+                }
+                finally
+                {
+                    _settings.ChatNotificationsEnabled = previous;
+                }
                 return Task.CompletedTask;
             });
 

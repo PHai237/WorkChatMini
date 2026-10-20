@@ -113,8 +113,8 @@ internal sealed class WorkChatCompanionWindow : Window
                 throw new InvalidOperationException("Companion WebView2 controller was not created.");
             core.Settings.IsStatusBarEnabled = false;
             core.Settings.IsZoomControlEnabled = false;
-            // Like WorkChat's normal surfaces, deny web notifications instead
-            // of prompting unexpectedly from an independent window.
+            // Companion windows do not independently raise notifications to avoid
+            // duplicate alerts; the main chat surfaces own background alerts.
             core.PermissionRequested += (_, e) =>
             {
                 if (e.PermissionKind == CoreWebView2PermissionKind.Notifications)

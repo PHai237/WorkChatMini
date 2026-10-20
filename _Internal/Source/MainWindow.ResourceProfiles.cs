@@ -7,6 +7,9 @@ public partial class MainWindow
 {
     private ResourcePolicy GetResourcePolicy(MiniSite site)
     {
+        // Notifications require running renderers; do not suspend alert-enabled chats.
+        if (ChatAlertsKeepAlive(site))
+            return ResourcePolicy.KeepAlive;
         if (site == MiniSite.YouTube)
             return ResourcePolicy.KeepAlive;
         if (site is MiniSite.Web or MiniSite.Story)

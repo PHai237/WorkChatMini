@@ -71,6 +71,7 @@ public partial class MainWindow
 
         UpdateZoomMenuState();
         UpdateDropdownState();
+        UpdateMoreMenuState();
         UpdateCurrentAppIndicator();
         UpdateResponsiveCommandBar();
     }
@@ -496,6 +497,7 @@ public partial class MainWindow
         MoreSizeMenuItem.Header = $"Size · {_settings.WindowSizePreset}";
         MorePositionMenuItem.Header = $"Position · {PositionModeLabel(_positionMode)}";
         MoreBackgroundAudioMenuItem.IsChecked = _settings.BackgroundAudioEnabled;
+        MoreChatNotificationsMenuItem.IsChecked = _settings.ChatNotificationsEnabled;
         MoreAlwaysOnTopMenuItem.IsChecked = _settings.AlwaysOnTop;
         MoreAdBlockMenuItem.Header = "Ad blocker";
         UpdateVpnMenuState();

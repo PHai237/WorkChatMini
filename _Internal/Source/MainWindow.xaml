@@ -134,6 +134,15 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Parent menu items must retain the native MenuItem submenu presenter / PART_Popup.
+             DarkMenuItemStyle below is ONLY for leaf commands, never submenus. -->
+        <Style x:Key="DarkSubmenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
+            <Setter Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
         <Style x:Key="DarkMenuItemStyle" TargetType="MenuItem">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -412,7 +421,8 @@
                         <Button.ContextMenu>
                             <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Right">
                                 <MenuItem Header="Pop out" Style="{StaticResource DarkMenuItemStyle}" Click="OpenActiveCompanion_Click"/>
-                                <MenuItem Header="New window" Style="{StaticResource DarkMenuItemStyle}">
+                                <MenuItem x:Name="MoreChatNotificationsMenuItem" Header="Chat alerts (Mess · Discord · Zalo)" ToolTip="Alerts while WorkChat runs in the tray; uses more RAM" Style="{StaticResource DarkMenuItemStyle}" IsCheckable="True" Click="ChatNotificationsMenuItem_Click"/>
+                                <MenuItem Header="New window" Style="{StaticResource DarkSubmenuItemStyle}">
                                     <MenuItem Header="Messenger" Tag="Messenger" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
                                     <MenuItem Header="Facebook" Tag="Facebook" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
                                     <MenuItem Header="YouTube" Tag="YouTube" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
@@ -421,20 +431,20 @@
                                 </MenuItem>
                                 <Separator/>
                                 <MenuItem x:Name="MoreZoomMenuItem" Header="Zoom" Style="{StaticResource DarkMenuItemStyle}" Click="MoreZoomMenuItem_Click"/>
-                                <MenuItem Header="Playback" Style="{StaticResource DarkMenuItemStyle}">
+                                <MenuItem Header="Playback" Style="{StaticResource DarkSubmenuItemStyle}">
                                     <MenuItem x:Name="MoreBackgroundAudioMenuItem" Header="Background audio" Style="{StaticResource DarkMenuItemStyle}" IsCheckable="True" Click="BackgroundAudioButton_Click"/>
-                                    <MenuItem x:Name="MoreResourcePolicyMenuItem" Header="Resource policy" Style="{StaticResource DarkMenuItemStyle}">
+                                    <MenuItem x:Name="MoreResourcePolicyMenuItem" Header="Resource policy" Style="{StaticResource DarkSubmenuItemStyle}">
                                         <MenuItem x:Name="ResourceKeepAliveMenuItem" IsCheckable="True" Header="Keep alive" Tag="KeepAlive" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
                                         <MenuItem x:Name="ResourceBalancedMenuItem" IsCheckable="True" Header="Balanced" Tag="Balanced" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
                                         <MenuItem x:Name="ResourceAggressiveMenuItem" IsCheckable="True" Header="Aggressive" Tag="Aggressive" Style="{StaticResource DarkMenuItemStyle}" Click="ResourcePolicyMenuItem_Click"/>
                                     </MenuItem>
                                 </MenuItem>
-                                <MenuItem Header="Window" Style="{StaticResource DarkMenuItemStyle}">
+                                <MenuItem Header="Window" Style="{StaticResource DarkSubmenuItemStyle}">
                                     <MenuItem x:Name="MoreSizeMenuItem" Header="Size" Style="{StaticResource DarkMenuItemStyle}" Click="MoreSizeMenuItem_Click"/>
                                     <MenuItem x:Name="MorePositionMenuItem" Header="Position" Style="{StaticResource DarkMenuItemStyle}" Click="MorePositionMenuItem_Click"/>
                                     <MenuItem x:Name="MoreAlwaysOnTopMenuItem" Header="Always on top" Style="{StaticResource DarkMenuItemStyle}" IsCheckable="True" Click="MoreAlwaysOnTopMenuItem_Click"/>
                                 </MenuItem>
-                                <MenuItem Header="Tools" Style="{StaticResource DarkMenuItemStyle}">
+                                <MenuItem Header="Tools" Style="{StaticResource DarkSubmenuItemStyle}">
                                     <MenuItem x:Name="MoreAdBlockMenuItem" Header="Ad blocker" Style="{StaticResource DarkMenuItemStyle}" Click="AdBlockButton_Click"/>
                                     <MenuItem x:Name="MoreVpnMenuItem" Header="VPN" Style="{StaticResource DarkMenuItemStyle}" Click="VpnMenuItem_Click"/>
                                     <MenuItem x:Name="MoreHealthMenuItem" Header="Health" Style="{StaticResource DarkMenuItemStyle}" Click="SessionHealthButton_Click"/>

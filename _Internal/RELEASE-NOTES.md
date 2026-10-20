@@ -1,3 +1,13 @@
+# WorkChat Core 2.52.0 — Working Settings & Chat Alerts
+
+- Fixed nonfunctional submenu parents. The old custom leaf MenuItem template omitted PART_Popup.
+- Enabled WebView2 notifications only for Messenger, Discord and Zalo HTTPS service origins (opt-out via Settings > Chat alerts).
+- Restored formerly denied WebView2 profile permissions; do not intercept permitted desktop notifications.
+- Keep chat renderers awake and start them after Messenger startup for background/tray alerts.
+- Trade-off: greater RAM use when alerts are enabled; no alerts after Exit.
+
+---
+
 # WorkChat Core 2.51.0 — Original Pixel Icons & Minimal Shell
 
 - Restore original custom pixel-art icon assets and crisp scaling.

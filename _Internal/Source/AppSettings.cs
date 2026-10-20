@@ -22,6 +22,8 @@ public sealed class AppSettings
     public bool AlwaysOnTop { get; set; } = false;
     public bool ToolbarCollapsed { get; set; } = false;
     public bool BackgroundAudioEnabled { get; set; } = false;
+    // Allow service-origin notifications while WorkChat stays running (including tray).
+    public bool ChatNotificationsEnabled { get; set; } = true;
     // Optional trusted HTTPS update feed; never silently installs updates.
     public string UpdateFeedUrl { get; set; } = string.Empty;
     public string SelectedAdBlocker { get; set; } = "AdBlock";
@@ -58,7 +60,7 @@ public sealed class AppSettings
     // Startup optimization: a full browser-extension rescan is unnecessary every launch.
     public DateTimeOffset? LastAdBlockFullScanUtc { get; set; }
 
-    public int SettingsVersion { get; set; } = 2250;
+    public int SettingsVersion { get; set; } = 2252;
 
     public static string AppDataDirectory => AppRuntime.DataDirectory;
 
@@ -221,8 +223,8 @@ public sealed class AppSettings
             if (string.IsNullOrWhiteSpace(settings.StoryModel))
                 settings.StoryModel = "gemini-3.8-flash";
 
-            settings.SettingsVersion = 2250;
-            if (originalSettingsVersion != 2250)
+            settings.SettingsVersion = 2252;
+            if (originalSettingsVersion != 2252)
                 settings.Save();
             return settings;
         }
