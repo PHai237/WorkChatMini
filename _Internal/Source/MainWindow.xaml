@@ -415,6 +415,7 @@
                             Style="{StaticResource UtilityIconButtonStyle}"
                             Width="40" Height="40" Margin="0"
                             ToolTip="Settings"
+                            ContextMenuService.IsEnabled="False"
                             Click="MoreMenuButton_Click">
                         <TextBlock Text="⚙" FontFamily="Segoe UI Symbol" FontSize="25" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <Button.ContextMenu>

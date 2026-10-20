@@ -449,7 +449,7 @@ public partial class MainWindow
     private void MoreMenuButton_Click(object sender, RoutedEventArgs e)
     {
         UpdateMoreMenuState();
-        OpenButtonMenu(MoreMenuButton);
+        ToggleSettingsFlyout();
     }
 
     private void MoreZoomMenuItem_Click(object sender, RoutedEventArgs e) =>

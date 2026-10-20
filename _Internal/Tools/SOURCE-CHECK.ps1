@@ -303,29 +303,29 @@ $badNames = @(Get-ChildItem -LiteralPath $source -File -Recurse | Where-Object {
 })
 if ($badNames.Count -gt 0) { $errors.Add("Built binary or generated artifact in source: $($badNames.Count)") }
 Write-Host "Source: $checked C#/XAML files; $xmlCount XML files parsed; max $largest lines ($maxFile)"
-# 2.52: submenu templates need PART_Popup; the custom flat style must never
-# be used by any MenuItem with children. Prevent the 2.51 Settings regression.
-try {
-    [xml]$menuXml = $shellXaml
-    $nsm = [System.Xml.XmlNamespaceManager]::new($menuXml.NameTable)
-    $nsm.AddNamespace('w', 'http://schemas.microsoft.com/winfx/2006/xaml/presentation')
-    $badParents = @($menuXml.SelectNodes('//w:MenuItem[w:MenuItem]', $nsm) | Where-Object { $_.Style -like '*DarkMenuItemStyle*' })
-    if ($badParents.Count -gt 0) {
-        $errors.Add('Settings submenu parent uses flat MenuItem template and cannot open child commands.')
-    }
-    # Never put essential update/exit commands inside a nested submenu.
-    # Uses XML ancestry instead of brittle text fragments.
-    foreach ($critical in @('MoreUpdatesMenuItem', 'MoreExitMenuItem')) {
-        $criticalItems = @($menuXml.SelectNodes("//w:MenuItem[@*[local-name()='Name' and namespace-uri()='http://schemas.microsoft.com/winfx/2006/xaml']='$critical']", $nsm))
-        if ($criticalItems.Count -ne 1 -or $criticalItems[0].ParentNode.LocalName -ne 'ContextMenu') {
-            $errors.Add("Critical $critical command is missing or nested under another menu (update lockout regression).")
-        }
-    }
-    if ($shellXaml -notmatch 'Click="UpdatesMenuItem_Click"' -or $shellXaml -notmatch 'Click="ExitMenuItem_Click"') {
-        $errors.Add('Update or Exit gear command lost its click handler.')
-    }
-
-} catch { $errors.Add('Could not check Settings submenu templates.') }
+# 2.54: The system MenuItem template produced white WinForms-like submenus and
+# uneven spacing. Settings MUST display a single styled flyout with page navigation.
+# We keep the legacy ContextMenu XAML objects temporarily for existing bindings,
+# but disable opening them directly from the gear button.
+$settingsFlyoutSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.SettingsFlyout.cs'))
+$controlStyles = [IO.File]::ReadAllText((Join-Path $source 'WorkChatControls.xaml'))
+if ($shellXaml -notmatch 'ContextMenuService.IsEnabled="False"' -or
+    $shellUi -notmatch 'ToggleSettingsFlyout\(' -or
+    $settingsFlyoutSource -notmatch 'private void ShowSettingsPage\(' -or
+    $settingsFlyoutSource -notmatch 'StaysOpen = false' -or
+    $settingsFlyoutSource -notmatch 'SettingsAction\("Updates", ShowUpdates\)' -or
+    $settingsFlyoutSource -notmatch 'SettingsAction\("Exit", ExitApplication\)' -or
+    $settingsFlyoutSource -notmatch 'SettingsAction\("Chat alerts", OpenSettingsChatAlerts' -or
+    $controlStyles -notmatch 'x:Key="SettingsFlyoutRowStyle"' -or
+    $controlStyles -notmatch 'x:Key="SettingsFlyoutSwitchStyle"') {
+    $errors.Add('Custom Settings flyout, nested pages, permanent Updates/Exit, or modern switch style missing.')
+}
+if ($controlStyles -notmatch 'TargetType="ToggleButton"' -or
+    $settingsFlyoutSource -match 'new ContextMenu|new System.Windows.Controls.MenuItem\s*\{\s*Header' -or
+    $settingsFlyoutSource -notmatch 'SettingsPages.Contains' -or
+    $settingsFlyoutSource -notmatch 'PlaceBesideBottom') {
+    $errors.Add('Settings must not fall back to native submenu and must keep bounded bottom positioning.')
+}
 $notificationSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.Notifications.cs'))
 $resourceProfiles = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.ResourceProfiles.cs'))
 if ($notificationSource -notmatch 'ChatAlertOriginMatches' -or
@@ -345,13 +345,15 @@ foreach ($site in @('Messenger', 'Discord', 'Zalo')) {
         $errors.Add("Missing $site chat alert preference.")
     }
 }
-if ($shellXaml -match 'MoreChatNotificationsMenuItem[^>]*IsCheckable="True"' -or
-    $alertPopupSource -notmatch 'StaysOpen = false' -or
+if ($alertPopupSource -notmatch 'StaysOpen = false' -or
     $alertPopupSource -notmatch 'ChatAlertChoice_Changed' -or
+    $alertPopupSource -notmatch 'new WpfToggleButton' -or
+    $alertPopupSource -notmatch 'SettingsFlyoutSwitchStyle' -or
+    $alertPopupSource -match 'new WpfCheckBox|new CheckBox' -or
     $notificationSource -notmatch 'SetChatAlertPreference') {
     $errors.Add('Chat alerts must use a separate multi-toggle popup and per-service settings.')
 }
-if ($shellXaml -notmatch 'Setter Property="Height" Value="34"' -or
+if ($controlStyles -notmatch 'Setter Property="Height" Value="39"' -or
     $shellXaml -match 'Chat alerts \(Mess') {
     $errors.Add('Settings menu rows must be consistent and chat alert menu labels concise.')
 }

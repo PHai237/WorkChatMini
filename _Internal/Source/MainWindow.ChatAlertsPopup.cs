@@ -2,117 +2,94 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using WpfBrush = System.Windows.Media.Brush;
 using System.Windows.Media.Effects;
-using System.Windows.Threading;
-using WpfCheckBox = System.Windows.Controls.CheckBox;
 using WpfImage = System.Windows.Controls.Image;
+using WpfOrientation = System.Windows.Controls.Orientation;
+using WpfToggleButton = System.Windows.Controls.Primitives.ToggleButton;
 
 namespace WorkChatMini;
 
 public partial class MainWindow
 {
     private Popup? _chatAlertsPopup;
-    private readonly Dictionary<MiniSite, WpfCheckBox> _chatAlertChoices = new();
+    private readonly Dictionary<MiniSite, WpfToggleButton> _chatAlertChoices = new();
     private bool _updatingChatAlertChoices;
 
     private void ShowChatAlertsPopup()
     {
-        if (_isExiting)
-            return;
+        if (_isExiting) return;
         EnsureChatAlertsPopup();
         _updatingChatAlertChoices = true;
         try
         {
-            foreach (var pair in _chatAlertChoices)
-                pair.Value.IsChecked = ChatAlertsKeepAlive(pair.Key);
+            foreach (var (site, toggle) in _chatAlertChoices)
+                toggle.IsChecked = ChatAlertsKeepAlive(site);
         }
-        finally
-        {
-            _updatingChatAlertChoices = false;
-        }
-        if (_chatAlertsPopup is not null)
-            _chatAlertsPopup.IsOpen = true;
+        finally { _updatingChatAlertChoices = false; }
+        if (_chatAlertsPopup is not null) _chatAlertsPopup.IsOpen = true;
     }
 
     private void EnsureChatAlertsPopup()
     {
-        if (_chatAlertsPopup is not null)
-            return;
-
-        var content = new StackPanel { Margin = new Thickness(8) };
-        content.Children.Add(new TextBlock
+        if (_chatAlertsPopup is not null) return;
+        var rows = new StackPanel { Margin = new Thickness(9, 7, 9, 8) };
+        rows.Children.Add(new TextBlock
         {
-            Text = "Chat alerts", FontSize = 13, FontWeight = FontWeights.SemiBold,
-            Foreground = (System.Windows.Media.Brush)FindResource("ShellTextBrush"),
-            Margin = new Thickness(8, 4, 4, 5)
+            Text = "Chat alerts", FontSize = 14, FontWeight = FontWeights.SemiBold,
+            Foreground = (WpfBrush)FindResource("ShellTextBrush"), Margin = new Thickness(12, 4, 7, 9)
         });
         foreach (MiniSite site in AlertSites)
         {
-            string iconKey = site switch
+            string key = site switch
             {
                 MiniSite.Messenger => "MessengerPixelIcon",
                 MiniSite.Discord => "DiscordPixelIcon",
                 _ => "ZaloPixelIcon"
             };
-            var label = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
-            var pixelIcon = new WpfImage
+            var name = new StackPanel { Orientation = WpfOrientation.Horizontal };
+            var icon = new WpfImage { Source = (ImageSource)FindResource(key), Width = 21, Height = 21,
+                Stretch = Stretch.Uniform, Margin = new Thickness(0, 0, 10, 0) };
+            RenderOptions.SetBitmapScalingMode(icon, BitmapScalingMode.NearestNeighbor);
+            name.Children.Add(icon);
+            name.Children.Add(new TextBlock { Text = site.ToString(), FontSize = 12.5,
+                Foreground = (WpfBrush)FindResource("ShellTextBrush"), VerticalAlignment = VerticalAlignment.Center });
+            var toggle = new WpfToggleButton
             {
-                Source = (ImageSource)FindResource(iconKey), Width = 19, Height = 19,
-                Stretch = Stretch.Uniform, Margin = new Thickness(0, 0, 9, 0)
+                Content = name, IsChecked = ChatAlertsKeepAlive(site), Tag = site,
+                Style = (Style)FindResource("SettingsFlyoutSwitchStyle"),
+                ToolTip = $"{site} notifications", IsThreeState = false
             };
-            RenderOptions.SetBitmapScalingMode(pixelIcon, BitmapScalingMode.NearestNeighbor);
-            label.Children.Add(pixelIcon);
-            label.Children.Add(new TextBlock
-            {
-                Text = site.ToString(), FontSize = 12.5,
-                Foreground = (System.Windows.Media.Brush)FindResource("ShellTextBrush"),
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            var check = new WpfCheckBox
-            {
-                Content = label, Height = 36, MinWidth = 185,
-                Tag = site, IsThreeState = false,
-                IsChecked = ChatAlertsKeepAlive(site),
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Padding = new Thickness(8, 0, 5, 0),
-                Cursor = System.Windows.Input.Cursors.Hand
-            };
-            check.Checked += ChatAlertChoice_Changed;
-            check.Unchecked += ChatAlertChoice_Changed;
-            _chatAlertChoices.Add(site, check);
-            content.Children.Add(check);
+            toggle.Click += ChatAlertChoice_Changed;
+            _chatAlertChoices.Add(site, toggle);
+            rows.Children.Add(toggle);
         }
-        content.Children.Add(new TextBlock
+        rows.Children.Add(new TextBlock
         {
-            Text = "Works while WorkChat is running",
-            Foreground = (System.Windows.Media.Brush)FindResource("ShellMutedBrush"),
-            FontSize = 10.5, Margin = new Thickness(8, 8, 4, 4),
-            TextWrapping = TextWrapping.Wrap
+            Text = "Alerts work while WorkChat is running in the background.",
+            FontSize = 11, Foreground = (WpfBrush)FindResource("ShellMutedBrush"),
+            TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 11, 12, 4)
         });
-        var border = new Border
+        var panel = new Border
         {
-            Background = (System.Windows.Media.Brush)FindResource("ShellSurfaceBrush"),
-            BorderBrush = (System.Windows.Media.Brush)FindResource("ShellLineBrush"),
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12),
-            Child = content,
-            Effect = new DropShadowEffect { BlurRadius = 14, Opacity = 0.20, ShadowDepth = 3 }
+            Width = 266, Background = (WpfBrush)FindResource("ShellSurfaceBrush"),
+            BorderBrush = (WpfBrush)FindResource("ShellLineBrush"),
+            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Child = rows,
+            Effect = new DropShadowEffect { BlurRadius = 20, Opacity = 0.26, ShadowDepth = 3 }
         };
         _chatAlertsPopup = new Popup
         {
-            Child = border, PlacementTarget = MoreMenuButton,
-            Placement = PlacementMode.Custom,
-            CustomPopupPlacementCallback = PlaceBesideBottom,
-            StaysOpen = false, AllowsTransparency = true,
-            PopupAnimation = PopupAnimation.Fade
+            Child = panel, PlacementTarget = MoreMenuButton,
+            Placement = PlacementMode.Custom, CustomPopupPlacementCallback = PlaceBesideBottom,
+            StaysOpen = false, AllowsTransparency = true, PopupAnimation = PopupAnimation.Fade
         };
     }
 
     private async void ChatAlertChoice_Changed(object sender, RoutedEventArgs e)
     {
-        if (_updatingChatAlertChoices || sender is not WpfCheckBox check ||
-            check.Tag is not MiniSite site)
+        if (_updatingChatAlertChoices || sender is not WpfToggleButton toggle || toggle.Tag is not MiniSite site)
             return;
-        // CheckBoxes stay inside one Popup: selecting one NEVER dismisses the panel.
-        await ApplyChatAlertChoiceAsync(site, check.IsChecked == true);
+        // Same Popup remains open for all three choices; no native CheckBox or one-at-a-time menu.
+        await ApplyChatAlertChoiceAsync(site, toggle.IsChecked == true);
     }
 }

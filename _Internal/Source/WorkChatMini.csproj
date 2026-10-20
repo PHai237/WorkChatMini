@@ -16,10 +16,10 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishSingleFile>false</PublishSingleFile>
-    <Version>2.53.0</Version>
-    <FileVersion>2.53.0.0</FileVersion>
-    <AssemblyVersion>2.53.0.0</AssemblyVersion>
-    <InformationalVersion>2.53.0</InformationalVersion>
+    <Version>2.54.0</Version>
+    <FileVersion>2.54.0.0</FileVersion>
+    <AssemblyVersion>2.54.0.0</AssemblyVersion>
+    <InformationalVersion>2.54.0</InformationalVersion>
   </PropertyGroup>
 
   <!-- When built by GitHub Actions this becomes the stable GitHub Pages feed. -->

@@ -1,10 +1,12 @@
-# WorkChat Mini Core 2.53.0 — Working Settings & Chat Alerts
+# WorkChat Mini Core 2.54.0 — Settings UI rebuilt
 
-- Restores functional nested Settings menus (Playback, Window, Tools, New window).
-- Chat alerts for Messenger, Discord, Zalo when WorkChat is running, including minimized/tray.
-- Default enabled, toggle at Settings > Chat alerts; keeping 3 chat WebViews active uses additional RAM.
-- WorkChat must still be running and the services must be signed in. Full Exit disables alerts.
-- Service WebView2/Windows notification delivery varies by service and Windows notification settings.
+**Settings gear:** A single dark, rounded popup anchored beside the bottom rail gear. All nine top-level commands use one 39-DIP button template. Categories open a page INSIDE that same popup, with Back navigation; no native WPF fly-out submenu can show a white panel. Updates and Exit stay at the root.
+
+**Chat alerts:** Dedicated dark popup with three independent, custom switch controls and the original Messenger/Discord/Zalo pixel-art icons. Settings persist independently. Clicking one switch does not close the popup. WebView2 may show notifications only when WorkChat stays running and when the service/Windows allow them.
+
+**Preserved:** The six original pixel icons, left rail, Split View, companion windows, background-audio toggle, Always on top, zoom, updates, browser profiles and app data. On browser tabs, unsupported Pop out is visibly disabled and resource policy explains that it is managed automatically.
+
+**Release gate:** This is a source candidate. Static/XAML/YAML verification does not prove Windows WPF compilation or actual visual rendering. Run the Windows Preflight followed by Quick/Stress before release; test the popup at 330/520/960 DIP and at 100/150/200% DPI.
 
 ## Previous: 2.51.0 — Pixel Rail & Minimal Shell
 

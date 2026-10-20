@@ -83,21 +83,23 @@ public partial class MainWindow
                 return Task.CompletedTask;
             });
 
-            await RunCase("Essential commands are one-click accessible", () =>
+            await RunCase("Settings root and critical commands", () =>
             {
-                var settingsMenu = MoreMenuButton.ContextMenu
-                    ?? throw new InvalidOperationException("Gear menu is missing.");
-                if (!settingsMenu.Items.Contains(MoreUpdatesMenuItem) ||
-                    !settingsMenu.Items.Contains(MoreExitMenuItem))
-                    throw new InvalidOperationException("Updates and Exit must be direct gear-menu commands.");
-                if (MoreUpdatesMenuItem.Items.Count != 0 || MoreExitMenuItem.Items.Count != 0)
-                    throw new InvalidOperationException("Essential actions must not depend on submenus.");
-                foreach (var item in settingsMenu.Items.OfType<System.Windows.Controls.MenuItem>())
+                EnsureSettingsFlyout();
+                ShowSettingsPage("root");
+                if (_settingsFlyout is null || _settingsFlyoutRows is null ||
+                    _settingsFlyout.StaysOpen ||
+                    System.Windows.Controls.ContextMenuService.GetIsEnabled(MoreMenuButton))
+                    throw new InvalidOperationException("Gear must use the custom dismissible popup, not the native context menu.");
+                string[] labels = { "Pop out", "Chat alerts", "New window", "Zoom", "Playback", "Window", "Tools", "Updates", "Exit" };
+                var buttons = _settingsFlyoutRows.Children.OfType<System.Windows.Controls.Button>().ToArray();
+                if (buttons.Length != labels.Length)
+                    throw new InvalidOperationException("Settings root must expose all nine commands.");
+                foreach (string label in labels)
                 {
-                    if (item.Header is string title &&
-                        title is "Playback" or "Window" or "Tools" or "New window" &&
-                        item.Items.Count == 0)
-                        throw new InvalidOperationException($"Settings group '{title}' has no child actions.");
+                    if (!buttons.Any(button => button.Content is System.Windows.Controls.Grid grid &&
+                        grid.Children.OfType<System.Windows.Controls.TextBlock>().Any(text => text.Text == label)))
+                        throw new InvalidOperationException($"Settings command missing: {label}");
                 }
                 return Task.CompletedTask;
             });
@@ -400,40 +402,48 @@ public partial class MainWindow
                 return Task.CompletedTask;
             });
 
-            await RunCase("Gear menu alignment and uniform rows", () =>
+            await RunCase("Settings popup positioning and consistent row templates", () =>
             {
-                var positions = PlaceBesideBottom(new System.Windows.Size(220, 290), new System.Windows.Size(40, 40), new System.Windows.Point());
-                if (positions.Length < 2 ||
-                    positions[0].Point.Y + 290 < 40 ||
-                    positions[0].Point.Y + 290 > 76 ||
-                    positions[0].Point.X <= 40)
-                    throw new InvalidOperationException("The gear popup must align its bottom to the gear.");
-                var menu = MoreMenuButton.ContextMenu
-                    ?? throw new InvalidOperationException("Settings context menu missing.");
-                var children = menu.Items.OfType<System.Windows.Controls.MenuItem>().ToArray();
-                if (children.Length < 7 || children.Any(item => Math.Abs(item.Height - 34) > 0.1))
-                    throw new InvalidOperationException("Settings root menu rows have inconsistent heights.");
+                var positions = PlaceBesideBottom(new System.Windows.Size(266, 400),
+                    new System.Windows.Size(40, 40), new System.Windows.Point());
+                if (positions.Length < 2 || positions[0].Point.X <= 40 ||
+                    positions[0].Point.Y + 400 < 40 || positions[0].Point.Y + 400 > 76)
+                    throw new InvalidOperationException("Settings popup must align its bottom to the rail gear.");
+                EnsureSettingsFlyout();
+                ShowSettingsPage("root");
+                if (_settingsFlyout?.Child is not System.Windows.Controls.Border panel ||
+                    panel.Width != 266 || _settingsFlyoutRows is null)
+                    throw new InvalidOperationException("The new settings surface is missing or incorrectly sized.");
+                var rowStyle = FindResource("SettingsFlyoutRowStyle") as System.Windows.Style;
+                if (rowStyle is null || _settingsFlyoutRows.Children.OfType<System.Windows.Controls.Button>()
+                    .Any(button => !ReferenceEquals(button.Style, rowStyle)))
+                    throw new InvalidOperationException("Settings rows do not share the same visual style.");
                 return Task.CompletedTask;
             });
 
-            await RunCase("Settings submenu templates", () =>
+            await RunCase("Settings pages are reachable without native submenus", () =>
             {
-                var nativeSubmenuStyle = FindResource("DarkSubmenuItemStyle") as System.Windows.Style;
-                if (nativeSubmenuStyle is null ||
-                    nativeSubmenuStyle.Setters.OfType<System.Windows.Setter>().Any(
-                        setter => setter.Property == System.Windows.Controls.Control.TemplateProperty))
-                    throw new InvalidOperationException("Settings submenu must keep WPF native popup template.");
-                var settingsMenu = MoreMenuButton.ContextMenu;
-                if (settingsMenu is null)
-                    throw new InvalidOperationException("Settings button has no context menu.");
-                foreach (string label in new[] { "New window", "Playback", "Window", "Tools" })
+                EnsureSettingsFlyout();
+                if (_settingsFlyoutRows is null || _settingsFlyoutBack is null)
+                    throw new InvalidOperationException("Settings popup was not initialized.");
+                var rowStyle = (System.Windows.Style)FindResource("SettingsFlyoutRowStyle");
+                foreach (string page in new[] { "new-window", "zoom", "playback", "resource", "window", "size", "position", "tools" })
                 {
-                    var parent = settingsMenu.Items.OfType<System.Windows.Controls.MenuItem>()
-                        .FirstOrDefault(item => Equals(item.Header, label));
-                    if (parent is null || parent.Items.Count == 0 ||
-                        !ReferenceEquals(parent.Style, nativeSubmenuStyle))
-                        throw new InvalidOperationException($"Settings group {label} is not submenu-capable.");
+                    ShowSettingsPage(page);
+                    bool hasControls = _settingsFlyoutRows.Children.OfType<System.Windows.Controls.Button>().Any() ||
+                        _settingsFlyoutRows.Children.OfType<System.Windows.Controls.Primitives.ToggleButton>().Any() ||
+                        (page == "resource" && _activeSite is MiniSite.YouTube or MiniSite.Web &&
+                         _settingsFlyoutRows.Children.OfType<System.Windows.Controls.TextBlock>().Any());
+                    if (_settingsPage != page || _settingsFlyoutBack.Visibility != System.Windows.Visibility.Visible ||
+                        !hasControls ||
+                        _settingsFlyoutRows.Children.OfType<System.Windows.Controls.Button>()
+                            .Any(button => !ReferenceEquals(button.Style, rowStyle)))
+                        throw new InvalidOperationException($"Settings page {page} cannot render correctly.");
                 }
+                if (ParentSettingsPage("resource") != "playback" ||
+                    ParentSettingsPage("position") != "window")
+                    throw new InvalidOperationException("Settings back navigation is broken.");
+                ShowSettingsPage("root");
                 return Task.CompletedTask;
             });
 
@@ -480,8 +490,9 @@ public partial class MainWindow
                     EnsureChatAlertsPopup();
                     if (_chatAlertsPopup is null || _chatAlertsPopup.StaysOpen ||
                         _chatAlertChoices.Count != 3 ||
-                        _chatAlertChoices.Values.Any(choice => choice.IsThreeState))
-                        throw new InvalidOperationException("Chat alert multi-select popup missing.");
+                        _chatAlertChoices.Values.Any(choice => choice.IsThreeState ||
+                            !ReferenceEquals(choice.Style, FindResource("SettingsFlyoutSwitchStyle"))))
+                        throw new InvalidOperationException("Modern chat alert toggles are missing or inconsistent.");
                 }
                 finally
                 {

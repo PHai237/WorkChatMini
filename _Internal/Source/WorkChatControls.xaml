@@ -89,4 +89,92 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+    <!-- Settings: one visual system for every row/page; never use the OS MenuItem popup. -->
+    <Style x:Key="SettingsFlyoutRowStyle" TargetType="Button">
+        <Setter Property="Height" Value="39"/>
+        <Setter Property="Margin" Value="0,2"/>
+        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Surface" Background="{TemplateBinding Background}" CornerRadius="10"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource ShellHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource ShellAccentSoftBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource ShellAccentSoftBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Full-row toggle with a visible modern switch; no default WPF checkbox chrome. -->
+    <Style x:Key="SettingsFlyoutSwitchStyle" TargetType="ToggleButton">
+        <Setter Property="Height" Value="48"/>
+        <Setter Property="Margin" Value="0,2"/>
+        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="RowSurface" CornerRadius="10" Background="{TemplateBinding Background}">
+                        <Grid Margin="{TemplateBinding Padding}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="48"/></Grid.ColumnDefinitions>
+                            <ContentPresenter Grid.Column="0" VerticalAlignment="Center"/>
+                            <Border x:Name="Track" Grid.Column="1" Width="38" Height="21"
+                                    Background="#34445D" BorderBrush="#566785" BorderThickness="1"
+                                    CornerRadius="11" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Ellipse x:Name="Thumb" Fill="#D6E0F5" Width="15" Height="15"
+                                         HorizontalAlignment="Left" VerticalAlignment="Center" Margin="2"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background" Value="{StaticResource ShellAccentBrush}"/>
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource ShellAccentBrush}"/>
+                            <Setter TargetName="Thumb" Property="Fill" Value="#0B1020"/>
+                            <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="RowSurface" Property="Background" Value="{StaticResource ShellHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="RowSurface" Property="Background" Value="{StaticResource ShellAccentSoftBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>
