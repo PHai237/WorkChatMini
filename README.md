@@ -1,4 +1,4 @@
-# WorkChat Mini Core 2.52.0 — Working Settings & Chat Alerts
+# WorkChat Mini Core 2.53.0 — Working Settings & Chat Alerts
 
 - Restores functional nested Settings menus (Playback, Window, Tools, New window).
 - Chat alerts for Messenger, Discord, Zalo when WorkChat is running, including minimized/tray.

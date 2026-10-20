@@ -1,4 +1,4 @@
-# WorkChat Core 2.52.0 — Working Settings & Chat Alerts
+# WorkChat Core 2.53.0 — Essential Actions Hotfix
 
 - Fixed nonfunctional submenu parents. The old custom leaf MenuItem template omitted PART_Popup.
 - Enabled WebView2 notifications only for Messenger, Discord and Zalo HTTPS service origins (opt-out via Settings > Chat alerts).
@@ -94,3 +94,19 @@ No changes to profile folders, credentials, browser cookies, user stories, or up
 ## Readiness policy
 
 See `docs/STORY-READY.md`. Do not describe this version as production-ready until a Windows GitHub build and actual story-writing pilot succeed.
+
+## 2.53.0 critical navigation hotfix
+
+- Updates is a first-level Settings command; no Tools submenu dependency.
+- Exit WorkChat is a first-level Settings command (the tray Exit remains available).
+- Ctrl+Shift+U opens Updates when the WorkChat window has keyboard focus.
+- New regression guards check that Updates and Exit cannot be buried in submenus.
+- Original pixel icons, Split View, companion windows, and chat alerts are unchanged.
+
+## 2.53.0 Settings UI usability and independent chat alerts
+
+- Gear menu now bottom-aligns beside the rail button; uniform-height compact rows.
+- Chat alerts opens a separate persistent multi-select popup; each of Messenger, Discord and Zalo has an independently saved check.
+- Existing 2.52 opt-out migrates to three disabled choices; alerts retain their original safe HTTPS origin restrictions.
+- Updates and Exit are direct Settings actions, never buried in Tools; Ctrl+Shift+U is an extra recovery shortcut.
+- No changes to the original six pixel PNG assets or installed WebView2 user data.

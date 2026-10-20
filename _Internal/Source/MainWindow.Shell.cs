@@ -479,6 +479,14 @@ public partial class MainWindow
             e.Handled = true;
             return;
         }
+        // Secondary update entry point if a submenu or custom menu template fails.
+        // Tray -> Check for updates remains available even when the window is hidden.
+        if (modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.U)
+        {
+            ShowUpdates();
+            e.Handled = true;
+            return;
+        }
         bool control = modifiers.HasFlag(ModifierKeys.Control);
         bool shift = modifiers.HasFlag(ModifierKeys.Shift);
 

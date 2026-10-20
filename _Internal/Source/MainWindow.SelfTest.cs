@@ -83,6 +83,25 @@ public partial class MainWindow
                 return Task.CompletedTask;
             });
 
+            await RunCase("Essential commands are one-click accessible", () =>
+            {
+                var settingsMenu = MoreMenuButton.ContextMenu
+                    ?? throw new InvalidOperationException("Gear menu is missing.");
+                if (!settingsMenu.Items.Contains(MoreUpdatesMenuItem) ||
+                    !settingsMenu.Items.Contains(MoreExitMenuItem))
+                    throw new InvalidOperationException("Updates and Exit must be direct gear-menu commands.");
+                if (MoreUpdatesMenuItem.Items.Count != 0 || MoreExitMenuItem.Items.Count != 0)
+                    throw new InvalidOperationException("Essential actions must not depend on submenus.");
+                foreach (var item in settingsMenu.Items.OfType<System.Windows.Controls.MenuItem>())
+                {
+                    if (item.Header is string title &&
+                        title is "Playback" or "Window" or "Tools" or "New window" &&
+                        item.Items.Count == 0)
+                        throw new InvalidOperationException($"Settings group '{title}' has no child actions.");
+                }
+                return Task.CompletedTask;
+            });
+
             await RunCase("Companion window launch policy (no eager WebView)", () =>
             {
                 if (_companions.Count != 0)
@@ -381,6 +400,22 @@ public partial class MainWindow
                 return Task.CompletedTask;
             });
 
+            await RunCase("Gear menu alignment and uniform rows", () =>
+            {
+                var positions = PlaceBesideBottom(new System.Windows.Size(220, 290), new System.Windows.Size(40, 40), new System.Windows.Point());
+                if (positions.Length < 2 ||
+                    positions[0].Point.Y + 290 < 40 ||
+                    positions[0].Point.Y + 290 > 76 ||
+                    positions[0].Point.X <= 40)
+                    throw new InvalidOperationException("The gear popup must align its bottom to the gear.");
+                var menu = MoreMenuButton.ContextMenu
+                    ?? throw new InvalidOperationException("Settings context menu missing.");
+                var children = menu.Items.OfType<System.Windows.Controls.MenuItem>().ToArray();
+                if (children.Length < 7 || children.Any(item => Math.Abs(item.Height - 34) > 0.1))
+                    throw new InvalidOperationException("Settings root menu rows have inconsistent heights.");
+                return Task.CompletedTask;
+            });
+
             await RunCase("Settings submenu templates", () =>
             {
                 var nativeSubmenuStyle = FindResource("DarkSubmenuItemStyle") as System.Windows.Style;
@@ -419,26 +454,41 @@ public partial class MainWindow
                     FindName("ZaloUnreadDot") is not null || FindName("CurrentAppUnreadDot") is not null)
                     throw new InvalidOperationException("Unexpected legacy notification badges.");
                 if (MoreChatNotificationsMenuItem is null ||
-                    MoreChatNotificationsMenuItem.IsChecked != _settings.ChatNotificationsEnabled)
-                    throw new InvalidOperationException("Notification Settings toggle does not match stored value.");
-                bool previous = _settings.ChatNotificationsEnabled;
+                    MoreChatNotificationsMenuItem.IsCheckable ||
+                    !Equals(MoreChatNotificationsMenuItem.Header, "Chat alerts…"))
+                    throw new InvalidOperationException("Chat alerts must open a multi-select popup, not flip a global checkbox.");
+                var old = new[] {
+                    _settings.MessengerNotificationsEnabled,
+                    _settings.DiscordNotificationsEnabled,
+                    _settings.ZaloNotificationsEnabled,
+                    _settings.ChatNotificationsEnabled
+                };
                 try
                 {
-                    _settings.ChatNotificationsEnabled = true;
-                    if (!ChatAlertsKeepAlive(MiniSite.Messenger) ||
+                    SetChatAlertPreference(MiniSite.Messenger, false);
+                    SetChatAlertPreference(MiniSite.Discord, false);
+                    SetChatAlertPreference(MiniSite.Zalo, false);
+                    if (AnyChatAlertsEnabled())
+                        throw new InvalidOperationException("Disabled chat alerts are still active.");
+                    SetChatAlertPreference(MiniSite.Discord, true);
+                    if (ChatAlertsKeepAlive(MiniSite.Messenger) ||
                         !ChatAlertsKeepAlive(MiniSite.Discord) ||
-                        !ChatAlertsKeepAlive(MiniSite.Zalo) ||
+                        ChatAlertsKeepAlive(MiniSite.Zalo) ||
                         ChatAlertsKeepAlive(MiniSite.Facebook) ||
-                        ChatAlertsKeepAlive(MiniSite.YouTube) ||
-                        ChatAlertsKeepAlive(MiniSite.Web))
-                        throw new InvalidOperationException("Chat keep-alive policy is too broad or incomplete.");
-                    _settings.ChatNotificationsEnabled = false;
-                    if (ChatAlertsKeepAlive(MiniSite.Messenger) || ChatAlertsKeepAlive(MiniSite.Zalo))
-                        throw new InvalidOperationException("Chat keep-alive policy ignored disabled alerts.");
+                        !_settings.ChatNotificationsEnabled)
+                        throw new InvalidOperationException("The three chat alert choices are not independent.");
+                    EnsureChatAlertsPopup();
+                    if (_chatAlertsPopup is null || _chatAlertsPopup.StaysOpen ||
+                        _chatAlertChoices.Count != 3 ||
+                        _chatAlertChoices.Values.Any(choice => choice.IsThreeState))
+                        throw new InvalidOperationException("Chat alert multi-select popup missing.");
                 }
                 finally
                 {
-                    _settings.ChatNotificationsEnabled = previous;
+                    _settings.MessengerNotificationsEnabled = old[0];
+                    _settings.DiscordNotificationsEnabled = old[1];
+                    _settings.ZaloNotificationsEnabled = old[2];
+                    _settings.ChatNotificationsEnabled = old[3];
                 }
                 return Task.CompletedTask;
             });

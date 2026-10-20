@@ -113,7 +113,8 @@
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
             <Setter Property="BorderBrush" Value="#3B4863"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="4"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="MinWidth" Value="216"/>
             <Setter Property="HasDropShadow" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -139,15 +140,22 @@
         <Style x:Key="DarkSubmenuItemStyle" TargetType="MenuItem">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
             <Setter Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
-            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="206"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="FontSize" Value="12.5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
         <Style x:Key="DarkMenuItemStyle" TargetType="MenuItem">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="206"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="FontSize" Value="12.5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -155,24 +163,15 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="MenuItem">
                         <Border x:Name="ItemRoot" Background="{TemplateBinding Background}" CornerRadius="8">
-                            <Grid MinWidth="92">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="16"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="CheckGlyph"
-                                           Grid.Column="0"
-                                           Text="•"
-                                           Foreground="#8EAAFF"
-                                           FontSize="18"
-                                           VerticalAlignment="Center"
-                                           HorizontalAlignment="Center"
-                                           Visibility="Collapsed"/>
-                                <ContentPresenter Grid.Column="1"
-                                                  Margin="4,0,8,0"
+                            <Grid MinWidth="202">
+                                <ContentPresenter Margin="24,0,24,0"
                                                   VerticalAlignment="Center"
                                                   ContentSource="Header"
                                                   RecognizesAccessKey="True"/>
+                                <TextBlock x:Name="CheckGlyph" Text="✓"
+                                           Foreground="#8EAAFF" FontSize="15"
+                                           VerticalAlignment="Center" HorizontalAlignment="Right"
+                                           Margin="0,0,10,0" Visibility="Collapsed"/>
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -421,7 +420,7 @@
                         <Button.ContextMenu>
                             <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Right">
                                 <MenuItem Header="Pop out" Style="{StaticResource DarkMenuItemStyle}" Click="OpenActiveCompanion_Click"/>
-                                <MenuItem x:Name="MoreChatNotificationsMenuItem" Header="Chat alerts (Mess · Discord · Zalo)" ToolTip="Alerts while WorkChat runs in the tray; uses more RAM" Style="{StaticResource DarkMenuItemStyle}" IsCheckable="True" Click="ChatNotificationsMenuItem_Click"/>
+                                <MenuItem x:Name="MoreChatNotificationsMenuItem" Header="Chat alerts…" ToolTip="Set Messenger, Discord and Zalo alerts separately" Style="{StaticResource DarkMenuItemStyle}" Click="ChatNotificationsMenuItem_Click"/>
                                 <MenuItem Header="New window" Style="{StaticResource DarkSubmenuItemStyle}">
                                     <MenuItem Header="Messenger" Tag="Messenger" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
                                     <MenuItem Header="Facebook" Tag="Facebook" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
@@ -429,7 +428,6 @@
                                     <MenuItem Header="Discord" Tag="Discord" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
                                     <MenuItem Header="Zalo" Tag="Zalo" Style="{StaticResource DarkMenuItemStyle}" Click="CompanionMenuItem_Click"/>
                                 </MenuItem>
-                                <Separator/>
                                 <MenuItem x:Name="MoreZoomMenuItem" Header="Zoom" Style="{StaticResource DarkMenuItemStyle}" Click="MoreZoomMenuItem_Click"/>
                                 <MenuItem Header="Playback" Style="{StaticResource DarkSubmenuItemStyle}">
                                     <MenuItem x:Name="MoreBackgroundAudioMenuItem" Header="Background audio" Style="{StaticResource DarkMenuItemStyle}" IsCheckable="True" Click="BackgroundAudioButton_Click"/>
@@ -448,8 +446,11 @@
                                     <MenuItem x:Name="MoreAdBlockMenuItem" Header="Ad blocker" Style="{StaticResource DarkMenuItemStyle}" Click="AdBlockButton_Click"/>
                                     <MenuItem x:Name="MoreVpnMenuItem" Header="VPN" Style="{StaticResource DarkMenuItemStyle}" Click="VpnMenuItem_Click"/>
                                     <MenuItem x:Name="MoreHealthMenuItem" Header="Health" Style="{StaticResource DarkMenuItemStyle}" Click="SessionHealthButton_Click"/>
-                                    <MenuItem Header="Updates" Style="{StaticResource DarkMenuItemStyle}" Click="UpdatesMenuItem_Click"/>
                                 </MenuItem>
+                                <!-- Critical actions must be direct children of the gear menu.
+                                     Never bury Updates behind a custom submenu again. -->
+                                <MenuItem x:Name="MoreUpdatesMenuItem" Header="Updates" ToolTip="Check for updates (Ctrl+Shift+U)" Style="{StaticResource DarkMenuItemStyle}" Click="UpdatesMenuItem_Click"/>
+                                <MenuItem x:Name="MoreExitMenuItem" Header="Exit" Style="{StaticResource DarkMenuItemStyle}" Click="ExitMenuItem_Click"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>

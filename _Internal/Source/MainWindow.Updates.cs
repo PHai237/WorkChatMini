@@ -31,4 +31,6 @@ public partial class MainWindow
     }
 
     private void UpdatesMenuItem_Click(object sender, RoutedEventArgs e) => ShowUpdates();
+
+    private void ExitMenuItem_Click(object sender, RoutedEventArgs e) => ExitApplication();
 }

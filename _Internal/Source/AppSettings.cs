@@ -24,6 +24,11 @@ public sealed class AppSettings
     public bool BackgroundAudioEnabled { get; set; } = false;
     // Allow service-origin notifications while WorkChat stays running (including tray).
     public bool ChatNotificationsEnabled { get; set; } = true;
+    // Separate chat alerts. The legacy global flag is preserved for downgrade
+    // compatibility and migration from 2.52.0 (not used for live policy).
+    public bool MessengerNotificationsEnabled { get; set; } = true;
+    public bool DiscordNotificationsEnabled { get; set; } = true;
+    public bool ZaloNotificationsEnabled { get; set; } = true;
     // Optional trusted HTTPS update feed; never silently installs updates.
     public string UpdateFeedUrl { get; set; } = string.Empty;
     public string SelectedAdBlocker { get; set; } = "AdBlock";
@@ -60,7 +65,7 @@ public sealed class AppSettings
     // Startup optimization: a full browser-extension rescan is unnecessary every launch.
     public DateTimeOffset? LastAdBlockFullScanUtc { get; set; }
 
-    public int SettingsVersion { get; set; } = 2252;
+    public int SettingsVersion { get; set; } = 2253;
 
     public static string AppDataDirectory => AppRuntime.DataDirectory;
 
@@ -223,8 +228,18 @@ public sealed class AppSettings
             if (string.IsNullOrWhiteSpace(settings.StoryModel))
                 settings.StoryModel = "gemini-3.8-flash";
 
-            settings.SettingsVersion = 2252;
-            if (originalSettingsVersion != 2252)
+            // One-time migration of the old shared notification switch.
+            // If users opted OUT of alerts on 2.52, do not re-enable them.
+            if (originalSettingsVersion < 2253 && !settings.ChatNotificationsEnabled)
+            {
+                settings.MessengerNotificationsEnabled = false;
+                settings.DiscordNotificationsEnabled = false;
+                settings.ZaloNotificationsEnabled = false;
+            }
+            settings.ChatNotificationsEnabled = settings.MessengerNotificationsEnabled ||
+                settings.DiscordNotificationsEnabled || settings.ZaloNotificationsEnabled;
+            settings.SettingsVersion = 2253;
+            if (originalSettingsVersion != 2253)
                 settings.Save();
             return settings;
         }

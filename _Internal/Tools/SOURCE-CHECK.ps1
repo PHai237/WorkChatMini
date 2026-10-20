@@ -69,6 +69,8 @@ foreach ($f in $sourceFiles) {
             @{ Name='Brushes'; Pattern='(?<![\w.])\bBrushes\s*\.' },
             @{ Name='MessageBox'; Pattern='(?<![\w.])\bMessageBox\s*\.' },
             @{ Name='Button'; Pattern='(?<![\w.])\bnew\s+Button\s*(?:\{|\()' }
+            # WPF + WinForms both define Orientation (2.53.0 CS0104).
+            @{ Name='Orientation'; Pattern='(?<![\w.])\bOrientation\s*(?:\.|\s+[A-Za-z_]\w*\s*[=;,\)])' }
         )
         foreach ($entry in $collisions) {
             $name = $entry.Name
@@ -311,6 +313,18 @@ try {
     if ($badParents.Count -gt 0) {
         $errors.Add('Settings submenu parent uses flat MenuItem template and cannot open child commands.')
     }
+    # Never put essential update/exit commands inside a nested submenu.
+    # Uses XML ancestry instead of brittle text fragments.
+    foreach ($critical in @('MoreUpdatesMenuItem', 'MoreExitMenuItem')) {
+        $criticalItems = @($menuXml.SelectNodes("//w:MenuItem[@*[local-name()='Name' and namespace-uri()='http://schemas.microsoft.com/winfx/2006/xaml']='$critical']", $nsm))
+        if ($criticalItems.Count -ne 1 -or $criticalItems[0].ParentNode.LocalName -ne 'ContextMenu') {
+            $errors.Add("Critical $critical command is missing or nested under another menu (update lockout regression).")
+        }
+    }
+    if ($shellXaml -notmatch 'Click="UpdatesMenuItem_Click"' -or $shellXaml -notmatch 'Click="ExitMenuItem_Click"') {
+        $errors.Add('Update or Exit gear command lost its click handler.')
+    }
+
 } catch { $errors.Add('Could not check Settings submenu templates.') }
 $notificationSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.Notifications.cs'))
 $resourceProfiles = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.ResourceProfiles.cs'))
@@ -320,6 +334,26 @@ if ($notificationSource -notmatch 'ChatAlertOriginMatches' -or
     $resourceProfiles -notmatch 'ChatAlertsKeepAlive' -or
     $shellXaml -notmatch 'MoreChatNotificationsMenuItem') {
     $errors.Add('Chat notification policy, menu switch or background keep-alive guard is missing.')
+}
+
+# 2.53: service-specific chat checkboxes must not be flattened into one switch.
+$alertPopupSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.ChatAlertsPopup.cs'))
+$settingSource = [IO.File]::ReadAllText((Join-Path $source 'AppSettings.cs'))
+foreach ($site in @('Messenger', 'Discord', 'Zalo')) {
+    if ($settingSource -notmatch ("$site" + 'NotificationsEnabled') -or
+        $notificationSource -notmatch ("MiniSite.$site")) {
+        $errors.Add("Missing $site chat alert preference.")
+    }
+}
+if ($shellXaml -match 'MoreChatNotificationsMenuItem[^>]*IsCheckable="True"' -or
+    $alertPopupSource -notmatch 'StaysOpen = false' -or
+    $alertPopupSource -notmatch 'ChatAlertChoice_Changed' -or
+    $notificationSource -notmatch 'SetChatAlertPreference') {
+    $errors.Add('Chat alerts must use a separate multi-toggle popup and per-service settings.')
+}
+if ($shellXaml -notmatch 'Setter Property="Height" Value="34"' -or
+    $shellXaml -match 'Chat alerts \(Mess') {
+    $errors.Add('Settings menu rows must be consistent and chat alert menu labels concise.')
 }
 
 if ($errors.Count -gt 0) {

@@ -33,8 +33,27 @@ public partial class MainWindow
         _ => Array.Empty<string>()
     };
 
-    private bool ChatAlertsKeepAlive(MiniSite site) =>
-        _settings.ChatNotificationsEnabled && site is (MiniSite.Messenger or MiniSite.Discord or MiniSite.Zalo);
+    private bool ChatAlertsKeepAlive(MiniSite site) => site switch
+    {
+        MiniSite.Messenger => _settings.MessengerNotificationsEnabled,
+        MiniSite.Discord => _settings.DiscordNotificationsEnabled,
+        MiniSite.Zalo => _settings.ZaloNotificationsEnabled,
+        _ => false
+    };
+
+    private bool AnyChatAlertsEnabled() => AlertSites.Any(ChatAlertsKeepAlive);
+
+    private void SetChatAlertPreference(MiniSite site, bool enabled)
+    {
+        switch (site)
+        {
+            case MiniSite.Messenger: _settings.MessengerNotificationsEnabled = enabled; break;
+            case MiniSite.Discord: _settings.DiscordNotificationsEnabled = enabled; break;
+            case MiniSite.Zalo: _settings.ZaloNotificationsEnabled = enabled; break;
+        }
+        // Keep older versions from mistaking individual preferences for an opt-out.
+        _settings.ChatNotificationsEnabled = AnyChatAlertsEnabled();
+    }
 
     private static bool IsNotificationPermissionBlocked(CoreWebView2PermissionKind kind) =>
         kind == CoreWebView2PermissionKind.Notifications;
@@ -86,12 +105,22 @@ public partial class MainWindow
         }
     }
 
-    private async void ChatNotificationsMenuItem_Click(object sender, RoutedEventArgs e)
+    private void ChatNotificationsMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        _settings.ChatNotificationsEnabled = !_settings.ChatNotificationsEnabled;
+        // The parent menu closes, then an independent multi-select popup opens.
+        // Checking one service must NOT close the other two choices.
+        _ = Dispatcher.BeginInvoke(new Action(ShowChatAlertsPopup),
+            System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    private async Task ApplyChatAlertChoiceAsync(MiniSite site, bool enabled)
+    {
+        if (site is not (MiniSite.Messenger or MiniSite.Discord or MiniSite.Zalo))
+            return;
+        SetChatAlertPreference(site, enabled);
         _settings.Save();
-        UpdateMoreMenuState();
-        foreach (MiniSite site in AlertSites)
+        AppLogger.Info("NOTIFY", $"Chat alert | site={site} | enabled={enabled}");
+        try
         {
             if (IsSiteInitialized(site))
             {
@@ -99,22 +128,33 @@ public partial class MainWindow
                 if (core is not null)
                     await ApplyChatAlertPermissionsAsync(core, site);
             }
+            if (enabled && !_isExiting && !AppRuntime.IsSelfTest)
+            {
+                await EnsureSiteInitializedAsync(site);
+                WakeSiteIfNeeded(site, markUsed: false);
+                if (!IsForegroundSite(site))
+                    GetWebView(site).Visibility = Visibility.Collapsed;
+            }
+            ApplyKeepAliveMemoryTargets();
         }
-        if (_settings.ChatNotificationsEnabled)
-            await EnsureChatAlertSitesReadyAsync();
-        AppLogger.Info("NOTIFY", $"Chat alerts changed | enabled={_settings.ChatNotificationsEnabled}");
+        catch (Exception ex)
+        {
+            AppLogger.Warn("NOTIFY", $"Chat alert preference | site={site} | {ex.Message}");
+        }
     }
 
     // Initialize each chat lazily AFTER the primary Messenger UI becomes usable.
     // WebView2 page notifications cannot arrive for a tab that was never created.
     private async Task EnsureChatAlertSitesReadyAsync()
     {
-        if (!_settings.ChatNotificationsEnabled || _isExiting || AppRuntime.IsSelfTest)
+        if (!AnyChatAlertsEnabled() || _isExiting || AppRuntime.IsSelfTest)
             return;
         foreach (MiniSite site in AlertSites)
         {
-            if (!_settings.ChatNotificationsEnabled || _isExiting)
+            if (_isExiting)
                 break;
+            if (!ChatAlertsKeepAlive(site))
+                continue;
             try
             {
                 await EnsureSiteInitializedAsync(site);

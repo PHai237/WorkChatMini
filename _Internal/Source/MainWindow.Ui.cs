@@ -474,16 +474,52 @@ public partial class MainWindow
         UpdateMoreMenuState();
     }
 
-    private static void OpenContextMenuFrom(System.Windows.Controls.Button placementTarget, ContextMenu? menu)
+    private void OpenContextMenuFrom(System.Windows.Controls.Button placementTarget, ContextMenu? menu)
     {
         if (menu is null)
             return;
         menu.PlacementTarget = placementTarget;
-        menu.Placement = placementTarget.Name == "MoreMenuButton"
-            ? PlacementMode.Right : PlacementMode.Bottom;
+        if (placementTarget.Name == "MoreMenuButton")
+        {
+            // Position the bottom of the whole menu beside the gear's bottom.
+            // WPF can fall back to the left when near the monitor's right edge.
+            menu.Placement = PlacementMode.Custom;
+            menu.CustomPopupPlacementCallback = PlaceBesideBottom;
+            menu.MaxHeight = Math.Max(160, SystemParameters.WorkArea.Height - 16);
+        }
+        else
+        {
+            menu.Placement = PlacementMode.Bottom;
+        }
         menu.HorizontalOffset = 0;
-        menu.VerticalOffset = 4;
+        menu.VerticalOffset = 0;
         menu.IsOpen = true;
+    }
+
+    private CustomPopupPlacement[] PlaceBesideBottom(System.Windows.Size popupSize, System.Windows.Size targetSize, System.Windows.Point offset)
+    {
+        // Visually align to the bottom of the rail/window (not the top of the gear).
+        // When Windows is tiny or the button isn't arranged yet, use the gear bottom.
+        double railBottomGap = 0;
+        if (MoreMenuButton is { IsLoaded: true })
+        {
+            try
+            {
+                double buttonBottom = MoreMenuButton.TranslatePoint(
+                    new System.Windows.Point(0, targetSize.Height), this).Y;
+                railBottomGap = Math.Clamp(ActualHeight - buttonBottom - 8, 0, 36);
+            }
+            catch (InvalidOperationException)
+            {
+                // Placement can be queried before the rail reaches the visual tree.
+            }
+        }
+        double bottomAligned = targetSize.Height + railBottomGap - popupSize.Height;
+        return new[]
+        {
+            new CustomPopupPlacement(new System.Windows.Point(targetSize.Width + 6, bottomAligned), PopupPrimaryAxis.Horizontal),
+            new CustomPopupPlacement(new System.Windows.Point(-popupSize.Width - 6, bottomAligned), PopupPrimaryAxis.Horizontal)
+        };
     }
 
     private void UpdateMoreMenuState()
@@ -491,13 +527,11 @@ public partial class MainWindow
         if (MoreMenuButton is null)
             return;
 
-        double zoom = GetStoredZoom(_activeSite);
-        string zoomLabel = zoom == 0 ? "Auto" : $"{zoom * 100:0}%";
-        MoreZoomMenuItem.Header = _activeSite == MiniSite.Story ? "Zoom" : $"Zoom · {zoomLabel}";
-        MoreSizeMenuItem.Header = $"Size · {_settings.WindowSizePreset}";
-        MorePositionMenuItem.Header = $"Position · {PositionModeLabel(_positionMode)}";
+        MoreZoomMenuItem.Header = "Zoom";
+        MoreSizeMenuItem.Header = "Size";
+        MorePositionMenuItem.Header = "Position";
         MoreBackgroundAudioMenuItem.IsChecked = _settings.BackgroundAudioEnabled;
-        MoreChatNotificationsMenuItem.IsChecked = _settings.ChatNotificationsEnabled;
+
         MoreAlwaysOnTopMenuItem.IsChecked = _settings.AlwaysOnTop;
         MoreAdBlockMenuItem.Header = "Ad blocker";
         UpdateVpnMenuState();
@@ -517,7 +551,7 @@ public partial class MainWindow
         OpenButtonMenu(PositionMenuButton);
     }
 
-    private static void OpenButtonMenu(System.Windows.Controls.Button button)
+    private void OpenButtonMenu(System.Windows.Controls.Button button)
     {
         OpenContextMenuFrom(button, button.ContextMenu);
     }
