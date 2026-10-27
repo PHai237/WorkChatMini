@@ -452,6 +452,25 @@ if ($settingsFlyoutSource -notmatch 'Width = 310' -or
     $errors.Add('Figma-to-WPF port: Settings, library, or original pixel icon contract regressed.')
 }
 
+# 2.59.0 R2: the Figma rail is 50/58 DIPs; Quick test must match production.
+# The browser undo URL must remain available when WebView2 shows an internal page.
+$responsiveCode = [IO.File]::ReadAllText((Join-Path $source 'WorkChatResponsiveLayout.cs'))
+$selftestCode = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.SelfTest.cs'))
+$browserCode = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.Browser.cs'))
+$browserUndoCode = Join-Path $source 'MainWindow.Browser.Reopen.cs'
+$browserUndoSelfTest = Join-Path $source 'MainWindow.SelfTest.BrowserUndo.cs'
+if ($responsiveCode -notmatch 'UseAppMenu\(width\) \? 50 : 58' -or
+    $selftestCode -notmatch 'tiny \? 50 : 58' -or
+    $selftestCode -match 'tiny \? 48 : 60') {
+    $errors.Add('Rail DPI contract mismatch between Figma runtime and Quick Self-Test.')
+}
+if (-not (Test-Path $browserUndoCode) -or -not (Test-Path $browserUndoSelfTest) -or
+    $browserCode -notmatch 'LastRestorableUrl' -or
+    $browserCode -notmatch 'GetRestorableBrowserUrl' -or
+    $selftestCode -notmatch 'VerifyBrowserUndoUrlSelection') {
+    $errors.Add('Browser close-tab undo lost its valid URL fallback or deterministic tests.')
+}
+
 if ($errors.Count -gt 0) {
     foreach ($issue in $errors) { Write-Host "FAIL: $issue" -ForegroundColor Red }
     exit 1

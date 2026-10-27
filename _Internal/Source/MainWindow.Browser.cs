@@ -14,6 +14,7 @@ public partial class MainWindow
         public required int Id { get; init; }
         public required WebView2 WebView { get; set; }
         public string Url { get; set; } = string.Empty;
+        public string? LastRestorableUrl { get; set; }
         public string Title { get; set; } = "New tab";
         public bool Initialized { get; set; }
         public bool Sleeping { get; set; }
@@ -113,6 +114,8 @@ public partial class MainWindow
             Pinned = pinned,
             LastUsedAt = DateTimeOffset.UtcNow
         };
+
+        TrackRestorableBrowserUrl(state, normalized);
 
         // Keep unopened tab slots out of the WPF visual tree. A WebView2 control is attached only
         // when the tab is first navigated, so restored/blank slots remain almost metadata-only.
@@ -335,8 +338,9 @@ public partial class MainWindow
 
     private void RememberClosedBrowserTab(BrowserTabState tab)
     {
-        string url = tab.WebView.Source?.ToString() ?? tab.Url;
-        if (!IsHttpOrHttpsUri(url) || !AdBlockNuisanceGuard.IsSafeToPersist(url, _settings.SelectedAdBlocker))
+        string? url = GetRestorableBrowserUrl(
+            tab.WebView.Source?.ToString(), tab.Url, tab.LastRestorableUrl, _settings.SelectedAdBlocker);
+        if (url is null)
             return;
         _recentlyClosedBrowserTabs.Push((url, tab.Pinned));
         // Drop the oldest undo entries to keep session-only metadata bounded.
@@ -598,6 +602,7 @@ public partial class MainWindow
 
         tab.NavigationInProgress = true;
         tab.Url = e.Uri ?? tab.Url;
+        TrackRestorableBrowserUrl(tab, tab.Url);
         if (tab == _activeBrowserTab && _activeSite == MiniSite.Web && IsWindowPresented)
             tab.LastUsedAt = DateTimeOffset.UtcNow;
         if (tab == _activeBrowserTab)
@@ -616,6 +621,7 @@ public partial class MainWindow
 
         tab.NavigationInProgress = false;
         tab.Url = tab.WebView.Source?.ToString() ?? tab.Url;
+        TrackRestorableBrowserUrl(tab, tab.Url);
         tab.Title = string.IsNullOrWhiteSpace(tab.WebView.CoreWebView2?.DocumentTitle)
             ? BrowserTitleFromUrl(tab.Url)
             : tab.WebView.CoreWebView2.DocumentTitle;
@@ -899,6 +905,7 @@ public partial class MainWindow
 
         BrowserTabState tab = _activeBrowserTab;
         tab.Url = NormalizeBrowserInput(target);
+        TrackRestorableBrowserUrl(tab, tab.Url);
         PermitBrowserNavigation(tab, tab.Url);
         tab.Title = BrowserTitleFromUrl(tab.Url);
         tab.LastUsedAt = DateTimeOffset.UtcNow;

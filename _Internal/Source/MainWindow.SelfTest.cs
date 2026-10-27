@@ -168,7 +168,7 @@ public partial class MainWindow
                     double height = Math.Max(220, physicalHeight / scale);
                     bool tiny = WorkChatResponsiveLayout.UseAppMenu(width);
                     bool split = WorkChatResponsiveLayout.CanShowSplit(width);
-                    if (WorkChatResponsiveLayout.RailWidth(width) != (tiny ? 48 : 60))
+                    if (WorkChatResponsiveLayout.RailWidth(width) != (tiny ? 50 : 58))
                         throw new InvalidOperationException("Compact pixel rail has incorrect width.");
                     double titleLimit = WorkChatResponsiveLayout.TitleMaxWidth(width);
                     if (titleLimit < 105 || titleLimit > 220 || (!tiny && titleLimit >= width))
@@ -832,8 +832,10 @@ public partial class MainWindow
 
             await RunCase("Close inactive tab", async () =>
             {
-                BrowserTabState? target = _browserTabs.FirstOrDefault(t => t != _activeBrowserTab && !t.IsBlank);
-                if (target is null) throw new InvalidOperationException("No inactive nonblank tab.");
+                BrowserTabState? target = _browserTabs.FirstOrDefault(t => t != _activeBrowserTab &&
+                    GetRestorableBrowserUrl(t.WebView.Source?.ToString(), t.Url, t.LastRestorableUrl,
+                        _settings.SelectedAdBlocker) is not null);
+                if (target is null) throw new InvalidOperationException("No inactive visited web tab.");
                 int before = _browserTabs.Count;
                 await CloseBrowserTabAsync(target);
                 if (_browserTabs.Count != before - 1)
@@ -843,6 +845,7 @@ public partial class MainWindow
 
             await RunCase("Reopen an accidentally closed browser tab", async () =>
             {
+                VerifyBrowserUndoUrlSelection();
                 if (_recentlyClosedBrowserTabs.Count == 0)
                     throw new InvalidOperationException("Closing a visited tab did not create an undo entry.");
                 string expectedUrl = _recentlyClosedBrowserTabs.Peek().Url;
