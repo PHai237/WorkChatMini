@@ -7,7 +7,6 @@ using WpfBrush = System.Windows.Media.Brush;
 using System.Windows.Media.Effects;
 using WpfButton = System.Windows.Controls.Button;
 using WpfMenuItem = System.Windows.Controls.MenuItem;
-using WpfOrientation = System.Windows.Controls.Orientation;
 using WpfToggleButton = System.Windows.Controls.Primitives.ToggleButton;
 
 namespace WorkChatMini;
@@ -43,7 +42,7 @@ public partial class MainWindow
         _settingsFlyoutRows = new StackPanel { Margin = new Thickness(7, 0, 7, 7) };
         _settingsFlyoutHeading = new TextBlock
         {
-            Text = "Settings", FontSize = 14, FontWeight = FontWeights.SemiBold,
+            Text = "Settings", FontSize = 13, FontWeight = FontWeights.SemiBold,
             Foreground = (WpfBrush)FindResource("ShellTextBrush"),
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -56,9 +55,28 @@ public partial class MainWindow
             ToolTip = "Back"
         };
         _settingsFlyoutBack.Click += (_, _) => ShowSettingsPage(ParentSettingsPage(_settingsPage));
-        var heading = new StackPanel { Orientation = WpfOrientation.Horizontal, Margin = new Thickness(10, 9, 10, 5) };
+        var heading = new Grid { Margin = new Thickness(14, 11, 10, 9) };
+        heading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        heading.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        heading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         heading.Children.Add(_settingsFlyoutBack);
-        heading.Children.Add(_settingsFlyoutHeading);
+        var headingText = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        headingText.Children.Add(_settingsFlyoutHeading);
+        headingText.Children.Add(new TextBlock
+        {
+            Text = "WORKCHAT MINI", FontSize = 9, Foreground = (WpfBrush)FindResource("ShellMutedBrush"),
+            Margin = new Thickness(0, 2, 0, 0)
+        });
+        Grid.SetColumn(headingText, 1);
+        heading.Children.Add(headingText);
+        var closeButton = new WpfButton
+        {
+            Content = "×", Width = 30, Height = 30, FontSize = 19, Padding = new Thickness(0),
+            Style = (Style)FindResource("SettingsFlyoutRowStyle"), ToolTip = "Close Settings"
+        };
+        closeButton.Click += (_, _) => { if (_settingsFlyout is not null) _settingsFlyout.IsOpen = false; };
+        Grid.SetColumn(closeButton, 2);
+        heading.Children.Add(closeButton);
         var scroll = new ScrollViewer
         {
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -71,11 +89,11 @@ public partial class MainWindow
         layout.Children.Add(scroll);
         var border = new Border
         {
-            Width = 266, Background = (WpfBrush)FindResource("ShellSurfaceBrush"),
+            Width = 310, Background = (WpfBrush)FindResource("ShellSurfaceBrush"),
             BorderBrush = (WpfBrush)FindResource("ShellLineBrush"),
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14),
+            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10),
             Child = layout,
-            Effect = new DropShadowEffect { BlurRadius = 20, Opacity = 0.26, ShadowDepth = 3 }
+            Effect = new DropShadowEffect { BlurRadius = 26, Opacity = 0.40, ShadowDepth = 3 }
         };
         _settingsFlyout = new Popup
         {
@@ -87,9 +105,9 @@ public partial class MainWindow
             PopupAnimation = PopupAnimation.Fade
         };
         // Limit the content on small windows; scrolling never changes row height.
-        scroll.MaxHeight = Math.Max(125, Math.Min(415, ActualHeight - 72));
+        scroll.MaxHeight = Math.Max(125, Math.Min(515, ActualHeight - 82));
         _settingsFlyout.Opened += (_, _) =>
-            scroll.MaxHeight = Math.Max(125, Math.Min(415, ActualHeight - 72));
+            scroll.MaxHeight = Math.Max(125, Math.Min(515, ActualHeight - 82));
         _settingsFlyout.Closed += (_, _) => _settingsPage = "root";
     }
 
@@ -204,19 +222,41 @@ public partial class MainWindow
         }
     }
 
+    private static string SettingsGlyph(string text) => text switch
+    {
+        "Pop out" => "▣", "Chat alerts" => "♧", "New window" => "+", "Zoom" => "⌕",
+        "Playback" => "♫", "Window" => "▣", "Tools" => "⚒", "Updates" => "↓",
+        "Exit" => "×", "Size" => "□", "Position" => "⌖", "Always on top" => "↑",
+        "Background audio" => "♫", "Resource policy" => "⚡", "VPN" => "◇",
+        "Health" => "♡", "Ad blocker" => "⊘", _ => "·"
+    };
+
     private void SettingsAction(string text, Action action, bool next = false, bool enabled = true)
     {
         if (_settingsFlyoutRows is null) return;
         var row = new Grid();
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        row.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center,
-            Foreground = (WpfBrush)FindResource("ShellTextBrush") });
+        var glyph = new Border
+        {
+            Width = 23, Height = 23, CornerRadius = new CornerRadius(5),
+            BorderBrush = (WpfBrush)FindResource("ShellLineBrush"), BorderThickness = new Thickness(1),
+            Background = (WpfBrush)FindResource("ShellElevatedBrush"),
+            Child = new TextBlock { Text = SettingsGlyph(text), FontFamily = new System.Windows.Media.FontFamily("Segoe UI Symbol"),
+                FontSize = 12, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                Foreground = (WpfBrush)FindResource("ShellMutedBrush") }
+        };
+        row.Children.Add(glyph);
+        var name = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center,
+            Foreground = (WpfBrush)FindResource(text == "Exit" ? "ShellDangerBrush" : "ShellTextBrush"), FontSize = 12.5 };
+        Grid.SetColumn(name, 1);
+        row.Children.Add(name);
         if (next)
         {
-            var arrow = new TextBlock { Text = "›", FontSize = 19, VerticalAlignment = VerticalAlignment.Center,
+            var arrow = new TextBlock { Text = "›", FontSize = 16, VerticalAlignment = VerticalAlignment.Center,
                 Foreground = (WpfBrush)FindResource("ShellMutedBrush") };
-            Grid.SetColumn(arrow, 1);
+            Grid.SetColumn(arrow, 2);
             row.Children.Add(arrow);
         }
         var button = new WpfButton { Content = row,
@@ -244,7 +284,7 @@ public partial class MainWindow
 
     private void SettingsRule()
     {
-        _settingsFlyoutRows?.Children.Add(new Border { Height = 1, Margin = new Thickness(12, 6, 12, 6),
+        _settingsFlyoutRows?.Children.Add(new Border { Height = 1, Margin = new Thickness(9, 5, 9, 5),
             Background = (WpfBrush)FindResource("ShellLineBrush") });
     }
 
@@ -253,7 +293,7 @@ public partial class MainWindow
         _settingsFlyoutRows?.Children.Add(new TextBlock
         {
             Text = message, TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(12, 9, 12, 8), FontSize = 11,
+            Margin = new Thickness(11, 10, 11, 9), FontSize = 11,
             Foreground = (WpfBrush)FindResource("ShellMutedBrush")
         });
     }

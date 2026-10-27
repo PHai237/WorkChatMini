@@ -322,7 +322,7 @@
     <Grid Background="{StaticResource ShellCanvasBrush}">
         <Grid x:Name="ExpandedShellGrid" Background="{StaticResource ShellCanvasBrush}" ClipToBounds="True">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition x:Name="SidebarColumn" Width="60"/>
+            <ColumnDefinition x:Name="SidebarColumn" Width="58"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -340,76 +340,82 @@
                 <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
             <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden"
                           CanContentScroll="True" Focusable="False">
-                    <StackPanel x:Name="AppSwitcherExpandedPanel" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0">
+                    <StackPanel x:Name="AppSwitcherExpandedPanel" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0">
                         <Button x:Name="MessengerButton"
-                                Margin="0,0,0,9"
+                                Margin="0,0,0,3"
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="MessengerButton_Click"
                                 ToolTip="Messenger">
-                            <Grid Width="24" Height="24">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource MessengerPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                            <Grid Width="33" Height="33">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource MessengerPixelIcon}" Width="33" Height="33" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
 
                         <Button x:Name="FacebookButton"
-                                Margin="0,0,0,9"
+                                Margin="0,0,0,3"
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="FacebookButton_Click"
                                 ToolTip="Facebook">
-                            <Grid Width="24" Height="24">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource FacebookPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                            <Grid Width="33" Height="33">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource FacebookPixelIcon}" Width="33" Height="33" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
 
                         <Button x:Name="YouTubeButton"
-                                Margin="0,0,0,9"
+                                Margin="0,0,0,3"
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="YouTubeButton_Click"
                                 ToolTip="YouTube">
-                            <Grid Width="24" Height="24">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource YouTubePixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                            <Grid Width="33" Height="33">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource YouTubePixelIcon}" Width="33" Height="33" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
 
                         <Button x:Name="DiscordButton"
-                                Margin="0,0,0,9"
+                                Margin="0,0,0,3"
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="DiscordButton_Click"
                                 ToolTip="Discord">
-                            <Grid Width="24" Height="24">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource DiscordPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                            <Grid Width="33" Height="33">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource DiscordPixelIcon}" Width="33" Height="33" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
 
                         <Button x:Name="ZaloButton"
-                                Margin="0,0,0,9"
+                                Margin="0,0,0,3"
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="ZaloButton_Click"
                                 ToolTip="Zalo">
-                            <Grid Width="24" Height="24">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource ZaloPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                            <Grid Width="33" Height="33">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource ZaloPixelIcon}" Width="33" Height="33" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
                         <Button x:Name="WebButton"
-                                Margin="0,0,0,9"
+                                Margin="0,0,0,3"
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="WebButton_Click"
                                 ToolTip="Web browser">
-                            <Grid Width="24" Height="24">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource WebPixelIcon}" Width="24" Height="24" Stretch="Uniform"
+                            <Grid Width="33" Height="33">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource WebPixelIcon}" Width="33" Height="33" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
+                        </Button>
+                        <Button x:Name="ReadingButton" Margin="0,0,0,3"
+                                Style="{StaticResource AppIconButtonStyle}" Click="ReadingButton_Click"
+                                ToolTip="Reading Hub · Manga / LN / WN">
+                            <Grid Width="33" Height="33"><Image Source="{StaticResource ReadingPixelIcon}" Width="33" Height="33"
+                                    RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform"/></Grid>
                         </Button>
                     </StackPanel>
 
             </ScrollViewer>
-            <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,6,0,12">
-                <Separator Width="32" Background="{StaticResource ShellLineBrush}" Margin="0,0,0,10"/>
+            <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,7,0,8">
+                <Separator Width="34" Background="{StaticResource ShellLineBrush}" Margin="0,0,0,8"/>
                     <Button x:Name="SplitButton" Style="{StaticResource UtilityIconButtonStyle}" Width="40" Height="40" Margin="0,0,0,8" Click="SplitButton_Click" ToolTip="Split screen (Ctrl+Shift+2)"><TextBlock Text="◫" FontSize="22" VerticalAlignment="Center" HorizontalAlignment="Center"/></Button>
                     <Button x:Name="MoreMenuButton"
                             Style="{StaticResource UtilityIconButtonStyle}"
@@ -919,6 +925,7 @@
                                     <MenuItem Header="GitHub" Tag="https://github.com/" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserQuickLink_Click"/>
                                     <MenuItem Header="Figma" Tag="https://www.figma.com/" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserQuickLink_Click"/>
                                     <Separator/>
+                                    <MenuItem x:Name="BrowserReopenClosedTabMenuItem" Header="Reopen closed tab" Style="{StaticResource DarkMenuItemStyle}" IsEnabled="False" Click="BrowserReopenClosedTabMenuItem_Click"/>
                                     <MenuItem Header="Find on page" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserFindMenuItem_Click"/>
                                     <MenuItem Header="Downloads" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserDownloadsMenuItem_Click"/>
                                     <MenuItem Header="Clear browsing data…" Style="{StaticResource DarkMenuItemStyle}" Click="BrowserClearDataMenuItem_Click"/>
@@ -955,6 +962,8 @@
                 </Grid>
             </Grid>
 
+            <!-- Library overlay lives in its own XAML UserControl to keep MainWindow lean. -->
+            <local:ReadingHubView x:Name="ReadingHubOverlay" Visibility="Collapsed" Panel.ZIndex="16"/>
 
             <Border x:Name="LoadingOverlay" Background="{StaticResource ShellCanvasBrush}" Visibility="Visible">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="250" Margin="10">

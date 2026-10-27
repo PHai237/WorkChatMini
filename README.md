@@ -1,3 +1,36 @@
+## Reading Hub usability and scroll support (Core 2.59.0)
+
+Based on Core 2.58.0 Figma port. Your reading shelf now has **Edit** (change a book title or source URL in place with an explicit Cancel action), **Favorite** (star/book prioritization and a Favorites filter), paginated library rendering (40 rows per batch), and best-effort preservation of positions in reader layouts that use an inner scrolling pane (e.g. custom novel readers). Title-only edits preserve reading progress; URL edits intentionally reset that book’s page/scroll and MangaDex update baseline. The reading shelf remains local and stores only metadata, not chapter text/images. No new WebView2 process.
+
+See `docs/READING_HUB_TEST_PLAN_2.59.0.md` for user QA. Source validation only: Windows WPF Compile/Quick/Stress and real site scroll behavior require testing on Windows.
+
+## Figma-inspired WorkChat shell and Reading Hub (Core 2.58.0)
+
+This release ports the **approved Workchat UI.zip Figma Make prototype** to the existing **WPF + WebView2** application (not React). It uses real native controls and real saved data; the six original pixel-art PNGs are unchanged. Updated screens: compact sidebar, Settings/Chat alerts, native browser controls and Reading Hub library with Continue Reading and status filters.
+
+See `docs/FIGMA_WPF_PORT_2.58.0.md` for scope, preserved functionality, test plan and explicit Windows validation limitations.
+
+## Reading Hub (Core 2.57.0)
+
+Select the pixel book icon on WorkChat's left rail. Browse MangaDex, Webnovel or Hako/DocLN;
+use **+ Add book** to save a title and its HTTP(S) link from **any other source**.
+Each book has a lightweight virtual tab, a reading/waiting marker, an editable chapter note,
+and a saved last page URL (updated when you navigate chapters on the same site).
+For websites using normal document scrolling, WorkChat also stores a best-effort scroll
+percentage every 30 seconds and attempts to restore it next time; image-based readers
+with custom scrolling might not support this.
+The shelf is local at `%LOCALAPPDATA%\WorkChatMini\Reading\library.json` and does not
+copy copyrighted chapters or run background crawlers. Reading reuses the existing Web tab
+mechanism: **maximum 5 active Web tabs**, unlimited virtual tabs up to **500** saved titles.
+`Waiting` remains a manual reading status. On MangaDex, you may now check for changes
+using the read-only chapter metadata API: select All/VI/EN, click **Check chapter** on a
+saved series or **Check chapters** for a maximum of eight series. The first check is a
+baseline; later changed chapter IDs show a possible new chapter/translation until you
+mark it seen. There is no background network polling. Webnovel, Hako/DocLN and custom
+links remain bookmark-only until their update mechanisms are separately validated. If all
+five browser slots are taken, close an unneeded Web tab first. The six original pixel
+art app icons, user WebView profile, chat alerts and Split View are unchanged.
+
 # WorkChat Mini Core 2.54.0 — Settings UI rebuilt
 
 **Settings gear:** A single dark, rounded popup anchored beside the bottom rail gear. All nine top-level commands use one 39-DIP button template. Categories open a page INSIDE that same popup, with Back navigation; no native WPF fly-out submenu can show a white panel. Updates and Exit stay at the root.

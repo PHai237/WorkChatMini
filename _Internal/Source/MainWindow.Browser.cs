@@ -39,8 +39,11 @@ public partial class MainWindow
     }
 
     private const int MaxBrowserTabs = 5;
+    private const int MaxRecentlyClosedBrowserTabs = 5;
     private const int MaxPinnedBrowserTabs = 2;
     private readonly List<BrowserTabState> _browserTabs = new();
+    // Session-only undo for accidental closes. This is metadata, not another live WebView.
+    private readonly Stack<(string Url, bool Pinned)> _recentlyClosedBrowserTabs = new();
     private BrowserTabState? _activeBrowserTab;
     private int _nextBrowserTabId = 1;
     private int _browserActivationEpoch;
@@ -245,6 +248,8 @@ public partial class MainWindow
 
         if (previous is not null && previous != tab)
         {
+            if (previous.Id == _readingHostTabId)
+                await CaptureReadingProgressAsync();
             previous.LastUsedAt = DateTimeOffset.UtcNow;
             previous.WebView.Visibility = Visibility.Collapsed;
         }
@@ -328,6 +333,39 @@ public partial class MainWindow
         return tab;
     }
 
+    private void RememberClosedBrowserTab(BrowserTabState tab)
+    {
+        string url = tab.WebView.Source?.ToString() ?? tab.Url;
+        if (!IsHttpOrHttpsUri(url) || !AdBlockNuisanceGuard.IsSafeToPersist(url, _settings.SelectedAdBlocker))
+            return;
+        _recentlyClosedBrowserTabs.Push((url, tab.Pinned));
+        // Drop the oldest undo entries to keep session-only metadata bounded.
+        if (_recentlyClosedBrowserTabs.Count > MaxRecentlyClosedBrowserTabs)
+        {
+            var recent = _recentlyClosedBrowserTabs.Take(MaxRecentlyClosedBrowserTabs).ToArray();
+            _recentlyClosedBrowserTabs.Clear();
+            for (int i = recent.Length - 1; i >= 0; i--)
+                _recentlyClosedBrowserTabs.Push(recent[i]);
+        }
+    }
+
+    private async Task ReopenLastClosedBrowserTabAsync()
+    {
+        if (_browserTabs.Count >= MaxBrowserTabs || _recentlyClosedBrowserTabs.Count == 0)
+            return;
+
+        (string url, bool pinned) = _recentlyClosedBrowserTabs.Pop();
+        BrowserTabState? reopened = await AddBrowserTabAsync(url, activate: false);
+        if (reopened is null)
+        {
+            _recentlyClosedBrowserTabs.Push((url, pinned));
+            return;
+        }
+        reopened.Pinned = pinned && _browserTabs.Count(candidate => candidate.Pinned) < MaxPinnedBrowserTabs;
+        RefreshBrowserTabVisual(reopened);
+        await ActivateBrowserTabAsync(reopened);
+    }
+
     private async Task CloseBrowserTabAsync(BrowserTabState tab)
     {
         int oldIndex = _browserTabs.IndexOf(tab);
@@ -335,6 +373,13 @@ public partial class MainWindow
             return;
 
         var closeTimer = System.Diagnostics.Stopwatch.StartNew();
+        if (tab.Id == _readingHostTabId)
+        {
+            await CaptureReadingProgressAsync();
+            _readingActiveBookId = null;
+            _readingHostTabId = 0;
+        }
+        RememberClosedBrowserTab(tab);
         tab.Closing = true;
         tab.RecoveryPending = false;
         bool wasActive = tab == _activeBrowserTab;
@@ -587,6 +632,7 @@ public partial class MainWindow
         RefreshBrowserTabVisual(tab);
         if (e.IsSuccess)
             RecordBrowserHistory(tab);
+        ReadingNavigationCompleted(tab, e.IsSuccess);
         QueuePersistBrowserTabs();
         AppLogger.Info("BROWSER", $"Navigation completed | tab={tab.Id} | success={e.IsSuccess} | host={SafeHost(tab.Url)}");
     }
@@ -596,14 +642,14 @@ public partial class MainWindow
         if (tab.Closing)
             return;
         string? title = tab.WebView.CoreWebView2?.DocumentTitle;
-        if (!string.IsNullOrWhiteSpace(title))
-        {
-            tab.Title = title;
-            // Some modern sites update the document title after NavigationCompleted. Refreshing
-            // the existing history row here keeps autocomplete labels useful without creating a
-            // second history entry. BrowserHistoryStore deduplicates by URL and debounces disk I/O.
-            RecordBrowserHistory(tab);
-        }
+        if (string.IsNullOrWhiteSpace(title) ||
+            string.Equals(tab.Title, title, StringComparison.Ordinal))
+            return;
+
+        tab.Title = title;
+        // Only update an existing visited entry. Do not bump recency or persist
+        // another visit every time a page changes its unread-count title.
+        UpdateBrowserHistoryTitle(tab);
         RefreshBrowserTabVisual(tab);
     }
 
@@ -820,7 +866,15 @@ public partial class MainWindow
             async () => { await AddBrowserTabAsync("about:blank", activate: true); },
             "new-tab");
 
-    private void BrowserQuickButton_Click(object sender, RoutedEventArgs e) => OpenButtonMenu(BrowserQuickButton);
+    private void BrowserQuickButton_Click(object sender, RoutedEventArgs e)
+    {
+        BrowserReopenClosedTabMenuItem.IsEnabled =
+            _recentlyClosedBrowserTabs.Count > 0 && _browserTabs.Count < MaxBrowserTabs;
+        OpenButtonMenu(BrowserQuickButton);
+    }
+
+    private async void BrowserReopenClosedTabMenuItem_Click(object sender, RoutedEventArgs e) =>
+        await RunBrowserUiActionAsync(ReopenLastClosedBrowserTabAsync, "reopen-closed-tab");
 
     private async void BrowserQuickLink_Click(object sender, RoutedEventArgs e)
     {

@@ -78,6 +78,73 @@ internal sealed class BrowserHistoryStore : IDisposable
         }
     }
 
+    // A modern web app may change document.title repeatedly (unread counts, playback,
+    // editing status). Refresh its autocomplete label without changing the last-visit
+    // time or scheduling another disk write when the label is unchanged. Never create
+    // a visit for a title-change event on a still-loading or unvisited page.
+    public bool UpdateTitle(string? url, string? title)
+    {
+        if (!IsWebUrl(url) || !AdBlockNuisanceGuard.IsSafeToPersist(url) ||
+            string.IsNullOrWhiteSpace(title))
+            return false;
+
+        string cleanTitle = title.Trim();
+        lock (_gate)
+        {
+            BrowserHistoryEntry? existing = _entries.FirstOrDefault(entry =>
+                string.Equals(entry.Url, url!.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (existing is null || string.Equals(existing.Title, cleanTitle, StringComparison.Ordinal))
+                return false;
+
+            existing.Title = cleanTitle;
+            MarkDirty_NoLock();
+            return true;
+        }
+    }
+
+    // Runs on the CI Self-Test runner against its own temporary history, never the
+    // user's real history or WebView2 profile.
+    internal static void VerifyTitleUpdates()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "WorkChatHistoryTest-" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            using (var history = new BrowserHistoryStore(path, new List<BrowserHistoryEntry>()))
+            {
+                const string url = "https://example.com/reading";
+                if (history.UpdateTitle(url, "Not visited"))
+                    throw new InvalidOperationException("Title changes must not create history visits.");
+                history.Record(url, "Original title");
+                BrowserHistoryEntry original = history.Search("reading").Single();
+                if (!history.UpdateTitle(url, "Updated title") ||
+                    history.UpdateTitle(url, "Updated title") ||
+                    history.UpdateTitle(url, "   "))
+                    throw new InvalidOperationException("Duplicate or blank title updates were persisted.");
+                BrowserHistoryEntry updated = history.Search("reading").Single();
+                if (updated.LastVisitedUtc != original.LastVisitedUtc ||
+                    updated.Title != "Updated title" ||
+                    history.Search("Updated title").Count != 1)
+                    throw new InvalidOperationException("Title refresh modified visit order or broke autocomplete.");
+                history.Flush();
+            }
+            using var reloaded = LoadFromPathForTest(path);
+            if (reloaded.Search("Updated title").Single().Title != "Updated title")
+                throw new InvalidOperationException("Updated history title was not persisted.");
+        }
+        finally
+        {
+            try { File.Delete(path); } catch { }
+            try { File.Delete(path + ".tmp"); } catch { }
+        }
+    }
+
+    private static BrowserHistoryStore LoadFromPathForTest(string path)
+    {
+        List<BrowserHistoryEntry> entries = JsonSerializer.Deserialize<List<BrowserHistoryEntry>>(File.ReadAllText(path))
+            ?? throw new InvalidDataException("Self-test history missing entries.");
+        return new BrowserHistoryStore(path, entries);
+    }
+
     public IReadOnlyList<BrowserHistoryEntry> Search(string? query, int maxResults = 6)
     {
         string text = query?.Trim() ?? string.Empty;

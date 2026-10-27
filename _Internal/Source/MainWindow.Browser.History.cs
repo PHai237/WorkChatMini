@@ -50,6 +50,13 @@ public partial class MainWindow
         _browserHistory?.Record(tab.Url, tab.Title);
     }
 
+    private void UpdateBrowserHistoryTitle(BrowserTabState tab)
+    {
+        // Title updates are very frequent on chat/web apps. Do not treat each one as a
+        // fresh navigation or move the entry to the top of browser history.
+        _browserHistory?.UpdateTitle(tab.Url, tab.Title);
+    }
+
     private void SetBrowserAddressText(string value)
     {
         _browserAddressInternalUpdate = true;

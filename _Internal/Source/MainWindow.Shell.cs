@@ -492,8 +492,51 @@ public partial class MainWindow
 
         // When Web is active, use familiar browser shortcuts instead of stealing Ctrl+Tab
         // for app switching. Other surfaces keep the original WorkChat app-cycle behavior.
-        if (_activeSite == MiniSite.Web && control)
+        if (_activeSite == MiniSite.Web)
         {
+            Key webKey = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (modifiers == ModifierKeys.Alt && (webKey == Key.Left || webKey == Key.Right))
+            {
+                if (webKey == Key.Left)
+                    BrowserBackButton_Click(BrowserBackButton, new RoutedEventArgs());
+                else
+                    BrowserForwardButton_Click(BrowserForwardButton, new RoutedEventArgs());
+                e.Handled = true;
+                return;
+            }
+            if ((modifiers == ModifierKeys.None && webKey == Key.F5) ||
+                (modifiers == ModifierKeys.Control && webKey == Key.R))
+            {
+                BrowserReloadButton_Click(BrowserReloadButton, new RoutedEventArgs());
+                e.Handled = true;
+                return;
+            }
+            if (!control)
+                return;
+
+            if (shift && webKey == Key.T)
+            {
+                await RunBrowserUiActionAsync(ReopenLastClosedBrowserTabAsync, "shortcut-reopen-tab");
+                e.Handled = true;
+                return;
+            }
+            if (shift && webKey != Key.Tab)
+                return;
+
+            if (webKey >= Key.D1 && webKey <= Key.D5)
+            {
+                int index = webKey - Key.D1;
+                if (index < _browserTabs.Count)
+                    await RunBrowserUiActionAsync(() => ActivateBrowserTabAsync(_browserTabs[index]), "shortcut-tab-number");
+                e.Handled = true;
+                return;
+            }
+            if (webKey == Key.F)
+            {
+                await RunBrowserUiActionAsync(ShowBrowserFindAsync, "shortcut-find-on-page");
+                e.Handled = true;
+                return;
+            }
             if (e.Key == Key.L)
             {
                 BrowserAddressBox.Focus();

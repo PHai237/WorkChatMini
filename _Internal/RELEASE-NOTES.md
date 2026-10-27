@@ -1,3 +1,58 @@
+# WorkChat Core 2.59.0 — Reading Hub usability and scroll positions
+
+- Edit existing reading bookmarks (title or source URL) without deleting/recreating their library ID. Title-only edits keep chapter/scroll progress; changing the saved link clears only that book's old progress and MangaDex update baseline. Cancel editing without altering data; duplicate link protection remains.
+- Favorite books, sort them first in the shelf and virtual tabs, and filter the library by Favorites. All data remains in `%LOCALAPPDATA%\WorkChatMini\Reading\library.json`; legacy entries default to unstarred.
+- Build up to 40 shelf rows per pass, with Show more for the remainder, rather than rendering all 500 bookmarks every time the user filters or searches. This does not limit saved books.
+- Best-effort reading position capture/restore also supports some independently scrolling reader elements, not only the document; no page content is extracted or stored. The previous document-scroll behavior remains the fallback.
+- Only Reading Hub source, source checks, version/docs were changed. Existing pixel assets, Messenger/Discord/YouTube, Settings, Split, updater and notifications remain unchanged.
+- Static verification is not a Windows WPF build. Run preflight, Quick/Stress and manual real-website reading checks before shipping.
+
+---
+
+# WorkChat Core 2.58.0 — Figma Make UI Port (WPF)
+
+- Applied the user-approved Figma Make dark design tokens to the existing native WPF shell.
+- Reworked the compact pixel-icon left navigation rail, browser control styling and Settings flyout while keeping production handlers and PNG icon bytes intact.
+- Settings root still includes Updates and Exit directly, all subpages still call real actions. Chat alerts remain individually persisted Messenger/Discord/Zalo switches.
+- Reading Hub now uses the Figma-inspired library layout: real recent-book continuation, persisted scroll progress, search, All/Reading/Waiting filters and stacked library rows with working original actions.
+- Retained WebView2 websites, five live Web tabs, lightweight virtual reading tabs, MangaDex metadata API, existing profiles/notifications/split/companions and local library.
+- No new WebView2 renderer, mock messaging screens, third-party scraper, fake update state or external Figma dependency added.
+- SOURCE-CHECK and Windows self-test expanded. WPF build, runtime visual QA and Quick/Stress require Windows CI.
+
+---
+
+# WorkChat Core 2.57.0 — Reading Progress & MangaDex Chapter Checks
+
+- Keep the existing virtual Reading Hub: up to 500 library entries but no new WebView2 just for the shelf. Only the first 32 open virtual tab buttons are drawn at once; remaining books stay on the shelf.
+- Save the last page's URL and best-effort document scroll percentage locally, at most once every 30 seconds while reading (plus when switching away). Attempt to restore scroll after page navigation. Sites with custom manga viewers, dynamic image loading or custom scroll panes may not restore precisely.
+- Use MangaDex's read-only metadata API for manual checks of saved title/chapter URLs. Per-book checks and an 8-series batch button; 20-minute cooldown per book and 550ms spacing for batch requests. First check creates a baseline, later chapter ID changes mark a possible new chapter/translation. Includes All/VI/EN language filter and manual Mark seen. No automatic background polling, manga image downloads or scrapes.
+- Pinned Web tabs cannot be repurposed as a reading host. Header actions wrap on narrow windows. Existing pixel icons, Settings, WebView profile, chat alerts, audio and Split are unchanged.
+- This is a source build candidate. Windows WPF Compile, Quick/Stress and real MangaDex/DocLN scrolling have not been run in the source-generation environment. Verify on Windows before releasing.
+
+# WorkChat Core 2.56.0 — Reading Hub (local shelf / virtual reading tabs)
+
+- New pixel book rail icon. The original six app icons are unchanged.
+- Reading Hub opens a dark lightweight shelf, with MangaDex, Webnovel and Hako/DocLN quick links.
+- Save up to 500 books from any public HTTP(S) site with title, URL, source, free-form chapter note,
+  Reading/Waiting status and persisted virtual reading tab. Stored locally under WorkChatMini/Reading/library.json.
+- Resume from the most recent successfully navigated same-host page; navigating unrelated sites
+  does not overwrite a book's last read URL. Virtual tabs reuse one Web browser tab and do not
+  create separate background WebView2 renderers. The existing Web max-five-tab policy still applies.
+- Removal requires two clicks. File writes are atomic; malformed library files are never overwritten.
+- No scraping, chapter downloading, background polling, API calls or automatic new chapter alerts
+  in this initial version. No changes to chat notifications, Settings, Split, Web sessions or updater.
+
+# WorkChat Core 2.55.0 — Everyday Web & Performance
+
+- Familiar shortcuts in the existing WorkChat Web tab: Ctrl+1…5, Ctrl+Shift+T (reopen last closed), Ctrl+F, F5/Ctrl+R and Alt+Left/Right. Existing Ctrl+L/T/W/Tab shortcuts are preserved.
+- Web tools includes Reopen closed tab. Undo holds at most 5 URL/pin records in memory, no extra WebView2 or permanent background process. It respects the existing 5-tab/2-pin limits.
+- Changing page titles (including unread-count titles) no longer counts as a fresh visit or updates history when the title is unchanged. History stays local and does not recreate expired/blocked visits.
+- Quick/Stress self-tests cover undo and a temporary on-disk history fixture; they do not access actual personal browsing history.
+- WorkChat still relies on WebView2. Some browser-extension, enterprise auth, DRM and site compatibility workflows may still require a full browser. No user data migration, account key change or forced tab wake was introduced.
+- Windows WPF compile and live UI check remain release gates. Do not publish solely on static checks.
+
+---
+
 # WorkChat Core 2.53.0 — Essential Actions Hotfix
 
 - Fixed nonfunctional submenu parents. The old custom leaf MenuItem template omitted PART_Popup.

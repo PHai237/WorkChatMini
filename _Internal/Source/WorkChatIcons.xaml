@@ -7,4 +7,5 @@
     <BitmapImage x:Key="DiscordPixelIcon" UriSource="pack://application:,,,/Assets/Icons/discord.png"/>
     <BitmapImage x:Key="ZaloPixelIcon" UriSource="pack://application:,,,/Assets/Icons/zalo.png"/>
     <BitmapImage x:Key="WebPixelIcon" UriSource="pack://application:,,,/Assets/Icons/web.png"/>
+    <BitmapImage x:Key="ReadingPixelIcon" UriSource="pack://application:,,,/Assets/Icons/reading.png"/>
 </ResourceDictionary>

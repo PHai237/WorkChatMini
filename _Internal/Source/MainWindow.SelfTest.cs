@@ -293,6 +293,135 @@ public partial class MainWindow
                     throw new InvalidOperationException("Expected one blank lazy tab.");
             });
 
+            await RunCase("Reading Hub virtual shelf and safe source links", () =>
+            {
+                EnsureReadingLibraryLoaded();
+                if (ReadingButton is null || ReadingHubOverlay is null ||
+                    ReadingOpenTabs is null || ReadingShelf is null ||
+                    FindResource("ReadingPixelIcon") is not System.Windows.Media.Imaging.BitmapImage)
+                    throw new InvalidOperationException("Reading UI or pixel book asset is missing.");
+                if (ReadingLibraryStore.DetectSource("https://mangadex.org/title/example") != "MangaDex" ||
+                    ReadingLibraryStore.DetectSource("https://www.webnovel.com/book/123") != "Webnovel" ||
+                    ReadingLibraryStore.DetectSource("https://docln.net/truyen/123") != "Hako / DocLN" ||
+                    ReadingLibraryStore.DetectSource("https://docln.net.evil.test/book") == "Hako / DocLN" ||
+                    ReadingLibraryStore.IsSafeHttpUrl("javascript:alert(1)") ||
+                    ReadingLibraryStore.IsSafeHttpUrl("file:///C:/private.txt") ||
+                    ReadingLibraryStore.IsSafeHttpUrl("https://localhost/"))
+                    throw new InvalidOperationException("Reading source detection or URL validation regressed.");
+                int browserBefore = _browserTabs.Count;
+                ReadingTitleInput.Text = "A sample manga";
+                ReadingUrlInput.Text = "https://mangadex.org/title/example";
+                ReadingAdd_Click(this, new System.Windows.RoutedEventArgs());
+                ReadingAdd_Click(this, new System.Windows.RoutedEventArgs()); // duplicate must be ignored
+                if (_readingLibrary.Books.Count != 1 || ReadingShelf.Children.Count != 1 ||
+                    ReadingOpenTabs.Children.Count != 1 || _browserTabs.Count != browserBefore)
+                    throw new InvalidOperationException("Shelf add, duplicate protection or lazy tabs failed.");
+                ReadingBook testBook = _readingLibrary.Books[0];
+                ToggleReadingStatus(testBook);
+                if (testBook.Status != "Waiting")
+                    throw new InvalidOperationException("Waiting status did not persist in memory.");
+                ToggleReadingFavorite(testBook);
+                if (!testBook.IsFavorite || _browserTabs.Count != browserBefore)
+                    throw new InvalidOperationException("Favorite changed renderer count or was not saved.");
+                testBook.ScrollFraction = 0.625;
+                testBook.ScrollUrl = testBook.Url;
+                testBook.ScrollTarget = "id:chapter-scroll";
+                BeginEditReadingBook(testBook);
+                ReadingTitleInput.Text = "Renamed manga";
+                ReadingAdd_Click(this, new System.Windows.RoutedEventArgs());
+                if (_readingLibrary.Books.Count != 1 || testBook.Title != "Renamed manga" ||
+                    testBook.Url != "https://mangadex.org/title/example" ||
+                    testBook.ScrollFraction != 0.625 || testBook.ScrollTarget != "id:chapter-scroll" ||
+                    _readingEditingBookId is not null)
+                    throw new InvalidOperationException("Editing the title duplicated or modified the saved book URL.");
+                BeginEditReadingBook(testBook);
+                ReadingTitleInput.Text = "Should not save";
+                ReadingCancelAdd_Click(this, new System.Windows.RoutedEventArgs());
+                if (testBook.Title != "Renamed manga" || _readingEditingBookId is not null ||
+                    ReadingHubOverlay.AddForm.Visibility != System.Windows.Visibility.Collapsed)
+                    throw new InvalidOperationException("Cancel editing altered stored book data.");
+                BeginEditReadingBook(testBook);
+                ReadingUrlInput.Text = "https://docln.net/truyen/edited";
+                ReadingAdd_Click(this, new System.Windows.RoutedEventArgs());
+                if (testBook.Url != "https://docln.net/truyen/edited" ||
+                    testBook.Source != "Hako / DocLN" || testBook.ScrollFraction != 0 ||
+                    testBook.ScrollTarget != "document")
+                    throw new InvalidOperationException("Editing a source URL did not reset the book chapter state.");
+                ToggleReadingTab(testBook);
+                if (testBook.OpenTab || _browserTabs.Count != browserBefore)
+                    throw new InvalidOperationException("Virtual reading tab created a browser renderer.");
+                _readingLibrary.Books.Clear();
+                ReadingTitleInput.Clear();
+                ReadingUrlInput.Clear();
+                RefreshReadingHub();
+                return Task.CompletedTask;
+            });
+
+            await RunCase("Figma reading controls and lightweight filters", () =>
+            {
+                if (ReadingHubOverlay.ContinuePanel is null ||
+                    ReadingHubOverlay.ContinueButton is null ||
+                    ReadingHubOverlay.ContinueProgress is null ||
+                    ReadingHubOverlay.FilterAll is null ||
+                    ReadingHubOverlay.FilterReading is null ||
+                    ReadingHubOverlay.FilterWaiting is null ||
+                    ReadingHubOverlay.FilterFavorites is null ||
+                    ReadingHubOverlay.CancelButton is null ||
+                    ReadingHubOverlay.ShowMoreButton is null)
+                    throw new InvalidOperationException("Reading Hub lost a Figma layout control.");
+                int tabsBefore = _browserTabs.Count;
+                ReadingFilter_Click(ReadingHubOverlay.FilterWaiting, new System.Windows.RoutedEventArgs());
+                if (_readingStatusFilter != "Waiting" || _browserTabs.Count != tabsBefore)
+                    throw new InvalidOperationException("Waiting filter started a browser tab or failed to select.");
+                ReadingFilter_Click(ReadingHubOverlay.FilterFavorites, new System.Windows.RoutedEventArgs());
+                if (_readingStatusFilter != "Favorites")
+                    throw new InvalidOperationException("Favorite filter did not select.");
+                ReadingFilter_Click(ReadingHubOverlay.FilterAll, new System.Windows.RoutedEventArgs());
+                if (_readingStatusFilter != "All")
+                    throw new InvalidOperationException("Reading filter cannot restore full library.");
+                if (ReadingScrollScripts.NormalizeTarget("id:chapter-scroll") != "id:chapter-scroll" ||
+                    ReadingScrollScripts.NormalizeTarget("https://not-a-scroller.test") != "document" ||
+                    !ReadingScrollScripts.Capture.Contains("scrollTop", StringComparison.Ordinal) ||
+                    !ReadingScrollScripts.Restore(0.75, "id:chapter-scroll").Contains("0.75", StringComparison.Ordinal))
+                    throw new InvalidOperationException("Reading scroll target migration or scripts regressed.");
+                if (FindResource("ShellAccentBrush") is not System.Windows.Media.SolidColorBrush accent ||
+                    accent.Color != (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#7598FF")!)
+                    throw new InvalidOperationException("Figma design tokens missing from WPF resources.");
+                return Task.CompletedTask;
+            });
+
+            await RunCase("Reading Hub shelf pagination remains lightweight", RunReadingPaginationSelfTest);
+
+            await RunCase("MangaDex metadata parser and safety", () =>
+            {
+                const string mangaId = "2582a87d-6fa5-4b0f-85ef-51a0fd1f232a";
+                const string chapterId = "7d3a63ca-149c-4293-a829-572358fbfc5c";
+                if (!MangaDexChapterTracker.TryParseMangaDexUrl($"https://mangadex.org/title/{mangaId}/sample", out string parsed, out bool isChapterFromTitle) ||
+                    parsed != mangaId || isChapterFromTitle ||
+                    !MangaDexChapterTracker.TryParseMangaDexUrl($"https://mangadex.org/chapter/{chapterId}", out _, out bool isChapter) ||
+                    !isChapter || MangaDexChapterTracker.TryParseMangaDexUrl($"https://mangadex.org.evil.test/title/{mangaId}", out _, out _) ||
+                    MangaDexChapterTracker.TryParseMangaDexUrl($"http://mangadex.org/title/{mangaId}", out _, out _) ||
+                    MangaDexChapterTracker.TryParseMangaDexUrl("https://mangadex.org/title/not-a-uuid", out _, out _))
+                    throw new InvalidOperationException("MangaDex link validation regressed.");
+                string feed = "{\"data\":[{\"id\":\"" + chapterId +
+                    "\",\"attributes\":{\"chapter\":\"18.5\",\"title\":\"Sample\"}}]}";
+                MangaDexChapterSnapshot? snapshot = MangaDexChapterTracker.ParseFeed(mangaId, feed);
+                if (snapshot is null || snapshot.MangaId != mangaId ||
+                    snapshot.ChapterId != chapterId || snapshot.Label != "Ch. 18.5" ||
+                    MangaDexChapterTracker.ParseFeed(mangaId, "{\"data\":[]}") is not null ||
+                    MangaDexChapterTracker.NormalizeLanguage("invalid") != "all" ||
+                    MangaDexChapterTracker.IsNewChapter("", chapterId) ||
+                    MangaDexChapterTracker.IsNewChapter(chapterId, chapterId) ||
+                    !MangaDexChapterTracker.IsNewChapter(mangaId, chapterId))
+                    throw new InvalidOperationException("MangaDex feed parsing or language fallback regressed.");
+                string chapterJson = "{\"data\":{\"relationships\":[" +
+                    "{\"type\":\"scanlation_group\",\"id\":\"" + chapterId + "\"}," +
+                    "{\"type\":\"manga\",\"id\":\"" + mangaId + "\"}]}}";
+                if (MangaDexChapterTracker.ExtractMangaIdFromChapter(chapterJson) != mangaId)
+                    throw new InvalidOperationException("MangaDex chapter-to-title lookup regressed.");
+                return Task.CompletedTask;
+            });
+
             string[] testUrls =
             {
                 "https://example.com/",
@@ -318,6 +447,22 @@ public partial class MainWindow
                 if (AdBlockNuisanceGuard.IsKnownNuisancePage("https://helpcenter.getadblock.com/adblock-help-center/"))
                     throw new InvalidOperationException("AdBlock guard incorrectly classified Help Center documentation.");
                 _browserHistory.Clear();
+                return Task.CompletedTask;
+            });
+
+            await RunCase("History title updates avoid repeat visits", () =>
+            {
+                BrowserHistoryStore.VerifyTitleUpdates();
+                return Task.CompletedTask;
+            });
+
+            await RunCase("Web keyboard and close-tab recovery surface", () =>
+            {
+                if (BrowserReopenClosedTabMenuItem is null ||
+                    MaxRecentlyClosedBrowserTabs != 5 || MaxBrowserTabs != 5 ||
+                    BrowserQuickButton.ContextMenu is null ||
+                    !BrowserQuickButton.ContextMenu.Items.Contains(BrowserReopenClosedTabMenuItem))
+                    throw new InvalidOperationException("Browser tab undo is unavailable in Web tools.");
                 return Task.CompletedTask;
             });
 
@@ -404,7 +549,7 @@ public partial class MainWindow
 
             await RunCase("Settings popup positioning and consistent row templates", () =>
             {
-                var positions = PlaceBesideBottom(new System.Windows.Size(266, 400),
+                var positions = PlaceBesideBottom(new System.Windows.Size(310, 400),
                     new System.Windows.Size(40, 40), new System.Windows.Point());
                 if (positions.Length < 2 || positions[0].Point.X <= 40 ||
                     positions[0].Point.Y + 400 < 40 || positions[0].Point.Y + 400 > 76)
@@ -412,7 +557,7 @@ public partial class MainWindow
                 EnsureSettingsFlyout();
                 ShowSettingsPage("root");
                 if (_settingsFlyout?.Child is not System.Windows.Controls.Border panel ||
-                    panel.Width != 266 || _settingsFlyoutRows is null)
+                    panel.Width != 310 || _settingsFlyoutRows is null)
                     throw new InvalidOperationException("The new settings surface is missing or incorrectly sized.");
                 var rowStyle = FindResource("SettingsFlyoutRowStyle") as System.Windows.Style;
                 if (rowStyle is null || _settingsFlyoutRows.Children.OfType<System.Windows.Controls.Button>()
@@ -687,13 +832,25 @@ public partial class MainWindow
 
             await RunCase("Close inactive tab", async () =>
             {
-                BrowserTabState? target = _browserTabs.FirstOrDefault(t => t != _activeBrowserTab);
-                if (target is null) throw new InvalidOperationException("No inactive tab.");
+                BrowserTabState? target = _browserTabs.FirstOrDefault(t => t != _activeBrowserTab && !t.IsBlank);
+                if (target is null) throw new InvalidOperationException("No inactive nonblank tab.");
                 int before = _browserTabs.Count;
                 await CloseBrowserTabAsync(target);
                 if (_browserTabs.Count != before - 1)
                     throw new InvalidOperationException("Inactive tab count did not decrease.");
                 await Task.Delay(120);
+            });
+
+            await RunCase("Reopen an accidentally closed browser tab", async () =>
+            {
+                if (_recentlyClosedBrowserTabs.Count == 0)
+                    throw new InvalidOperationException("Closing a visited tab did not create an undo entry.");
+                string expectedUrl = _recentlyClosedBrowserTabs.Peek().Url;
+                int before = _browserTabs.Count;
+                await ReopenLastClosedBrowserTabAsync();
+                if (_browserTabs.Count != before + 1 || _activeBrowserTab is null ||
+                    !string.Equals(_activeBrowserTab.Url, expectedUrl, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Reopened tab did not restore the last closed URL.");
             });
 
             await RunCase("Close active tab", async () =>

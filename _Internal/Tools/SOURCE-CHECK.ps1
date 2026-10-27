@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $source = Join-Path $root '_Internal\Source'
 $errors = [System.Collections.Generic.List[string]]::new()
@@ -79,6 +79,12 @@ foreach ($f in $sourceFiles) {
                 $errors.Add("Ambiguous WPF/WinForms $name in $($f.Name): use a fully qualified type or explicit WPF/Forms alias (2.50.0 CS0104).")
             }
         }
+    }
+    # 2.59.0 CS0176: MainWindow inherits a HorizontalAlignment property.
+    # The RHS enum must be explicitly qualified in C# object initializers.
+    if ($f.Extension -eq '.cs' -and
+        [regex]::IsMatch($body, '(?<![\w.])\bHorizontalAlignment\s*=\s*HorizontalAlignment\.')) {
+        $errors.Add("Unqualified HorizontalAlignment enum in $($f.Name): use System.Windows.HorizontalAlignment (2.59.0 CS0176).")
     }
     # A 2.51.0 self-test used WPF StackPanel without importing the controls
     # namespace. Fail early instead of waiting for CI error CS0103.
@@ -358,10 +364,97 @@ if ($controlStyles -notmatch 'Setter Property="Height" Value="39"' -or
     $errors.Add('Settings menu rows must be consistent and chat alert menu labels concise.')
 }
 
+
+# Reading Hub v2.56.0: source-independent shelf, virtual tabs, guarded saved links.
+$readerCs = Join-Path $source 'MainWindow.Reading.cs'
+$readerStoreCs = Join-Path $source 'ReadingLibraryStore.cs'
+$readerUi = Join-Path $source 'ReadingHubView.xaml'
+$readerUiCs = Join-Path $source 'ReadingHubView.xaml.cs'
+foreach ($path in @($readerCs, $readerStoreCs, $readerUi, $readerUiCs, (Join-Path $source 'Assets/Icons/reading.png'))) {
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { $errors.Add("Reading Hub file missing: $path") }
+}
+if ((Test-Path $readerCs) -and (Test-Path $readerStoreCs) -and (Test-Path $readerUi)) {
+    $readerBody = [IO.File]::ReadAllText($readerCs)
+    $storeBody = [IO.File]::ReadAllText($readerStoreCs)
+    $readerMarkup = [IO.File]::ReadAllText($readerUi)
+    if ($readerBody -notmatch 'ReadingNavigationCompleted' -or
+        $readerBody -notmatch 'OpenReadingBookAsync' -or
+        $readerBody -notmatch 'ReadingHubOverlay\.AddForm\.Visibility' -or
+        $storeBody -notmatch 'File\.Move\(temp, LibraryPath, overwrite: true\)' -or
+        $storeBody -notmatch 'IsSafeHttpUrl' -or
+        $readerMarkup -match 'Visibility="Collapsed".*Panel\.ZIndex="16"' -or
+        $shellXaml -notmatch 'local:ReadingHubView x:Name="ReadingHubOverlay"' -or
+        $pixelIcons -notmatch '/Assets/Icons/reading.png') {
+        $errors.Add('Reading Hub safe URL, virtual tab, XAML visibility or local persistence contract regressed.')
+    }
+}
+
+
+# Reading Hub 2.57: metadata-only chapter checks and single-tab scroll progress.
+$readerProgress = Join-Path $source 'MainWindow.Reading.Progress.cs'
+$readingScrollScripts = Join-Path $source 'ReadingScrollScripts.cs'
+$readerUpdates = Join-Path $source 'MainWindow.Reading.Updates.cs'
+$mangaClient = Join-Path $source 'MangaDexChapterTracker.cs'
+foreach ($path in @($readerProgress, $readerUpdates, $mangaClient, $readingScrollScripts)) {
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        $errors.Add("Reading Hub enhancement missing: $path")
+    }
+}
+if ((Test-Path $readerProgress) -and (Test-Path $readerUpdates) -and (Test-Path $mangaClient)) {
+    $progressBody = [IO.File]::ReadAllText($readerProgress)
+    $updatesBody = [IO.File]::ReadAllText($readerUpdates)
+    $mangaBody = [IO.File]::ReadAllText($mangaClient)
+    if ($readerBody -notmatch 'CheckUpdatesButton.Click' -or
+        $readerBody -notmatch 'RestoreReadingProgressAsync' -or
+        $progressBody -notmatch 'CaptureReadingProgressAsync' -or
+        ($progressBody -notmatch 'ReadingScrollScripts' -or
+         [IO.File]::ReadAllText($readingScrollScripts) -notmatch 'window.scrollTo') -or
+        $updatesBody -notmatch 'Take\(8\)' -or
+        $updatesBody -notmatch 'MangaDexCheckCooldown' -or
+        $mangaBody -notmatch 'api.mangadex.org/manga/' -or
+        $mangaBody -match 'at-home/server' -or
+        $readerMarkup -notmatch 'CheckReadingUpdatesButton') {
+        $errors.Add('Reading Hub progress, rate-limited metadata checks or UI wiring regressed.')
+    }
+}
+
+# Core 2.59: existing-book editing, favorite view and best-effort inner scroll reader.
+if ((Test-Path $readingScrollScripts) -and (Test-Path $readerCs) -and (Test-Path $readerUi)) {
+    $scrollBody = [IO.File]::ReadAllText($readingScrollScripts)
+    if ($readerBody -notmatch 'BeginEditReadingBook' -or
+        $readerBody -notmatch 'ToggleReadingFavorite' -or
+        $readerBody -notmatch 'ResetReadingForm' -or
+        $readerMarkup -notmatch 'ReadingFilterFavorites' -or
+        $readerMarkup -notmatch 'CancelReadingButton' -or
+        $readerMarkup -notmatch 'ReadingShowMoreButton' -or
+        $readerBody -notmatch 'ReadingShelfPageSize' -or
+        $scrollBody -notmatch 'NormalizeTarget' -or
+        $scrollBody -notmatch 'document.scrollingElement' -or
+        $progressBody -notmatch 'ScrollTarget') {
+        $errors.Add('Reading Hub 2.59 edit, favorites or scroll-target contract regressed.')
+    }
+}
+
+# Core 2.58: port only Figma shell and the real library, no mock service/reader data.
+$themeTokens = [IO.File]::ReadAllText((Join-Path $source 'WorkChatTheme.xaml'))
+$readingViewCode = [IO.File]::ReadAllText((Join-Path $source 'ReadingHubView.xaml.cs'))
+foreach ($token in @('#0D1016', '#141820', '#1A1F29', '#7598FF', '#292F3B')) {
+    if (-not $themeTokens.Contains($token)) { $errors.Add("Figma theme token missing: $token") }
+}
+if ($settingsFlyoutSource -notmatch 'Width = 310' -or
+    $alertPopupSource -notmatch 'Width = 310' -or
+    $readerMarkup -notmatch 'x:Name="ReadingContinuePanel"' -or
+    $readerMarkup -notmatch 'x:Name="ReadingFilterWaiting"' -or
+    $readerBody -notmatch 'ReadingFilter_Click' -or
+    $readerBody -notmatch 'ReadingContinue_Click' -or
+    $readingViewCode -notmatch 'StackPanel Shelf => ReadingShelfInner' -or
+    $shellXaml -notmatch 'Source="{StaticResource MessengerPixelIcon}"') {
+    $errors.Add('Figma-to-WPF port: Settings, library, or original pixel icon contract regressed.')
+}
+
 if ($errors.Count -gt 0) {
     foreach ($issue in $errors) { Write-Host "FAIL: $issue" -ForegroundColor Red }
     exit 1
 }
 Write-Host 'SOURCE CHECK PASS (static only; Windows BUILD + selftest still required)' -ForegroundColor Green
 exit 0
-

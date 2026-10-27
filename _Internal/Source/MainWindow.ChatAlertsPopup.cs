@@ -36,7 +36,7 @@ public partial class MainWindow
         var rows = new StackPanel { Margin = new Thickness(9, 7, 9, 8) };
         rows.Children.Add(new TextBlock
         {
-            Text = "Chat alerts", FontSize = 14, FontWeight = FontWeights.SemiBold,
+            Text = "Chat alerts", FontSize = 13, FontWeight = FontWeights.SemiBold,
             Foreground = (WpfBrush)FindResource("ShellTextBrush"), Margin = new Thickness(12, 4, 7, 9)
         });
         foreach (MiniSite site in AlertSites)
@@ -48,7 +48,7 @@ public partial class MainWindow
                 _ => "ZaloPixelIcon"
             };
             var name = new StackPanel { Orientation = WpfOrientation.Horizontal };
-            var icon = new WpfImage { Source = (ImageSource)FindResource(key), Width = 21, Height = 21,
+            var icon = new WpfImage { Source = (ImageSource)FindResource(key), Width = 32, Height = 32,
                 Stretch = Stretch.Uniform, Margin = new Thickness(0, 0, 10, 0) };
             RenderOptions.SetBitmapScalingMode(icon, BitmapScalingMode.NearestNeighbor);
             name.Children.Add(icon);
@@ -72,10 +72,10 @@ public partial class MainWindow
         });
         var panel = new Border
         {
-            Width = 266, Background = (WpfBrush)FindResource("ShellSurfaceBrush"),
+            Width = 310, Background = (WpfBrush)FindResource("ShellSurfaceBrush"),
             BorderBrush = (WpfBrush)FindResource("ShellLineBrush"),
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Child = rows,
-            Effect = new DropShadowEffect { BlurRadius = 20, Opacity = 0.26, ShadowDepth = 3 }
+            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Child = rows,
+            Effect = new DropShadowEffect { BlurRadius = 26, Opacity = 0.40, ShadowDepth = 3 }
         };
         _chatAlertsPopup = new Popup
         {

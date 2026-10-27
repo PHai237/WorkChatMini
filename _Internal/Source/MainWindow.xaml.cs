@@ -181,6 +181,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        WireReadingHub();
         ConfigureSplitButton();
         ConfigureCompanionButtons();
 

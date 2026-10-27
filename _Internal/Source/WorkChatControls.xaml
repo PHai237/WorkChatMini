@@ -15,86 +15,56 @@
         </Style.Triggers>
     </Style>
 
-    <!-- The app rail has lightweight pointer feedback, no WebView animations. -->
-        <Style x:Key="AppIconButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Background" Value="{StaticResource ShellElevatedBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource ShellLineBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Width" Value="40"/>
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="Margin" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Opacity" Value="1"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid SnapsToDevicePixels="True">
-                            <Border x:Name="Root" Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="13"/>
-                            <Border x:Name="HoverTint" Background="#87A7FF" CornerRadius="13"
-                                    Opacity="0" IsHitTestVisible="False"/>
-                            <Border x:Name="ActiveMarker" Width="3" Height="19" CornerRadius="2"
-                                    Background="{StaticResource ShellAccentBrush}" HorizontalAlignment="Left"
-                                    Margin="-6,0,0,0" Visibility="Collapsed"/>
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#6789C5"/>
-                            </Trigger>
-                            <EventTrigger RoutedEvent="MouseEnter">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverTint" Storyboard.TargetProperty="Opacity"
-                                                         To="0.11" Duration="0:0:0.12"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                            <EventTrigger RoutedEvent="MouseLeave">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverTint" Storyboard.TargetProperty="Opacity"
-                                                         To="0" Duration="0:0:0.12"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                            <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource ShellAccentBrush}"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Opacity" Value="0.75"/>
-                            </Trigger>
-                            <Trigger Property="Tag" Value="Active">
-                                <Setter Property="Opacity" Value="1"/>
-                                <Setter TargetName="Root" Property="Background" Value="{StaticResource ShellAccentSoftBrush}"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource ShellAccentBrush}"/>
-                                <Setter TargetName="ActiveMarker" Property="Visibility" Value="Visible"/>
-                            </Trigger>
-                            <Trigger Property="Tag" Value="Sleeping">
-                                <Setter Property="Opacity" Value="0.34"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#202636"/>
-                                <Setter TargetName="Root" Property="BorderThickness" Value="1"/>
-                            </Trigger>
-                            <Trigger Property="Tag" Value="Hibernated">
-                                <Setter Property="Opacity" Value="0.18"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#171B27"/>
-                                <Setter TargetName="Root" Property="BorderThickness" Value="1"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+    <!-- Figma compact rail, 46 DIP hit target; pixel PNGs are unchanged. -->
+    <Style x:Key="AppIconButtonStyle" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Width" Value="46"/>
+        <Setter Property="Height" Value="46"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Opacity" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid SnapsToDevicePixels="True">
+                        <Border x:Name="Root" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9"/>
+                        <Border x:Name="ActiveMarker" Width="3" Height="24" CornerRadius="0,2,2,0"
+                                Background="{StaticResource ShellAccentBrush}" HorizontalAlignment="Left"
+                                Margin="-5,0,0,0" Visibility="Collapsed"/>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource ShellHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource ShellAccentBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True"><Setter Property="Opacity" Value="0.8"/></Trigger>
+                        <Trigger Property="Tag" Value="Active">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource ShellAccentSoftBrush}"/>
+                            <Setter TargetName="ActiveMarker" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="Tag" Value="Sleeping"><Setter Property="Opacity" Value="0.48"/></Trigger>
+                        <Trigger Property="Tag" Value="Hibernated"><Setter Property="Opacity" Value="0.3"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <!-- Settings: one visual system for every row/page; never use the OS MenuItem popup. -->
     <Style x:Key="SettingsFlyoutRowStyle" TargetType="Button">
         <Setter Property="Height" Value="39"/>
-        <Setter Property="Margin" Value="0,2"/>
-        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="Margin" Value="0,0"/>
+        <Setter Property="Padding" Value="9,0"/>
         <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
@@ -105,7 +75,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Surface" Background="{TemplateBinding Background}" CornerRadius="10"
+                    <Border x:Name="Surface" Background="{TemplateBinding Background}" CornerRadius="6"
                             SnapsToDevicePixels="True">
                         <ContentPresenter Margin="{TemplateBinding Padding}"
                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -132,9 +102,9 @@
 
     <!-- Full-row toggle with a visible modern switch; no default WPF checkbox chrome. -->
     <Style x:Key="SettingsFlyoutSwitchStyle" TargetType="ToggleButton">
-        <Setter Property="Height" Value="48"/>
-        <Setter Property="Margin" Value="0,2"/>
-        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="Height" Value="58"/>
+        <Setter Property="Margin" Value="0,0"/>
+        <Setter Property="Padding" Value="9,0"/>
         <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Cursor" Value="Hand"/>
@@ -143,14 +113,14 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="RowSurface" CornerRadius="10" Background="{TemplateBinding Background}">
+                    <Border x:Name="RowSurface" CornerRadius="7" Background="{TemplateBinding Background}">
                         <Grid Margin="{TemplateBinding Padding}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="48"/></Grid.ColumnDefinitions>
                             <ContentPresenter Grid.Column="0" VerticalAlignment="Center"/>
-                            <Border x:Name="Track" Grid.Column="1" Width="38" Height="21"
-                                    Background="#34445D" BorderBrush="#566785" BorderThickness="1"
-                                    CornerRadius="11" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Ellipse x:Name="Thumb" Fill="#D6E0F5" Width="15" Height="15"
+                            <Border x:Name="Track" Grid.Column="1" Width="36" Height="20"
+                                    Background="#343B45" BorderBrush="#343B45" BorderThickness="1"
+                                    CornerRadius="10" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Ellipse x:Name="Thumb" Fill="#A6ADBA" Width="16" Height="16"
                                          HorizontalAlignment="Left" VerticalAlignment="Center" Margin="2"/>
                             </Border>
                         </Grid>
@@ -159,7 +129,7 @@
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Track" Property="Background" Value="{StaticResource ShellAccentBrush}"/>
                             <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource ShellAccentBrush}"/>
-                            <Setter TargetName="Thumb" Property="Fill" Value="#0B1020"/>
+                            <Setter TargetName="Thumb" Property="Fill" Value="White"/>
                             <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">

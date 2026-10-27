@@ -605,6 +605,8 @@ public partial class MainWindow
         MiniSite previousSite = _activeSite;
         AppLogger.Info("UI", $"Switch site requested | from={previousSite} | to={site}");
         RecordPerformanceEvent("SWITCH", $"request {previousSite}->{site}");
+        if (previousSite == MiniSite.Web && site != MiniSite.Web && _readingActiveBookId is not null)
+            await CaptureReadingProgressAsync();
 
         if (previousSite != site)
         {
@@ -735,8 +737,11 @@ public partial class MainWindow
     private async void ZaloButton_Click(object sender, RoutedEventArgs e) =>
         await SwitchToSiteSafeAsync(MiniSite.Zalo);
 
-    private async void WebButton_Click(object sender, RoutedEventArgs e) =>
+    private async void WebButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseReadingHub();
         await SwitchToSiteSafeAsync(MiniSite.Web);
+    }
 
     private static WindowPositionMode ParsePositionMode(string? value) =>
         Enum.TryParse(value, ignoreCase: true, out WindowPositionMode mode) ? mode : WindowPositionMode.BottomRight;

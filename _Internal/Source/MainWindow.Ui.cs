@@ -60,6 +60,9 @@ public partial class MainWindow
             SetButtonState(GetSiteButton(site), site,
                 _activeSite == site || (IsSplitVisible && _splitSecondarySite == site));
         }
+        SetButtonState(ReadingButton, MiniSite.Web, _activeSite == MiniSite.Web &&
+            (_readingHubVisible || _readingActiveBookId is not null &&
+             _activeBrowserTab?.Id == _readingHostTabId));
         if (ShellSiteTitle is not null)
         {
             ShellSiteTitle.Text = IsSplitVisible && _splitSecondarySite is { } right
