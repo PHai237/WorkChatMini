@@ -341,7 +341,7 @@
                         <Border Width="38" Height="38" Margin="0,2,0,11"
                                 Background="{StaticResource ShellAccentSoftBrush}" CornerRadius="11"
                                 ToolTip="WorkChat Mini · apps">
-                            <TextBlock Text="w." FontFamily="Georgia" FontSize="24" FontWeight="Bold"
+                            <TextBlock Text="w." FontFamily="Georgia" FontSize="22" FontWeight="Bold"
                                        Foreground="{StaticResource ShellAccentBrush}" VerticalAlignment="Center"
                                        HorizontalAlignment="Center" Margin="0,-3,0,0"/>
                         </Border>
@@ -350,8 +350,8 @@
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="MessengerButton_Click"
                                 ToolTip="Messenger">
-                            <Grid Width="33" Height="33">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource MessengerPixelIcon}" Width="33" Height="33" Stretch="Uniform"
+                            <Grid Width="29" Height="29">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource MessengerPixelIcon}" Width="29" Height="29" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
@@ -361,8 +361,8 @@
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="FacebookButton_Click"
                                 ToolTip="Facebook">
-                            <Grid Width="33" Height="33">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource FacebookPixelIcon}" Width="33" Height="33" Stretch="Uniform"
+                            <Grid Width="29" Height="29">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource FacebookPixelIcon}" Width="29" Height="29" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
@@ -372,8 +372,8 @@
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="YouTubeButton_Click"
                                 ToolTip="YouTube">
-                            <Grid Width="33" Height="33">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource YouTubePixelIcon}" Width="33" Height="33" Stretch="Uniform"
+                            <Grid Width="29" Height="29">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource YouTubePixelIcon}" Width="29" Height="29" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
@@ -383,8 +383,8 @@
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="DiscordButton_Click"
                                 ToolTip="Discord">
-                            <Grid Width="33" Height="33">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource DiscordPixelIcon}" Width="33" Height="33" Stretch="Uniform"
+                            <Grid Width="29" Height="29">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource DiscordPixelIcon}" Width="29" Height="29" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
@@ -394,8 +394,8 @@
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="ZaloButton_Click"
                                 ToolTip="Zalo">
-                            <Grid Width="33" Height="33">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource ZaloPixelIcon}" Width="33" Height="33" Stretch="Uniform"
+                            <Grid Width="29" Height="29">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource ZaloPixelIcon}" Width="29" Height="29" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
@@ -404,15 +404,15 @@
                                 Style="{StaticResource AppIconButtonStyle}"
                                 Click="WebButton_Click"
                                 ToolTip="Web browser">
-                            <Grid Width="33" Height="33">
-                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource WebPixelIcon}" Width="33" Height="33" Stretch="Uniform"
+                            <Grid Width="29" Height="29">
+                                <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource WebPixelIcon}" Width="29" Height="29" Stretch="Uniform"
                                        SnapsToDevicePixels="True"/>
                             </Grid>
                         </Button>
                         <Button x:Name="ReadingButton" Margin="0,0,0,3"
                                 Style="{StaticResource AppIconButtonStyle}" Click="ReadingButton_Click"
                                 ToolTip="Reading Hub · Manga / LN / WN">
-                            <Grid Width="33" Height="33"><Image Source="{StaticResource ReadingPixelIcon}" Width="33" Height="33"
+                            <Grid Width="29" Height="29"><Image Source="{StaticResource ReadingPixelIcon}" Width="29" Height="29"
                                     RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform"/></Grid>
                         </Button>
                     </StackPanel>
@@ -420,14 +420,14 @@
             </ScrollViewer>
             <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,7,0,8">
                 <Separator Width="34" Background="{StaticResource ShellLineBrush}" Margin="0,0,0,8"/>
-                    <Button x:Name="SplitButton" Style="{StaticResource UtilityIconButtonStyle}" Width="40" Height="40" Margin="0,0,0,8" Click="SplitButton_Click" ToolTip="Split screen (Ctrl+Shift+2)"><TextBlock Text="◫" FontSize="22" VerticalAlignment="Center" HorizontalAlignment="Center"/></Button>
+                    <Button x:Name="SplitButton" Style="{StaticResource UtilityIconButtonStyle}" Width="40" Height="40" Margin="0,0,0,8" Click="SplitButton_Click" ToolTip="Split screen (Ctrl+Shift+2)"><TextBlock Text="◫" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center"/></Button>
                     <Button x:Name="MoreMenuButton"
                             Style="{StaticResource UtilityIconButtonStyle}"
                             Width="40" Height="40" Margin="0"
                             ToolTip="Settings"
                             ContextMenuService.IsEnabled="False"
                             Click="MoreMenuButton_Click">
-                        <TextBlock Text="⚙" FontFamily="Segoe UI Symbol" FontSize="25" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="⚙" FontFamily="Segoe UI Symbol" FontSize="22" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <Button.ContextMenu>
                             <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Right">
                                 <MenuItem Header="Pop out" Style="{StaticResource DarkMenuItemStyle}" Click="OpenActiveCompanion_Click"/>

@@ -80,6 +80,13 @@ public partial class MainWindow
                 if (SplitButton.Parent is not System.Windows.Controls.StackPanel || MoreMenuButton.Parent is not System.Windows.Controls.StackPanel ||
                     !ReferenceEquals(SplitButton.Parent, MoreMenuButton.Parent))
                     throw new InvalidOperationException("Split and Settings must share pinned rail footer.");
+                var railArtwork = new[] { MessengerButton, FacebookButton, YouTubeButton,
+                    DiscordButton, ZaloButton, WebButton, ReadingButton };
+                if (railArtwork.Any(button => button.Width != 46 || button.Height != 46 ||
+                    button.Content is not System.Windows.Controls.Grid grid ||
+                    grid.Children.OfType<System.Windows.Controls.Image>()
+                        .Any(icon => icon.Width != 29 || icon.Height != 29)))
+                    throw new InvalidOperationException("Compact rail artwork must keep 46 DIP button targets.");
                 return Task.CompletedTask;
             });
 
@@ -574,7 +581,7 @@ public partial class MainWindow
                 if (_settingsFlyoutRows is null || _settingsFlyoutBack is null)
                     throw new InvalidOperationException("Settings popup was not initialized.");
                 var rowStyle = (System.Windows.Style)FindResource("SettingsFlyoutRowStyle");
-                foreach (string page in new[] { "new-window", "zoom", "playback", "resource", "window", "size", "position", "tools" })
+                foreach (string page in new[] { "chat-alerts", "new-window", "zoom", "playback", "resource", "window", "size", "position", "tools" })
                 {
                     ShowSettingsPage(page);
                     bool hasControls = _settingsFlyoutRows.Children.OfType<System.Windows.Controls.Button>().Any() ||
@@ -588,68 +595,14 @@ public partial class MainWindow
                         throw new InvalidOperationException($"Settings page {page} cannot render correctly.");
                 }
                 if (ParentSettingsPage("resource") != "playback" ||
-                    ParentSettingsPage("position") != "window")
+                    ParentSettingsPage("position") != "window" ||
+                    ParentSettingsPage("chat-alerts") != "root")
                     throw new InvalidOperationException("Settings back navigation is broken.");
                 ShowSettingsPage("root");
                 return Task.CompletedTask;
             });
 
-            await RunCase("Chat notification origin and toggle policy", () =>
-            {
-                UpdateMoreMenuState();
-                if (!IsNotificationPermissionBlocked(CoreWebView2PermissionKind.Notifications) ||
-                    !ChatAlertOriginMatches(MiniSite.Messenger, "https://www.messenger.com/t/123") ||
-                    !ChatAlertOriginMatches(MiniSite.Discord, "https://discord.com/app") ||
-                    !ChatAlertOriginMatches(MiniSite.Zalo, "https://chat.zalo.me/") ||
-                    ChatAlertOriginMatches(MiniSite.Messenger, "https://messenger.com.evil.test/") ||
-                    ChatAlertOriginMatches(MiniSite.Discord, "http://discord.com/app") ||
-                    ChatAlertOriginMatches(MiniSite.Discord, "https://discord.com.evil.test/") ||
-                    ChatAlertOriginMatches(MiniSite.Facebook, "https://facebook.com/") ||
-                    ChatAlertOriginMatches(MiniSite.YouTube, "https://youtube.com/"))
-                    throw new InvalidOperationException("Chat notification origin allowlist is invalid.");
-                if (FindName("MessengerUnreadDot") is not null || FindName("DiscordUnreadDot") is not null ||
-                    FindName("ZaloUnreadDot") is not null || FindName("CurrentAppUnreadDot") is not null)
-                    throw new InvalidOperationException("Unexpected legacy notification badges.");
-                if (MoreChatNotificationsMenuItem is null ||
-                    MoreChatNotificationsMenuItem.IsCheckable ||
-                    !Equals(MoreChatNotificationsMenuItem.Header, "Chat alerts…"))
-                    throw new InvalidOperationException("Chat alerts must open a multi-select popup, not flip a global checkbox.");
-                var old = new[] {
-                    _settings.MessengerNotificationsEnabled,
-                    _settings.DiscordNotificationsEnabled,
-                    _settings.ZaloNotificationsEnabled,
-                    _settings.ChatNotificationsEnabled
-                };
-                try
-                {
-                    SetChatAlertPreference(MiniSite.Messenger, false);
-                    SetChatAlertPreference(MiniSite.Discord, false);
-                    SetChatAlertPreference(MiniSite.Zalo, false);
-                    if (AnyChatAlertsEnabled())
-                        throw new InvalidOperationException("Disabled chat alerts are still active.");
-                    SetChatAlertPreference(MiniSite.Discord, true);
-                    if (ChatAlertsKeepAlive(MiniSite.Messenger) ||
-                        !ChatAlertsKeepAlive(MiniSite.Discord) ||
-                        ChatAlertsKeepAlive(MiniSite.Zalo) ||
-                        ChatAlertsKeepAlive(MiniSite.Facebook) ||
-                        !_settings.ChatNotificationsEnabled)
-                        throw new InvalidOperationException("The three chat alert choices are not independent.");
-                    EnsureChatAlertsPopup();
-                    if (_chatAlertsPopup is null || _chatAlertsPopup.StaysOpen ||
-                        _chatAlertChoices.Count != 3 ||
-                        _chatAlertChoices.Values.Any(choice => choice.IsThreeState ||
-                            !ReferenceEquals(choice.Style, FindResource("SettingsFlyoutSwitchStyle"))))
-                        throw new InvalidOperationException("Modern chat alert toggles are missing or inconsistent.");
-                }
-                finally
-                {
-                    _settings.MessengerNotificationsEnabled = old[0];
-                    _settings.DiscordNotificationsEnabled = old[1];
-                    _settings.ZaloNotificationsEnabled = old[2];
-                    _settings.ChatNotificationsEnabled = old[3];
-                }
-                return Task.CompletedTask;
-            });
+            await RunCase("Chat notification origin and toggle policy", VerifyChatAlertSettingsSelfTest);
 
             await RunCase("Discord call protection", () =>
             {

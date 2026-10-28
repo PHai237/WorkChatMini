@@ -20,7 +20,7 @@ public partial class MainWindow
     private string _settingsPage = "root";
 
     private static readonly string[] SettingsPages =
-        { "root", "new-window", "zoom", "playback", "resource", "window", "size", "position", "tools" };
+        { "root", "chat-alerts", "new-window", "zoom", "playback", "resource", "window", "size", "position", "tools" };
 
     private void ToggleSettingsFlyout()
     {
@@ -48,8 +48,8 @@ public partial class MainWindow
         };
         _settingsFlyoutBack = new WpfButton
         {
-            Content = "‹", Width = 32, Height = 32, FontSize = 24,
-            Foreground = (WpfBrush)FindResource("ShellTextBrush"),
+            Content = "‹", Width = 30, Height = 30, FontSize = 21,
+            Padding = new Thickness(0), Foreground = (WpfBrush)FindResource("ShellTextBrush"),
             Style = (Style)FindResource("SettingsFlyoutRowStyle"),
             Margin = new Thickness(0, 0, 6, 0),
             ToolTip = "Back"
@@ -128,9 +128,14 @@ public partial class MainWindow
         _settingsPage = page;
         _settingsFlyoutRows.Children.Clear();
         _settingsFlyoutBack.Visibility = page == "root" ? Visibility.Collapsed : Visibility.Visible;
+        _settingsFlyoutBack.ToolTip = ParentSettingsPage(page) switch
+        {
+            "playback" => "Back to Playback", "window" => "Back to Window",
+            _ => "Back to Settings"
+        };
         _settingsFlyoutHeading.Text = page switch
         {
-            "root" => "Settings", "new-window" => "New window", "zoom" => "Zoom",
+            "root" => "Settings", "chat-alerts" => "Chat alerts", "new-window" => "New window", "zoom" => "Zoom",
             "playback" => "Playback", "resource" => "Resource policy",
             "window" => "Window", "size" => "Window size", "position" => "Position",
             "tools" => "Tools", _ => "Settings"
@@ -140,7 +145,7 @@ public partial class MainWindow
             case "root":
                 SettingsAction("Pop out", () => OpenCompanionWindow(_activeSite),
                     enabled: _activeSite is not MiniSite.Web and not MiniSite.Story);
-                SettingsAction("Chat alerts", OpenSettingsChatAlerts, next: true);
+                SettingsAction("Chat alerts", () => ShowSettingsPage("chat-alerts"), next: true);
                 SettingsAction("New window", () => ShowSettingsPage("new-window"), next: true);
                 SettingsAction("Zoom", () => ShowSettingsPage("zoom"), next: true);
                 SettingsAction("Playback", () => ShowSettingsPage("playback"), next: true);
@@ -149,6 +154,9 @@ public partial class MainWindow
                 SettingsRule();
                 SettingsAction("Updates", ShowUpdates);
                 SettingsAction("Exit", ExitApplication);
+                break;
+            case "chat-alerts":
+                AddChatAlertSettingsRows();
                 break;
             case "new-window":
                 foreach (MiniSite site in new[] { MiniSite.Messenger, MiniSite.Facebook, MiniSite.YouTube, MiniSite.Discord, MiniSite.Zalo })
@@ -235,16 +243,16 @@ public partial class MainWindow
     {
         if (_settingsFlyoutRows is null) return;
         var row = new Grid();
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var glyph = new Border
         {
-            Width = 23, Height = 23, CornerRadius = new CornerRadius(5),
+            Width = 21, Height = 21, CornerRadius = new CornerRadius(5),
             BorderBrush = (WpfBrush)FindResource("ShellLineBrush"), BorderThickness = new Thickness(1),
             Background = (WpfBrush)FindResource("ShellElevatedBrush"),
             Child = new TextBlock { Text = SettingsGlyph(text), FontFamily = new System.Windows.Media.FontFamily("Segoe UI Symbol"),
-                FontSize = 12, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                FontSize = 11, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
                 Foreground = (WpfBrush)FindResource("ShellMutedBrush") }
         };
         row.Children.Add(glyph);
@@ -298,10 +306,4 @@ public partial class MainWindow
         });
     }
 
-    private void OpenSettingsChatAlerts()
-    {
-        if (_settingsFlyout is not null) _settingsFlyout.IsOpen = false;
-        _ = Dispatcher.BeginInvoke(new Action(ShowChatAlertsPopup),
-            System.Windows.Threading.DispatcherPriority.Background);
-    }
 }

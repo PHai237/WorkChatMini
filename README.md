@@ -1,3 +1,7 @@
+## Settings navigation and icon polish (Core 2.60.1)
+
+The Chat alerts controls now live inside the same navigable Settings flyout as Zoom/Playback/Window and return via the shared Back button. Messenger/Discord/Zalo remain independent. The sidebar artwork is slightly smaller (33 → 29 DIP) while the 46-DIP click targets remain unchanged. Also scales down the gear/split glyphs and Settings row glyphs. No new UI framework, background workers or WebViews. Keep using `PUSH.bat`; Windows preflight is the release gate. See `docs/SETTINGS_POLISH_2.60.1.md`.
+
 ## Quiet Workbench visual redesign (Core 2.60.0)
 
 Impeccable-informed WPF design pass: simpler chrome, clearer active rail, redesigned blank browser tab and Reading Hub, coherent semantic colors, and vertically scrollable library at compact window sizes. All original controls and WebView2 logic remain; no additional browser engines, design-tool runtime or user data migration. See `docs/QUIET_WORKBENCH_DESIGN_2.60.0.md`. **Source candidate; Windows CI and visual QA required.** Use the existing `PUSH.bat` workflow.

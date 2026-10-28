@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $source = Join-Path $root '_Internal\Source'
 $errors = [System.Collections.Generic.List[string]]::new()
@@ -321,7 +321,7 @@ if ($shellXaml -notmatch 'ContextMenuService.IsEnabled="False"' -or
     $settingsFlyoutSource -notmatch 'StaysOpen = false' -or
     $settingsFlyoutSource -notmatch 'SettingsAction\("Updates", ShowUpdates\)' -or
     $settingsFlyoutSource -notmatch 'SettingsAction\("Exit", ExitApplication\)' -or
-    $settingsFlyoutSource -notmatch 'SettingsAction\("Chat alerts", OpenSettingsChatAlerts' -or
+    $settingsFlyoutSource -notmatch 'SettingsAction\("Chat alerts", \(\) => ShowSettingsPage\("chat-alerts"\)' -or
     $controlStyles -notmatch 'x:Key="SettingsFlyoutRowStyle"' -or
     $controlStyles -notmatch 'x:Key="SettingsFlyoutSwitchStyle"') {
     $errors.Add('Custom Settings flyout, nested pages, permanent Updates/Exit, or modern switch style missing.')
@@ -342,8 +342,8 @@ if ($notificationSource -notmatch 'ChatAlertOriginMatches' -or
     $errors.Add('Chat notification policy, menu switch or background keep-alive guard is missing.')
 }
 
-# 2.53: service-specific chat checkboxes must not be flattened into one switch.
-$alertPopupSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.ChatAlertsPopup.cs'))
+# 2.60.1: chat alerts live in the navigable Settings flyout, not a detached popup.
+$alertSettingsSource = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.ChatAlertSettings.cs'))
 $settingSource = [IO.File]::ReadAllText((Join-Path $source 'AppSettings.cs'))
 foreach ($site in @('Messenger', 'Discord', 'Zalo')) {
     if ($settingSource -notmatch ("$site" + 'NotificationsEnabled') -or
@@ -351,13 +351,16 @@ foreach ($site in @('Messenger', 'Discord', 'Zalo')) {
         $errors.Add("Missing $site chat alert preference.")
     }
 }
-if ($alertPopupSource -notmatch 'StaysOpen = false' -or
-    $alertPopupSource -notmatch 'ChatAlertChoice_Changed' -or
-    $alertPopupSource -notmatch 'new WpfToggleButton' -or
-    $alertPopupSource -notmatch 'SettingsFlyoutSwitchStyle' -or
-    $alertPopupSource -match 'new WpfCheckBox|new CheckBox' -or
-    $notificationSource -notmatch 'SetChatAlertPreference') {
-    $errors.Add('Chat alerts must use a separate multi-toggle popup and per-service settings.')
+if ($settingsFlyoutSource -notmatch '"chat-alerts" => "Chat alerts"' -or
+    $settingsFlyoutSource -notmatch 'case "chat-alerts"' -or
+    $settingsFlyoutSource -notmatch 'AddChatAlertSettingsRows\(\)' -or
+    $alertSettingsSource -notmatch 'OpenChatAlertSettings' -or
+    $alertSettingsSource -notmatch 'ApplyChatAlertChoiceAsync' -or
+    $alertSettingsSource -notmatch 'SettingsSwitch' -or
+    $notificationSource -notmatch 'OpenChatAlertSettings' -or
+    $notificationSource -notmatch 'SetChatAlertPreference' -or
+    (Test-Path -LiteralPath (Join-Path $source 'MainWindow.ChatAlertsPopup.cs'))) {
+    $errors.Add('Chat alerts must share the Settings navigation and retain three independent preferences.')
 }
 if ($controlStyles -notmatch 'Setter Property="Height" Value="39"' -or
     $shellXaml -match 'Chat alerts \(Mess') {
@@ -477,7 +480,7 @@ if ($readerMarkup -notmatch 'Whole page scrolls vertically' -or
     $errors.Add('2.60 Quiet Workbench reader/shell layout or flat-color test contract regressed.')
 }
 if ($settingsFlyoutSource -notmatch 'Width = 310' -or
-    $alertPopupSource -notmatch 'Width = 310' -or
+    $alertSettingsSource -notmatch 'ShowSettingsPage\("chat-alerts"\)' -or
     $readerMarkup -notmatch 'x:Name="ReadingContinuePanel"' -or
     $readerMarkup -notmatch 'x:Name="ReadingFilterWaiting"' -or
     $readerBody -notmatch 'ReadingFilter_Click' -or

@@ -16,7 +16,7 @@ public static class MangaDexChapterTracker
     private static HttpClient CreateClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(12) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("WorkChatMini/2.60.0 (+https://github.com/PHai237/WorkChatMini)");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("WorkChatMini/2.60.1 (+https://github.com/PHai237/WorkChatMini)");
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         return client;
     }

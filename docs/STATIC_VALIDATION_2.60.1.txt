@@ -1,0 +1,12 @@
+WorkChat Mini 2.60.1 — static audit
+Input: WorkChat Mini 2.60.0 Quiet Workbench CRLF Fixed ZIP
+PASS: 66 C# files; max 996 lines in MainWindow.Browser.cs (limit 1000)
+PASS: XAML named controls identical to 2.60.0 (139)
+PASS: 7 batch files use Windows CRLF
+PASS: XAML / XML / csproj parse
+PASS: Chat alerts under Settings with 3 independent toggles and actual Back navigation test
+PASS: Legacy Chat alerts menu routes to same Settings page; separate popup removed
+PASS: 7 rail PNG icons use 29 DIP (46 DIP hit targets retained)
+PASS: version synced to 2.60.1; PUSH.bat byte-for-byte unchanged
+NOT RUN: actual Windows PowerShell SOURCE-CHECK, WPF build, Quick/Stress self-test, visual UI test
+Windows preflight and GitHub Actions are required before install/release.

@@ -1,3 +1,12 @@
+# WorkChat Core 2.60.1 — Settings navigation and compact icons
+
+- Chat alerts now opens inside the existing Settings flyout with a working Back control.
+- Messenger, Discord and Zalo remain independent; preferences and WebView2 notification behavior are unchanged.
+- Remove the redundant standalone Chat Alerts popup; both Settings and the legacy menu use the same page.
+- Reduce rail artwork from 33 to 29 DIP, and tone down Settings/shell glyph sizes without shrinking hit targets.
+- Update quick self-tests and SOURCE-CHECK rules for navigation and alert settings; preserve PUSH workflow.
+- Source-only candidate. Windows build, quick/stress tests and visual review are required for validation.
+
 # WorkChat Core 2.60.0 — Quiet Workbench redesign
 
 - Impeccable-informed WPF visual hierarchy, typography, color and layout polish. No Impeccable CLI/runtime dependency.

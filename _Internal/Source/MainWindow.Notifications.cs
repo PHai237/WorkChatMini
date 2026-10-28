@@ -107,9 +107,8 @@ public partial class MainWindow
 
     private void ChatNotificationsMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        // The parent menu closes, then an independent multi-select popup opens.
-        // Checking one service must NOT close the other two choices.
-        _ = Dispatcher.BeginInvoke(new Action(ShowChatAlertsPopup),
+        // Legacy native menu and the gear button both use the same Settings page.
+        _ = Dispatcher.BeginInvoke(new Action(OpenChatAlertSettings),
             System.Windows.Threading.DispatcherPriority.Background);
     }
 
