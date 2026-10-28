@@ -1,3 +1,26 @@
+# WorkChat Core 2.60.0 — Quiet Workbench redesign
+
+- Impeccable-informed WPF visual hierarchy, typography, color and layout polish. No Impeccable CLI/runtime dependency.
+- Dark neutral + muted mint design tokens; refreshed rail, button focus/hover, Web tabs, URL field and Settings flyout styling.
+- Replace new-browser-tab generic graphic with functional quiet start page and quick links (no new WebView2).
+- Reorganize Reading Hub with full-page vertical scroll for small windows, source strip, prominent resume card, search and filters; restyle book rows, preserve exact named controls and handlers.
+- Retain all 2.59.1 safety fixes, app icons, update and PUSH pipeline, browser profiles and data.
+- Source-level validation only in this environment; Windows WPF preflight, Quick/Stress and hands-on UI QA remain required.
+
+---
+
+# WorkChat Core 2.59.1 — Reading and browser history safety fixes
+
+- Migrate missing reading `LastReadUrl` safely and preserve a pre-migration file backup; corrupted or partially invalid shelf files are never silently rewritten.
+- Validate reading URLs per book rather than per host; refuse definitely conflicting old resume links while preserving raw stored data.
+- Order Continue Reading by the most recent real read timestamp; distinguish edits and favorites from reading.
+- Retry scroll restoration once only when the page had no scrollable content.
+- Quarantine malformed browser history before accepting new writes; use read-only fallback if file recovery fails.
+- Expand self-tests and source-check; preserve existing UI, WebView allocation policy, logins, updater and six pixel icons.
+- **Source candidate**. Windows Build, Quick/Stress, and real-world site checks are release requirements.
+
+---
+
 # WorkChat Core 2.59.0 — Reading Hub usability and scroll positions
 
 - Edit existing reading bookmarks (title or source URL) without deleting/recreating their library ID. Title-only edits keep chapter/scroll progress; changing the saved link clears only that book's old progress and MangaDex update baseline. Cancel editing without altering data; duplicate link protection remains.

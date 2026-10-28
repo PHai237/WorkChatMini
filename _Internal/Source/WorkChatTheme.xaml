@@ -1,20 +1,17 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- 2.58 Figma Make dark tokens; one canonical WPF dictionary. -->
-    <SolidColorBrush x:Key="ShellCanvasBrush" Color="#0D1016"/>
-    <SolidColorBrush x:Key="ShellSurfaceBrush" Color="#141820"/>
-    <SolidColorBrush x:Key="ShellElevatedBrush" Color="#1A1F29"/>
-    <SolidColorBrush x:Key="ShellHoverBrush" Color="#202631"/>
-    <SolidColorBrush x:Key="ShellLineBrush" Color="#292F3B"/>
-    <SolidColorBrush x:Key="ShellAccentBrush" Color="#7598FF"/>
-    <SolidColorBrush x:Key="ShellAccentSoftBrush" Color="#202A3A"/>
-    <SolidColorBrush x:Key="ShellTextBrush" Color="#E9EBEF"/>
-    <SolidColorBrush x:Key="ShellMutedBrush" Color="#9EA7B5"/>
-    <SolidColorBrush x:Key="ShellPositiveBrush" Color="#68C6A0"/>
-    <SolidColorBrush x:Key="ShellDangerBrush" Color="#EF7D85"/>
-    <!-- Constant dark rail color: no decorative gradient behind original pixel icons. -->
-    <LinearGradientBrush x:Key="ShellChromeGradientBrush" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Offset="0" Color="#10141C"/>
-        <GradientStop Offset="1" Color="#10141C"/>
-    </LinearGradientBrush>
+    <!-- Quiet Workbench / Impeccable-informed design pass: functional contrast, no decoration. -->
+    <SolidColorBrush x:Key="ShellCanvasBrush" Color="#0E1315"/>
+    <SolidColorBrush x:Key="ShellSurfaceBrush" Color="#171D20"/>
+    <SolidColorBrush x:Key="ShellElevatedBrush" Color="#20282B"/>
+    <SolidColorBrush x:Key="ShellHoverBrush" Color="#293337"/>
+    <SolidColorBrush x:Key="ShellLineBrush" Color="#303B3E"/>
+    <SolidColorBrush x:Key="ShellAccentBrush" Color="#A5DDC8"/>
+    <SolidColorBrush x:Key="ShellAccentSoftBrush" Color="#203D38"/>
+    <SolidColorBrush x:Key="ShellTextBrush" Color="#F1F3F0"/>
+    <SolidColorBrush x:Key="ShellMutedBrush" Color="#ADB8B6"/>
+    <SolidColorBrush x:Key="ShellPositiveBrush" Color="#89DAB6"/>
+    <SolidColorBrush x:Key="ShellDangerBrush" Color="#F2A0A0"/>
+    <!-- Flat rail keeps pixel icons crisp; gradients are intentionally absent. -->
+    <SolidColorBrush x:Key="ShellChromeGradientBrush" Color="#12191B"/>
 </ResourceDictionary>

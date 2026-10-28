@@ -23,8 +23,8 @@ public partial class MainWindow
         var list = new StackPanel { Orientation = System.Windows.Controls.Orientation.Vertical };
         var border = new Border
         {
-            Background = FrozenBrush(24, 29, 38),
-            BorderBrush = FrozenBrush(55, 64, 79),
+            Background = FrozenBrush(23, 29, 32),
+            BorderBrush = FrozenBrush(48, 59, 62),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(10),
             Padding = new Thickness(4),
@@ -137,7 +137,7 @@ public partial class MainWindow
             content.Children.Add(address);
             var row = new Border
             {
-                Background = index == _browserHistorySelection ? FrozenBrush(43, 51, 66) : System.Windows.Media.Brushes.Transparent,
+                Background = index == _browserHistorySelection ? FrozenBrush(38, 61, 54) : System.Windows.Media.Brushes.Transparent,
                 CornerRadius = new CornerRadius(7),
                 Cursor = System.Windows.Input.Cursors.Hand,
                 Child = content,

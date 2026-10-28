@@ -1,3 +1,11 @@
+## Quiet Workbench visual redesign (Core 2.60.0)
+
+Impeccable-informed WPF design pass: simpler chrome, clearer active rail, redesigned blank browser tab and Reading Hub, coherent semantic colors, and vertically scrollable library at compact window sizes. All original controls and WebView2 logic remain; no additional browser engines, design-tool runtime or user data migration. See `docs/QUIET_WORKBENCH_DESIGN_2.60.0.md`. **Source candidate; Windows CI and visual QA required.** Use the existing `PUSH.bat` workflow.
+
+## Reading/History data-safety fixes (Core 2.59.1)
+
+This patch protects legacy Reading Hub entries from being silently dropped, preserves a pre-migration JSON backup, isolates saved reading progress between different books on the same site, sorts Continue Reading by actual read time, adds one limited restore retry, and protects damaged browser history before new writes. Safety guards and temporary-file self-tests are included. Where a chapter URL cannot be verified as belonging to the original book (notably Hako `/chuong/{id}` and MangaDex `/chapter/{uuid}`), automatic chapter tracking now intentionally stops instead of guessing. See `docs/READING_SAFETY_PATCH_2.59.1.md` for scope, known limitations and Windows validation steps. **Source-only candidate: build and test on Windows before publishing.**
+
 ## Reading Hub usability and scroll support (Core 2.59.0)
 
 Based on Core 2.58.0 Figma port. Your reading shelf now has **Edit** (change a book title or source URL in place with an explicit Cancel action), **Favorite** (star/book prioritization and a Favorites filter), paginated library rendering (40 rows per batch), and best-effort preservation of positions in reader layouts that use an inner scrolling pane (e.g. custom novel readers). Title-only edits preserve reading progress; URL edits intentionally reset that book’s page/scroll and MangaDex update baseline. The reading shelf remains local and stores only metadata, not chapter text/images. No new WebView2 process.

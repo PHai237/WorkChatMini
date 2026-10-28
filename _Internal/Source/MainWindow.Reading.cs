@@ -234,6 +234,7 @@ public partial class MainWindow
                 // A different source/chapter must never inherit another page's scroll bookmark.
                 editing.Url = url;
                 editing.LastReadUrl = url;
+                editing.LastReadAt = null;
                 editing.ScrollUrl = "";
                 editing.ScrollFraction = 0;
                 editing.ScrollTarget = "document";
@@ -304,6 +305,7 @@ public partial class MainWindow
         // Figma-style Continue card shows only persisted metadata; no extra WebView is created.
         ReadingBook? recent = _readingLibrary.Books
             .OrderByDescending(book => book.Id == _readingActiveBookId)
+            .ThenByDescending(book => book.LastReadAt ?? DateTimeOffset.MinValue)
             .ThenByDescending(book => book.UpdatedAt).FirstOrDefault();
         ReadingHubOverlay.ContinuePanel.Visibility = recent is null ? Visibility.Collapsed : Visibility.Visible;
         if (recent is not null)
@@ -340,19 +342,19 @@ public partial class MainWindow
                 () => _ = RunBrowserUiActionAsync(() => OpenReadingBookAsync(book.Id), "reading-virtual-tab"));
             tab.ToolTip = $"{book.Title} · {book.Source} (virtual tab)";
             tab.Margin = new Thickness(0, 0, 5, 0);
-            tab.Background = book.Id == _readingActiveBookId ? BrushFrom("#202A3A") : BrushFrom("#1A1F29");
-            tab.BorderBrush = book.Id == _readingActiveBookId ? BrushFrom("#7598FF") : BrushFrom("#292F3B");
+            tab.Background = book.Id == _readingActiveBookId ? BrushFrom("#203D38") : BrushFrom("#20282B");
+            tab.BorderBrush = book.Id == _readingActiveBookId ? BrushFrom("#A5DDC8") : BrushFrom("#303B3E");
             ReadingOpenTabs.Children.Add(tab);
         }
         int hiddenReadingTabs = _readingLibrary.Books.Count(item => item.OpenTab) - 32;
         if (hiddenReadingTabs > 0)
             ReadingOpenTabs.Children.Add(new TextBlock
             {
-                Text = $"+{hiddenReadingTabs} on shelf", Foreground = BrushFrom("#8FA7BC"),
+                Text = $"+{hiddenReadingTabs} on shelf", Foreground = BrushFrom("#ACBDB6"),
                 FontSize = 11, Margin = new Thickness(7, 5, 0, 0)
             });
         if (ReadingOpenTabs.Children.Count == 0)
-            ReadingOpenTabs.Children.Add(new TextBlock { Text = "No open reading tabs yet", Foreground = BrushFrom("#8292A7"), FontSize = 11 });
+            ReadingOpenTabs.Children.Add(new TextBlock { Text = "No open reading tabs yet", Foreground = BrushFrom("#ADB8B6"), FontSize = 11 });
         int visibleCount = Math.Min(books.Count, _readingVisibleCount);
         foreach (ReadingBook book in books.Take(visibleCount))
             ReadingShelf.Children.Add(BuildReadingCard(book));
@@ -371,8 +373,8 @@ public partial class MainWindow
             Content = title, Height = 29, MinWidth = 54,
             Padding = new Thickness(9, 0, 9, 0),
             Margin = new Thickness(0, 0, 5, 5),
-            Background = BrushFrom("#202631"), Foreground = BrushFrom("#E9EBEF"),
-            BorderBrush = BrushFrom("#343B47"), BorderThickness = new Thickness(1),
+            Background = BrushFrom("#263337"), Foreground = BrushFrom("#F1F3F0"),
+            BorderBrush = BrushFrom("#42544F"), BorderThickness = new Thickness(1),
             FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand
         };
         button.Click += (_, _) => action();
@@ -383,7 +385,7 @@ public partial class MainWindow
     {
         // Real library data presented in a compact Figma-style list row. All existing actions
         // remain accessible without loading a book page or another browser engine.
-        var wrapper = new StackPanel { Margin = new Thickness(0, 9, 0, 9) };
+        var wrapper = new StackPanel { Margin = new Thickness(10, 11, 10, 11) };
         var main = new Grid { Margin = new Thickness(4, 0, 5, 0) };
         main.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(53) });
         main.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -393,11 +395,11 @@ public partial class MainWindow
         string marker = book.Kind == "Manga" ? "M" : book.Kind == "Light novel" ? "LN" : "WN";
         var cover = new Border
         {
-            Width = 37, Height = 52, CornerRadius = new CornerRadius(4),
-            Background = BrushFrom(book.Source == "MangaDex" ? "#354960" :
-                book.Source == "Hako / DocLN" ? "#554257" : "#364D48"),
+            Width = 37, Height = 52, CornerRadius = new CornerRadius(6),
+            Background = BrushFrom(book.Source == "MangaDex" ? "#335A53" :
+                book.Source == "Hako / DocLN" ? "#514F4A" : "#39584D"),
             Child = new TextBlock { Text = marker, FontSize = 12, FontWeight = FontWeights.SemiBold,
-                FontFamily = new System.Windows.Media.FontFamily("Georgia"), Foreground = BrushFrom("#E5EAF3"),
+                FontFamily = new System.Windows.Media.FontFamily("Georgia"), Foreground = BrushFrom("#ECF4EE"),
                 VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = System.Windows.HorizontalAlignment.Center },
             VerticalAlignment = VerticalAlignment.Top
         };
@@ -408,13 +410,13 @@ public partial class MainWindow
         description.Children.Add(new TextBlock
         {
             Text = (book.IsFavorite ? "★  " : "") + book.Title, FontSize = 13, FontWeight = FontWeights.SemiBold,
-            Foreground = BrushFrom("#E9EBEF"), TextTrimming = TextTrimming.CharacterEllipsis,
+            Foreground = BrushFrom("#F1F3F0"), TextTrimming = TextTrimming.CharacterEllipsis,
             ToolTip = book.Title
         });
         description.Children.Add(new TextBlock
         {
             Text = $"{book.Source}  ·  {book.Kind}", FontSize = 11,
-            Foreground = BrushFrom("#9EA7B5"), Margin = new Thickness(0, 3, 0, 3),
+            Foreground = BrushFrom("#ADB8B6"), Margin = new Thickness(0, 3, 0, 3),
             TextTrimming = TextTrimming.CharacterEllipsis
         });
         string status = book.HasNewChapter ? "● New chapter" :
@@ -422,8 +424,8 @@ public partial class MainWindow
         description.Children.Add(new TextBlock
         {
             Text = status, FontSize = 10.5,
-            Foreground = BrushFrom(book.HasNewChapter ? "#68C6A0" :
-                book.Status == "Waiting" ? "#D9B179" : "#89B2A5")
+            Foreground = BrushFrom(book.HasNewChapter ? "#89DAB6" :
+                book.Status == "Waiting" ? "#D9B179" : "#A5DDC8")
         });
         if (book.ScrollFraction > 0)
         {
@@ -471,7 +473,7 @@ public partial class MainWindow
             wrapper.Children.Add(new TextBlock
             {
                 Text = $"MangaDex latest: {book.LatestKnownChapterLabel}",
-                FontSize = 10, Foreground = BrushFrom("#9EA7B5"),
+                FontSize = 10, Foreground = BrushFrom("#ADB8B6"),
                 Margin = new Thickness(57, 0, 5, 7), TextTrimming = TextTrimming.CharacterEllipsis,
                 ToolTip = book.LastChapterCheckUtc is { } checkedAt
                     ? $"Last checked: {checkedAt.ToLocalTime():g}" : "Last known chapter"
@@ -480,7 +482,7 @@ public partial class MainWindow
         noteRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(108) });
         noteRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var noteLabel = new TextBlock { Text = "Chapter / page", FontSize = 10.5,
-            Foreground = BrushFrom("#9EA7B5"), VerticalAlignment = VerticalAlignment.Center };
+            Foreground = BrushFrom("#ADB8B6"), VerticalAlignment = VerticalAlignment.Center };
         noteRow.Children.Add(noteLabel);
         var note = new WpfTextBox
         {
@@ -504,9 +506,10 @@ public partial class MainWindow
         wrapper.Children.Add(noteRow);
         return new Border
         {
-            Background = System.Windows.Media.Brushes.Transparent,
+            Background = (System.Windows.Media.Brush)FindResource("ShellSurfaceBrush"),
             BorderBrush = (System.Windows.Media.Brush)FindResource("ShellLineBrush"),
-            BorderThickness = new Thickness(0, 0, 0, 1), Child = wrapper
+            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(11),
+            Margin = new Thickness(0, 0, 0, 8), Child = wrapper
         };
     }
 
@@ -566,7 +569,11 @@ public partial class MainWindow
         EnsureReadingLibraryLoaded();
         ReadingBook? book = _readingLibrary.Books.FirstOrDefault(item => item.Id == id);
         if (book is null) return;
-        string url = ReadingLibraryStore.IsSafeHttpUrl(book.LastReadUrl) ? book.LastReadUrl : book.Url;
+        // Old versions could save a different book's URL on the same website.
+        // Do not follow a demonstrably conflicting old bookmark (but preserve it on disk).
+        string url = ReadingLibraryStore.IsSafeHttpUrl(book.LastReadUrl) &&
+            !ReadingUrlMatcher.IsDefinitelyDifferentBook(book, book.LastReadUrl)
+            ? book.LastReadUrl : book.Url;
         if (!ReadingLibraryStore.IsSafeHttpUrl(url)) return;
         _readingBusy = true;
         try
@@ -596,7 +603,8 @@ public partial class MainWindow
             _readingHostTabId = target.Id;
             book.OpenTab = true;
             book.Status = "Reading";
-            book.UpdatedAt = DateTimeOffset.UtcNow;
+            book.LastReadAt = DateTimeOffset.UtcNow;
+            book.UpdatedAt = book.LastReadAt.Value;
             SaveReadingLibrary();
             _readingNoCaptureUntil = DateTimeOffset.UtcNow.AddSeconds(3);
             await NavigateActiveBrowserTabAsync(url);
@@ -623,7 +631,8 @@ public partial class MainWindow
         _ = RestoreReadingProgressAsync(tab, book);
         if (string.Equals(book.LastReadUrl, tab.Url, StringComparison.Ordinal)) return;
         book.LastReadUrl = tab.Url;
-        book.UpdatedAt = DateTimeOffset.UtcNow;
+        book.LastReadAt = DateTimeOffset.UtcNow;
+        book.UpdatedAt = book.LastReadAt.Value;
         SaveReadingLibrary();
     }
 }

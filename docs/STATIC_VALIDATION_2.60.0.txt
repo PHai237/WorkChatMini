@@ -1,0 +1,21 @@
+WorkChat Mini 2.60.0 — Quiet Workbench static validation
+
+Source: 2.59.1 fixed source ZIP (all original control identifiers retained)
+Design approach: Impeccable-informed audit/distill/layout/typeset/polish/adapt, native WPF.
+
+PASS XML: 8 XAML files and C# project XML parse.
+PASS XAML resources: 33 StaticResource names resolved in checked XAML dictionaries.
+PASS control IDs: MainWindow 139, ReadingHubView 33 (no removed/renamed controls).
+PASS code-behind events: 103 event references resolve to C# methods.
+PASS source size: 65 C# files, maximum 996 lines (MainWindow.SelfTest.cs); MainWindow.xaml 990 lines.
+PASS version: VERSION.txt, WorkChatMini.csproj, BUILD.bat, MangaDex user agent = 2.60.0.
+PASS static SOURCE-CHECK theme contracts updated: mint accent, flat rail and minimum-size reader layout.
+PASS packaging: retains PUSH.bat and GitHub workflow; no extra executable or WebView package introduced.
+
+NOT RUN: Windows .NET WPF compilation, actual PowerShell SOURCE-CHECK.bat,
+GitHub Actions preflight, WPF runtime style loading, Quick/Stress tests, live site rendering,
+manual DPI/touch/small-window QA. This is source code, NOT a tested Windows EXE.
+
+To validate: extract entire ZIP into a NEW folder; run PUSH.bat as usual; watch Windows
+preflight + release Actions. Inspect Reading Hub and browser at compact sizes.
+If any stage fails, do NOT deploy/replace your existing installed version; send the log.

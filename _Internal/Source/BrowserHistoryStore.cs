@@ -19,26 +19,30 @@ internal sealed class BrowserHistoryStore : IDisposable
     private readonly List<BrowserHistoryEntry> _entries;
     private bool _dirty;
     private bool _disposed;
+    private readonly bool _preserveDamagedFile;
 
-    private BrowserHistoryStore(string path, List<BrowserHistoryEntry> entries)
+    private BrowserHistoryStore(string path, List<BrowserHistoryEntry> entries, bool preserveDamagedFile = false)
     {
         _path = path;
         _entries = entries;
+        _preserveDamagedFile = preserveDamagedFile;
         _saveTimer = new System.Threading.Timer(_ => FlushFromTimer(), null, Timeout.Infinite, Timeout.Infinite);
     }
 
-    public static BrowserHistoryStore Load()
+    public static BrowserHistoryStore Load() => LoadFromPath(
+        Path.Combine(AppRuntime.DataDirectory, "browser-history.json"));
+
+    private static BrowserHistoryStore LoadFromPath(string path)
     {
-        string path = Path.Combine(AppRuntime.DataDirectory, "browser-history.json");
+        if (!File.Exists(path)) return new BrowserHistoryStore(path, new List<BrowserHistoryEntry>());
         try
         {
-            if (!File.Exists(path))
-                return new BrowserHistoryStore(path, new List<BrowserHistoryEntry>());
-
             string json = File.ReadAllText(path);
-            List<BrowserHistoryEntry>? loaded = JsonSerializer.Deserialize<List<BrowserHistoryEntry>>(json);
-            List<BrowserHistoryEntry> clean = (loaded ?? new List<BrowserHistoryEntry>())
-                .Where(entry => IsWebUrl(entry.Url) && AdBlockNuisanceGuard.IsSafeToPersist(entry.Url))
+            List<BrowserHistoryEntry> loaded = JsonSerializer.Deserialize<List<BrowserHistoryEntry>>(json)
+                ?? throw new InvalidDataException("Empty history document.");
+            List<BrowserHistoryEntry> clean = loaded
+                .Where(entry => entry is not null && IsWebUrl(entry.Url) &&
+                                AdBlockNuisanceGuard.IsSafeToPersist(entry.Url))
                 .OrderByDescending(entry => entry.LastVisitedUtc)
                 .GroupBy(entry => entry.Url, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First())
@@ -46,9 +50,30 @@ internal sealed class BrowserHistoryStore : IDisposable
                 .ToList();
             return new BrowserHistoryStore(path, clean);
         }
-        catch
+        catch (Exception ex) when (ex is JsonException or InvalidDataException)
         {
-            return new BrowserHistoryStore(path, new List<BrowserHistoryEntry>());
+            // Quarantine a bad JSON file BEFORE accepting new history writes.
+            // Never overwrite or delete the only remaining copy on a failed move.
+            string backup = path + ".corrupt-" + DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmssfff") +
+                "-" + Guid.NewGuid().ToString("N") + ".bak";
+            try
+            {
+                File.Move(path, backup);
+                AppLogger.Warn("BROWSER", $"Damaged history preserved as {Path.GetFileName(backup)}: {ex.Message}");
+                return new BrowserHistoryStore(path, new List<BrowserHistoryEntry>());
+            }
+            catch (Exception backupError)
+            {
+                AppLogger.Warn("BROWSER", $"History is read-only until damaged file is recovered: {backupError.Message}");
+                return new BrowserHistoryStore(path, new List<BrowserHistoryEntry>(), preserveDamagedFile: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            // An IO/read permission failure is not proof that the file is corrupt.
+            // Do not rename it or allow a subsequent write over it.
+            AppLogger.Warn("BROWSER", $"History could not be loaded; writes disabled: {ex.Message}");
+            return new BrowserHistoryStore(path, new List<BrowserHistoryEntry>(), preserveDamagedFile: true);
         }
     }
 
@@ -138,11 +163,31 @@ internal sealed class BrowserHistoryStore : IDisposable
         }
     }
 
-    private static BrowserHistoryStore LoadFromPathForTest(string path)
+    private static BrowserHistoryStore LoadFromPathForTest(string path) => LoadFromPath(path);
+
+    internal static void VerifyCorruptFileProtection()
     {
-        List<BrowserHistoryEntry> entries = JsonSerializer.Deserialize<List<BrowserHistoryEntry>>(File.ReadAllText(path))
-            ?? throw new InvalidDataException("Self-test history missing entries.");
-        return new BrowserHistoryStore(path, entries);
+        string directory = Path.Combine(Path.GetTempPath(), "WorkChatHistoryGuard-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "browser-history.json");
+        const string damaged = "{not-json-data";
+        try
+        {
+            File.WriteAllText(path, damaged);
+            using (BrowserHistoryStore history = LoadFromPath(path))
+            {
+                history.Record("https://example.com/after-recovery", "Recovered history");
+                history.Flush();
+            }
+            string[] backups = Directory.GetFiles(directory, "browser-history.json.corrupt-*.bak");
+            if (backups.Length != 1 || File.ReadAllText(backups[0]) != damaged ||
+                !File.Exists(path))
+                throw new InvalidOperationException("Corrupt browser history was not backed up before writing.");
+            using var reloaded = LoadFromPath(path);
+            if (reloaded.Search("after-recovery").Count != 1)
+                throw new InvalidOperationException("History did not recover after damaged-file quarantine.");
+        }
+        finally { try { Directory.Delete(directory, recursive: true); } catch { } }
     }
 
     public IReadOnlyList<BrowserHistoryEntry> Search(string? query, int maxResults = 6)
@@ -210,7 +255,7 @@ internal sealed class BrowserHistoryStore : IDisposable
         BrowserHistoryEntry[] snapshot;
         lock (_gate)
         {
-            if (!_dirty)
+            if (!_dirty || _preserveDamagedFile)
                 return;
             snapshot = _entries.Select(entry => new BrowserHistoryEntry
             {

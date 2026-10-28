@@ -380,7 +380,8 @@ if ((Test-Path $readerCs) -and (Test-Path $readerStoreCs) -and (Test-Path $reade
     if ($readerBody -notmatch 'ReadingNavigationCompleted' -or
         $readerBody -notmatch 'OpenReadingBookAsync' -or
         $readerBody -notmatch 'ReadingHubOverlay\.AddForm\.Visibility' -or
-        $storeBody -notmatch 'File\.Move\(temp, LibraryPath, overwrite: true\)' -or
+        $storeBody -notmatch 'File\.Move\(temp, _filePath, overwrite: true\)' -or
+        $storeBody -notmatch 'pre-migration\.bak' -or
         $storeBody -notmatch 'IsSafeHttpUrl' -or
         $readerMarkup -match 'Visibility="Collapsed".*Panel\.ZIndex="16"' -or
         $shellXaml -notmatch 'local:ReadingHubView x:Name="ReadingHubOverlay"' -or
@@ -435,11 +436,45 @@ if ((Test-Path $readingScrollScripts) -and (Test-Path $readerCs) -and (Test-Path
     }
 }
 
-# Core 2.58: port only Figma shell and the real library, no mock service/reader data.
+# Core 2.59.1: no same-host cross-book progress, no silent legacy shelf loss.
+$readerMatcher = Join-Path $source 'ReadingUrlMatcher.cs'
+$readerSafety = Join-Path $source 'ReadingSafetySelfTest.cs'
+$historyStore = Join-Path $source 'BrowserHistoryStore.cs'
+foreach ($path in @($readerMatcher, $readerSafety)) {
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        $errors.Add("2.59.1 reading safety file missing: $path")
+    }
+}
+if ((Test-Path $readerMatcher) -and (Test-Path $readerSafety)) {
+    $matcherBody = [IO.File]::ReadAllText($readerMatcher)
+    $safetyBody = [IO.File]::ReadAllText($readerSafety)
+    $historyBody = [IO.File]::ReadAllText($historyStore)
+    if ($progressBody -notmatch 'ReadingUrlMatcher\.BelongsToBook' -or
+        $matcherBody -notmatch 'GetBookIdentity' -or
+        $safetyBody -notmatch 'VerifyUrlIsolation' -or
+        $safetyBody -notmatch 'VerifyPersistence' -or
+        $historyBody -notmatch 'preserveDamagedFile' -or
+        $readerBody -notmatch 'LastReadAt') {
+        $errors.Add('2.59.1 reading data integrity, URL isolation or history guard regressed.')
+    }
+}
+
+# Core 2.60: Quiet Workbench tokens, original controls and real Reading Hub data.
 $themeTokens = [IO.File]::ReadAllText((Join-Path $source 'WorkChatTheme.xaml'))
 $readingViewCode = [IO.File]::ReadAllText((Join-Path $source 'ReadingHubView.xaml.cs'))
-foreach ($token in @('#0D1016', '#141820', '#1A1F29', '#7598FF', '#292F3B')) {
-    if (-not $themeTokens.Contains($token)) { $errors.Add("Figma theme token missing: $token") }
+foreach ($token in @('#0E1315', '#171D20', '#20282B', '#A5DDC8', '#303B3E')) {
+    if (-not $themeTokens.Contains($token)) { $errors.Add("Quiet Workbench theme token missing: $token") }
+}
+# 2.60 native WPF hierarchy: minimum-height reader scrolls without an extra
+# WebView2, and the design-system rail remains the same tested width.
+if ($readerMarkup -notmatch 'Whole page scrolls vertically' -or
+    $readerMarkup -notmatch 'x:Name="ReadingSearchInputInner"' -or
+    $readerMarkup -notmatch 'x:Name="ReadingShelfInner"' -or
+    $shellXaml -notmatch 'x:Name="BrowserNewTabOverlay"' -or
+    $shellXaml -notmatch 'A quieter place to browse' -or
+    ([IO.File]::ReadAllText((Join-Path $source 'MainWindow.SelfTest.cs'))) -match 'LinearGradientBrush' -or
+    $themeTokens -notmatch 'SolidColorBrush x:Key="ShellChromeGradientBrush"') {
+    $errors.Add('2.60 Quiet Workbench reader/shell layout or flat-color test contract regressed.')
 }
 if ($settingsFlyoutSource -notmatch 'Width = 310' -or
     $alertPopupSource -notmatch 'Width = 310' -or

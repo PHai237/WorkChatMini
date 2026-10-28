@@ -43,7 +43,7 @@ internal static class ReadingScrollScripts
         return """
             (() => {
               const root = document.scrollingElement || document.documentElement;
-              if (!root) return;
+              if (!root) return 'not-scrollable';
               const preferred = TARGET_VALUE;
               let chosen = root;
               if (preferred.startsWith('id:')) {
@@ -64,10 +64,11 @@ internal static class ReadingScrollScripts
               }
               const isDocument = chosen === root;
               const max = Math.max(0, chosen.scrollHeight - (isDocument ? innerHeight : chosen.clientHeight));
-              if (max <= 0) return;
+              if (max <= 0) return 'not-scrollable';
               const position = max * FRACTION_VALUE;
               if (isDocument) window.scrollTo(0, position);
               else chosen.scrollTop = position;
+              return 'restored';
             })()
             """.Replace("TARGET_VALUE", preferred, StringComparison.Ordinal)
                   .Replace("FRACTION_VALUE", amount, StringComparison.Ordinal);

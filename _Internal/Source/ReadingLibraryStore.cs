@@ -17,6 +17,8 @@ public sealed class ReadingBook
     public bool OpenTab { get; set; } = true;
     public bool IsFavorite { get; set; }
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    // Unlike UpdatedAt, this changes only after opening or reading the book.
+    public DateTimeOffset? LastReadAt { get; set; }
     // Scroll is best-effort (websites with custom scroll panes may not expose document scroll).
     public string ScrollUrl { get; set; } = "";
     public double ScrollFraction { get; set; }
@@ -37,47 +39,95 @@ public sealed class ReadingLibraryStore
     public string? LoadError { get; private set; }
 
     private static string LibraryPath => Path.Combine(AppSettings.AppDataDirectory, "Reading", "library.json");
+    private string _filePath = LibraryPath;
+    private bool _needsMigrationBackup;
 
-    public static ReadingLibraryStore Load()
+    public static ReadingLibraryStore Load() => LoadFromPath(LibraryPath);
+
+    // Self-tests exclusively use a temporary directory, never the live user library.
+    internal static ReadingLibraryStore LoadForTest(string path) => LoadFromPath(path);
+
+    private static ReadingLibraryStore LoadFromPath(string path)
     {
-        if (!File.Exists(LibraryPath))
-            return new ReadingLibraryStore();
+        if (!File.Exists(path)) return new ReadingLibraryStore { _filePath = path };
         try
         {
-            ReadingLibraryStore result = JsonSerializer.Deserialize<ReadingLibraryStore>(File.ReadAllText(LibraryPath))
+            ReadingLibraryStore result = JsonSerializer.Deserialize<ReadingLibraryStore>(File.ReadAllText(path))
                 ?? throw new InvalidDataException("Empty reading library file.");
+            result._filePath = path;
             result.Books ??= new List<ReadingBook>();
-            result.Books = result.Books
-                .Where(book => book is not null && !string.IsNullOrWhiteSpace(book.Id) &&
-                               IsSafeHttpUrl(book.Url) && IsSafeHttpUrl(book.LastReadUrl))
-                .Take(MaxBooks).ToList();
+            // Never silently drop unknown/invalid entries: saving the shortened list would
+            // permanently discard them. Keep the original file untouched for recovery.
+            if (result.Books.Count > MaxBooks)
+                throw new InvalidDataException("Reading library exceeds the 500-book limit.");
             foreach (ReadingBook book in result.Books)
             {
-                book.ScrollFraction = double.IsFinite(book.ScrollFraction)
+                if (book is null || !IsSafeHttpUrl(book.Url))
+                    throw new InvalidDataException("A saved book has an invalid source URL.");
+                if (string.IsNullOrWhiteSpace(book.Id))
+                {
+                    book.Id = Guid.NewGuid().ToString("N");
+                    result._needsMigrationBackup = true;
+                }
+                if (!IsSafeHttpUrl(book.LastReadUrl))
+                {
+                    // Older versions could omit this field. Preserve the whole book.
+                    book.LastReadUrl = book.Url;
+                    result._needsMigrationBackup = true;
+                }
+                double scroll = double.IsFinite(book.ScrollFraction)
                     ? Math.Clamp(book.ScrollFraction, 0, 1) : 0;
+                if (scroll != book.ScrollFraction)
+                {
+                    book.ScrollFraction = scroll;
+                    result._needsMigrationBackup = true;
+                }
+                if (!IsSafeHttpUrl(book.ScrollUrl) && !string.IsNullOrEmpty(book.ScrollUrl))
+                {
+                    book.ScrollUrl = "";
+                    book.ScrollFraction = 0;
+                    result._needsMigrationBackup = true;
+                }
+                string normalizedTarget = ReadingScrollScripts.NormalizeTarget(book.ScrollTarget);
+                if (book.ScrollTarget != normalizedTarget)
+                {
+                    book.ScrollTarget = normalizedTarget;
+                    result._needsMigrationBackup = true;
+                }
                 book.MangaDexLanguage = MangaDexChapterTracker.NormalizeLanguage(book.MangaDexLanguage);
-                if (!IsSafeHttpUrl(book.ScrollUrl)) book.ScrollUrl = "";
-                book.ScrollTarget = ReadingScrollScripts.NormalizeTarget(book.ScrollTarget);
+                book.Title ??= "";
+                book.Source ??= "Other";
+                book.Kind ??= "Novel";
+                book.Status ??= "Reading";
+                book.ProgressNote ??= "";
             }
             return result;
         }
         catch (Exception ex)
         {
-            // Do not destroy a damaged file by saving an empty shelf on top of it.
-            return new ReadingLibraryStore { LoadError = ex.Message };
+            // A damaged file must not be overwritten with a truncated or empty shelf.
+            AppLogger.Warn("READING", $"Reading library load blocked: {ex.Message}");
+            return new ReadingLibraryStore { _filePath = path, LoadError = ex.Message };
         }
     }
 
     public bool Save()
     {
         if (LoadError is not null) return false;
-        string temp = LibraryPath + ".tmp";
+        string temp = _filePath + ".tmp";
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(LibraryPath)!);
+            Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
+            if (_needsMigrationBackup && File.Exists(_filePath))
+            {
+                // Never overwrite the pre-migration copy with an already migrated file.
+                string backup = _filePath + ".pre-migration.bak";
+                if (!File.Exists(backup)) File.Copy(_filePath, backup);
+            }
             string json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(temp, json);
-            File.Move(temp, LibraryPath, overwrite: true);
+            File.Move(temp, _filePath, overwrite: true);
+            _needsMigrationBackup = false;
             return true;
         }
         catch (Exception ex)
@@ -98,7 +148,7 @@ public sealed class ReadingLibraryStore
         if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri)) return "Other";
         string host = uri.Host.ToLowerInvariant();
         if (host is "mangadex.org" or "www.mangadex.org") return "MangaDex";
-        if (host is "webnovel.com" or "www.webnovel.com") return "Webnovel";
+        if (host is "webnovel.com" or "www.webnovel.com" or "en.webnovel.com" or "m.webnovel.com") return "Webnovel";
         if (host is "docln.net" or "www.docln.net" or "docln.sbs" or "www.docln.sbs") return "Hako / DocLN";
         return host;
     }

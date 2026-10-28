@@ -140,7 +140,7 @@ public partial class MainWindow
                     throw new InvalidOperationException("Retired window size 1/16 remains selectable.");
                 if (FindResource("ShellAccentBrush") is not System.Windows.Media.SolidColorBrush ||
                     FindResource("ShellCanvasBrush") is not System.Windows.Media.SolidColorBrush ||
-                    FindResource("ShellChromeGradientBrush") is not System.Windows.Media.LinearGradientBrush)
+                    FindResource("ShellChromeGradientBrush") is not System.Windows.Media.SolidColorBrush)
                     throw new InvalidOperationException("Core design-system resources were not loaded.");
                 foreach (string iconKey in new[] { "MessengerPixelIcon", "FacebookPixelIcon", "YouTubePixelIcon", "DiscordPixelIcon", "ZaloPixelIcon", "WebPixelIcon" })
                     if (FindResource(iconKey) is not System.Windows.Media.Imaging.BitmapImage bitmap ||
@@ -357,7 +357,7 @@ public partial class MainWindow
                 return Task.CompletedTask;
             });
 
-            await RunCase("Figma reading controls and lightweight filters", () =>
+            await RunCase("Quiet Workbench reading controls and lightweight filters", () =>
             {
                 if (ReadingHubOverlay.ContinuePanel is null ||
                     ReadingHubOverlay.ContinueButton is null ||
@@ -368,7 +368,7 @@ public partial class MainWindow
                     ReadingHubOverlay.FilterFavorites is null ||
                     ReadingHubOverlay.CancelButton is null ||
                     ReadingHubOverlay.ShowMoreButton is null)
-                    throw new InvalidOperationException("Reading Hub lost a Figma layout control.");
+                    throw new InvalidOperationException("Reading Hub lost a required reading control.");
                 int tabsBefore = _browserTabs.Count;
                 ReadingFilter_Click(ReadingHubOverlay.FilterWaiting, new System.Windows.RoutedEventArgs());
                 if (_readingStatusFilter != "Waiting" || _browserTabs.Count != tabsBefore)
@@ -385,10 +385,12 @@ public partial class MainWindow
                     !ReadingScrollScripts.Restore(0.75, "id:chapter-scroll").Contains("0.75", StringComparison.Ordinal))
                     throw new InvalidOperationException("Reading scroll target migration or scripts regressed.");
                 if (FindResource("ShellAccentBrush") is not System.Windows.Media.SolidColorBrush accent ||
-                    accent.Color != (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#7598FF")!)
-                    throw new InvalidOperationException("Figma design tokens missing from WPF resources.");
+                    accent.Color != (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#A5DDC8")!)
+                    throw new InvalidOperationException("Quiet Workbench design tokens missing from WPF resources.");
                 return Task.CompletedTask;
             });
+
+            await RunCase("Reading safety: migration, URL isolation and history", RunReadingSafetySelfTest);
 
             await RunCase("Reading Hub shelf pagination remains lightweight", RunReadingPaginationSelfTest);
 

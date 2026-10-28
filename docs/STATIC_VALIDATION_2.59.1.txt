@@ -1,0 +1,19 @@
+WorkChat Mini Core 2.59.1 — Static validation record
+Date: 2026-10-27
+
+PASS  65 C# files; none reaches 1,000 lines (largest: 996 lines).
+PASS  8 WPF XAML files and 1 .csproj parsed as well-formed XML.
+PASS  Core version synchronized: VERSION.txt / WorkChatMini.csproj / BUILD.bat.
+PASS  Reading/History safety fix source/test wiring and Source-Check contract inspection.
+PASS  Node.js syntax validation for ReadingScrollScripts.Capture and Restore.
+PASS  Node.js behavior smoke: restore 75% when scroll height exists; request one retry when no scroll height exists.
+
+NOT RUN  Windows WPF compiler (.NET SDK unavailable in this environment).
+NOT RUN  Windows SOURCE-CHECK.bat (PowerShell/Windows unavailable).
+NOT RUN  Windows Quick and Stress Self-Tests.
+NOT RUN  Real websites and WebView2 reading session/manual UI tests.
+
+Do not install/publish solely on the static checks above. Build and run
+SOURCE-CHECK.bat, BUILD.bat, AUTO-TEST.bat --built on a Windows PC first.
+All persistence/URL isolation automated tests are included as C# self-tests;
+they were written, NOT executed in this environment.

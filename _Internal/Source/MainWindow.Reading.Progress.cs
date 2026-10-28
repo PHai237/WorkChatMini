@@ -48,12 +48,15 @@ public partial class MainWindow
                 string.Equals(book.ScrollUrl, url, StringComparison.Ordinal) &&
                 string.Equals(book.LastReadUrl, url, StringComparison.Ordinal)) return;
             // The query can complete after another virtual book became active.
-            if (_readingActiveBookId != book.Id || _readingHostTabId != tab.Id) return;
+            if (_readingActiveBookId != book.Id || _readingHostTabId != tab.Id ||
+                tab.Closing || tab.NavigationInProgress ||
+                !string.Equals(tab.Url, url, StringComparison.Ordinal)) return;
             book.LastReadUrl = url!;
             book.ScrollUrl = url!;
             book.ScrollFraction = fraction;
             book.ScrollTarget = target;
-            book.UpdatedAt = DateTimeOffset.UtcNow;
+            book.LastReadAt = DateTimeOffset.UtcNow;
+            book.UpdatedAt = book.LastReadAt.Value;
             SaveReadingLibrary();
         }
         catch (Exception ex)
@@ -66,17 +69,8 @@ public partial class MainWindow
         }
     }
 
-    private static bool ReadingUrlBelongsToBook(ReadingBook book, string? url)
-    {
-        if (!ReadingLibraryStore.IsSafeHttpUrl(url) ||
-            !Uri.TryCreate(book.Url, UriKind.Absolute, out Uri? original) ||
-            !Uri.TryCreate(url, UriKind.Absolute, out Uri? current)) return false;
-        bool sameHost = string.Equals(NormalizeReadingHost(original.Host),
-            NormalizeReadingHost(current.Host), StringComparison.OrdinalIgnoreCase);
-        bool hakoMirror = ReadingLibraryStore.DetectSource(book.Url) == "Hako / DocLN" &&
-            ReadingLibraryStore.DetectSource(url!) == "Hako / DocLN";
-        return sameHost || hakoMirror;
-    }
+    private static bool ReadingUrlBelongsToBook(ReadingBook book, string? url) =>
+        ReadingUrlMatcher.BelongsToBook(book, url);
 
     // Not all manga sites scroll the main document. Restore only where document scrolling is supported.
     private async Task RestoreReadingProgressAsync(BrowserTabState tab, ReadingBook book)
@@ -88,12 +82,20 @@ public partial class MainWindow
             !ReadingUrlBelongsToBook(book, expectedUrl)) return;
         try
         {
-            await Task.Delay(650); // Allow lazy chapter images / article layout to settle a little.
-            if (tab.Closing || _readingHostTabId != tab.Id || _readingActiveBookId != book.Id ||
-                !string.Equals(tab.Url, expectedUrl, StringComparison.Ordinal) ||
-                tab.WebView.CoreWebView2 is null) return;
-            await tab.WebView.CoreWebView2.ExecuteScriptAsync(
-                ReadingScrollScripts.Restore(fraction, book.ScrollTarget));
+            // Retry just once, and only when the reader had no scrollable area yet.
+            // Never keep re-scrolling a user who has already started reading.
+            await Task.Delay(650);
+            for (int attempt = 0; attempt < 2; attempt++)
+            {
+                if (tab.Closing || tab.Sleeping || tab.Hibernated || tab.NavigationInProgress ||
+                    _readingHostTabId != tab.Id || _readingActiveBookId != book.Id ||
+                    !string.Equals(tab.Url, expectedUrl, StringComparison.Ordinal) ||
+                    tab.WebView.CoreWebView2 is null) return;
+                string response = await tab.WebView.CoreWebView2.ExecuteScriptAsync(
+                    ReadingScrollScripts.Restore(fraction, book.ScrollTarget));
+                if (JsonSerializer.Deserialize<string>(response) != "not-scrollable") return;
+                if (attempt == 0) await Task.Delay(1000);
+            }
         }
         catch (Exception ex)
         {

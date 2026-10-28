@@ -9,14 +9,14 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="BrowserStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <!-- Figma-derived WPF fields and low-profile actions; real data remains in ReadingLibraryStore. -->
+            <!-- Compact accessible fields and controls; real data remains in ReadingLibraryStore. -->
             <Style x:Key="ReadingFieldStyle" TargetType="TextBox">
                 <Setter Property="Height" Value="36"/>
                 <Setter Property="FontSize" Value="12"/>
                 <Setter Property="Padding" Value="11,7"/>
                 <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
                 <Setter Property="CaretBrush" Value="White"/>
-                <Setter Property="Background" Value="#171B22"/>
+                <Setter Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
                 <Setter Property="BorderBrush" Value="{StaticResource ShellLineBrush}"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="Template">
@@ -25,7 +25,7 @@
                             <Border x:Name="FieldBorder" Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="7" SnapsToDevicePixels="True">
+                                    CornerRadius="9" SnapsToDevicePixels="True">
                                 <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
                             </Border>
                             <ControlTemplate.Triggers>
@@ -38,13 +38,13 @@
                 </Setter>
             </Style>
             <Style x:Key="ReadingFilterStyle" TargetType="Button">
-                <Setter Property="Height" Value="34"/>
+                <Setter Property="Height" Value="32"/>
                 <Setter Property="MinWidth" Value="58"/>
                 <Setter Property="Padding" Value="10,0"/>
                 <Setter Property="Foreground" Value="{StaticResource ShellMutedBrush}"/>
                 <Setter Property="BorderBrush" Value="Transparent"/>
-                <Setter Property="BorderThickness" Value="0,0,0,2"/>
-                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
                 <Setter Property="FontSize" Value="11.5"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Template">
@@ -52,7 +52,7 @@
                         <ControlTemplate TargetType="Button">
                             <Border x:Name="FilterBorder" Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
                                                   Margin="{TemplateBinding Padding}"/>
                             </Border>
@@ -70,7 +70,7 @@
             </Style>
             <Style x:Key="ReadingProgressBarStyle" TargetType="ProgressBar">
                 <Setter Property="Height" Value="4"/>
-                <Setter Property="Background" Value="#303641"/>
+                <Setter Property="Background" Value="#3A4845"/>
                 <Setter Property="Foreground" Value="{StaticResource ShellAccentBrush}"/>
                 <Setter Property="Template">
                     <Setter.Value>
@@ -86,141 +86,120 @@
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Border Background="#11141A">
-        <Grid Margin="20,16,20,16">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <!-- Top: compact heading, fast search and Add, no extra shell toolbar. -->
-            <Grid Grid.Row="0" Margin="0,0,0,11">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <StackPanel Margin="0,0,8,0">
-                    <TextBlock Text="YOUR LIBRARY" FontSize="10" FontWeight="SemiBold"
-                               Foreground="{StaticResource ShellAccentBrush}"/>
-                    <TextBlock Text="Reading Hub" FontSize="22" FontWeight="SemiBold"
-                               Foreground="{StaticResource ShellTextBrush}" Margin="0,2,0,0"/>
-                </StackPanel>
-                <WrapPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
+    <!-- One editorial workspace: actions near their content, no ornamental cards. -->
+    <Border Background="{StaticResource ShellCanvasBrush}">
+        <!-- Whole page scrolls vertically even in the minimum-size WorkChat window. -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="16,15,16,12">
+
+            <!-- Heading and actions stack instead of clipping on narrow windows. -->
+            <StackPanel Margin="0,0,0,12">
+                <TextBlock Text="THE READING DESK" Foreground="{StaticResource ShellAccentBrush}"
+                           FontSize="10" FontWeight="SemiBold"/>
+                <TextBlock Text="Reading library" Foreground="{StaticResource ShellTextBrush}"
+                           FontSize="24" FontWeight="SemiBold" Margin="0,4,0,10"/>
+                <WrapPanel Orientation="Horizontal">
                     <Button x:Name="ToggleAddReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
-                            Content="+ Add book" Height="34" Margin="0,0,6,2" Padding="12,6"/>
-                    <Button x:Name="CloseReadingButton" Style="{StaticResource BrowserChromeButtonStyle}"
-                            Width="34" Height="34" Margin="0,0,0,2" Content="✕" ToolTip="Back to Web"/>
+                            Content="+ Add book" Height="34" Margin="0,0,6,4" Padding="12,6"
+                            Background="{StaticResource ShellAccentSoftBrush}"/>
+                    <Button x:Name="CloseReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
+                            Height="34" Content="Back to web" Margin="0,0,6,4" Padding="12,6"
+                            ToolTip="Return to web browser"/>
                 </WrapPanel>
-            </Grid>
-            <!-- Virtual tabs are metadata, not an additional WebView2 instance. -->
-            <Border Grid.Row="1" Background="#0D1016" BorderBrush="{StaticResource ShellLineBrush}"
-                    BorderThickness="0,0,0,1" Margin="0,0,0,11" Padding="5,4,5,3">
+            </StackPanel>
+
+            <!-- Reading tabs are metadata only; no extra WebView2 is started. -->
+            <Border BorderBrush="{StaticResource ShellLineBrush}"
+                    BorderThickness="0,0,0,1" Margin="0,0,0,13" Padding="0,0,0,8">
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                     <StackPanel x:Name="ReadingOpenTabsInner" Orientation="Horizontal"/>
                 </ScrollViewer>
             </Border>
-            <WrapPanel Grid.Row="2" Margin="0,0,0,11">
-                <Button x:Name="MangaDexReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
-                        Content="MangaDex ↗" Tag="https://mangadex.org/" Height="31" Margin="0,0,5,4" Padding="9,5"/>
-                <Button x:Name="WebnovelReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
-                        Content="Webnovel ↗" Tag="https://www.webnovel.com/" Height="31" Margin="0,0,5,4" Padding="9,5"/>
-                <Button x:Name="HakoReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
-                        Content="Hako / DocLN ↗" Tag="https://docln.net/" Height="31" Margin="0,0,5,4" Padding="9,5"/>
-                <Button x:Name="SaveCurrentReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
-                        Content="+ Save current page" Height="31" Margin="0,0,5,4" Padding="9,5"/>
-                <Button x:Name="CheckReadingUpdatesButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
-                        Content="Check chapters" Height="31" Margin="0,0,0,4" Padding="9,5"
-                        ToolTip="Check up to eight MangaDex series; other websites are not scanned"/>
-            </WrapPanel>
-            <Border x:Name="ReadingAddForm" Grid.Row="3" Visibility="Collapsed"
-                    Background="{StaticResource ShellElevatedBrush}" BorderBrush="{StaticResource ShellLineBrush}"
-                    BorderThickness="1" CornerRadius="8" Padding="13" Margin="0,0,0,11">
-                <Grid>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                    <Grid Grid.Row="0">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <TextBlock x:Name="ReadingEditorHeading" Text="Save a story from any website" Foreground="{StaticResource ShellTextBrush}"
-                                   FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Button x:Name="CancelReadingButton" Content="Cancel"
-                                    Style="{StaticResource BrowserQuickLaunchButtonStyle}" Padding="11,6" Margin="6,0,0,0"/>
-                            <Button x:Name="AddReadingButton" Content="Add to shelf"
-                                    Style="{StaticResource BrowserQuickLaunchButtonStyle}" Padding="11,6" Margin="6,0,0,0"/>
-                        </StackPanel>
-                    </Grid>
-                    <StackPanel Grid.Row="1" Margin="0,9,0,0">
-                        <TextBlock Text="Title" Foreground="{StaticResource ShellMutedBrush}" FontSize="11" Margin="0,0,0,4"/>
-                        <TextBox x:Name="ReadingTitleInputInner" Style="{StaticResource ReadingFieldStyle}" Margin="0,0,0,7"/>
-                        <TextBlock Text="Book or chapter URL" Foreground="{StaticResource ShellMutedBrush}" FontSize="11" Margin="0,0,0,4"/>
-                        <TextBox x:Name="ReadingUrlInputInner" Style="{StaticResource ReadingFieldStyle}"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
-            <!-- Most recent book, backed by the real library; hide when library is empty. -->
-            <Border x:Name="ReadingContinuePanel" Grid.Row="4" Visibility="Collapsed" Margin="0,0,0,12"
-                    Background="#181C23" BorderBrush="#303641" BorderThickness="1" CornerRadius="10" Padding="13">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="56"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0" Width="44" Height="66" Background="#273143" CornerRadius="5"
-                            HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <TextBlock Text="READ" FontSize="10" FontWeight="Bold" Foreground="#BBCBE3"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="1,0,12,0">
-                        <TextBlock Text="CONTINUE READING" FontSize="10" FontWeight="SemiBold" Foreground="#8296C7"/>
-                        <TextBlock x:Name="ReadingContinueTitle" FontSize="17" FontWeight="SemiBold"
-                                   Foreground="{StaticResource ShellTextBrush}" TextTrimming="CharacterEllipsis" Margin="0,3,0,3"/>
-                        <TextBlock x:Name="ReadingContinueMeta" Foreground="{StaticResource ShellMutedBrush}"
-                                   TextTrimming="CharacterEllipsis" FontSize="11" Margin="0,0,0,8"/>
-                        <ProgressBar x:Name="ReadingContinueProgress" Minimum="0" Maximum="100" Value="0"
-                                     Style="{StaticResource ReadingProgressBarStyle}" MaxWidth="310"/>
-                    </StackPanel>
-                    <Button x:Name="ContinueReadingButton" Grid.Column="2" Content="Continue ›"
-                            Style="{StaticResource BrowserQuickLaunchButtonStyle}"
-                            Height="36" Padding="12,6" Margin="0" VerticalAlignment="Center"/>
-                </Grid>
-            </Border>
-            <!-- Library header + search + state filters remain accessible at narrow widths. -->
-            <Grid Grid.Row="5" Margin="0,0,0,4">
-                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                <Grid Grid.Row="0" Margin="0,0,0,5">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="My library" FontWeight="SemiBold" FontSize="15"
-                                   Foreground="{StaticResource ShellTextBrush}"/>
-                        <TextBlock x:Name="ReadingCountTextInner" Foreground="{StaticResource ShellMutedBrush}"
-                                   FontSize="11" VerticalAlignment="Center" Margin="9,1,0,0"/>
-                    </StackPanel>
-                    <TextBox x:Name="ReadingSearchInputInner" Grid.Column="1" Width="210"
-                             Style="{StaticResource ReadingFieldStyle}" ToolTip="Search title or source"/>
-                </Grid>
-                <Grid Grid.Row="1" Background="Transparent">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <TextBlock Text="Stories from MangaDex, Webnovel, DocLN and other websites"
-                               VerticalAlignment="Center" Foreground="{StaticResource ShellMutedBrush}"
-                               FontSize="10" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <Button x:Name="ReadingFilterAll" Tag="All" Content="All" Style="{StaticResource ReadingFilterStyle}"/>
-                        <Button x:Name="ReadingFilterCurrent" Tag="Reading" Content="Reading" Style="{StaticResource ReadingFilterStyle}"/>
-                        <Button x:Name="ReadingFilterWaiting" Tag="Waiting" Content="Waiting" Style="{StaticResource ReadingFilterStyle}"/>
-                        <Button x:Name="ReadingFilterFavorites" Tag="Favorites" Content="Favorites" Style="{StaticResource ReadingFilterStyle}"/>
-                    </StackPanel>
-                </Grid>
-            </Grid>
-            <ScrollViewer Grid.Row="6" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+
+            <!-- Compact horizontally scrollable source/actions strip, rather than wrapping 5 rows. -->
+            <ScrollViewer Margin="0,0,0,12" HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled" VerticalAlignment="Top">
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="MangaDexReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
+                            Content="MangaDex ↗" Tag="https://mangadex.org/" Height="31" Margin="0,0,6,3" Padding="10,5"/>
+                    <Button x:Name="WebnovelReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
+                            Content="Webnovel ↗" Tag="https://www.webnovel.com/" Height="31" Margin="0,0,6,3" Padding="10,5"/>
+                    <Button x:Name="HakoReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
+                            Content="Hako / DocLN ↗" Tag="https://docln.net/" Height="31" Margin="0,0,6,3" Padding="10,5"/>
+                    <Button x:Name="SaveCurrentReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
+                            Content="Save page" Height="31" Margin="0,0,6,3" Padding="10,5"/>
+                    <Button x:Name="CheckReadingUpdatesButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
+                            Content="Check chapters" Height="31" Margin="0,0,0,3" Padding="10,5"
+                            ToolTip="Check up to eight MangaDex series; other websites are not scanned"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border x:Name="ReadingAddForm" Visibility="Collapsed"
+                    Background="{StaticResource ShellSurfaceBrush}" BorderBrush="{StaticResource ShellLineBrush}"
+                    BorderThickness="1" CornerRadius="11" Padding="12" Margin="0,0,0,13">
                 <StackPanel>
-                    <TextBlock x:Name="ReadingMessageTextInner" Foreground="#D5AF7E" TextWrapping="Wrap"
+                    <TextBlock x:Name="ReadingEditorHeading" Text="Save a story from any website"
+                               Foreground="{StaticResource ShellTextBrush}" FontSize="13"
+                               FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock Text="TITLE" Foreground="{StaticResource ShellMutedBrush}" FontSize="10" Margin="0,0,0,5"/>
+                    <TextBox x:Name="ReadingTitleInputInner" Style="{StaticResource ReadingFieldStyle}" Margin="0,0,0,10"/>
+                    <TextBlock Text="BOOK OR CHAPTER URL" Foreground="{StaticResource ShellMutedBrush}" FontSize="10" Margin="0,0,0,5"/>
+                    <TextBox x:Name="ReadingUrlInputInner" Style="{StaticResource ReadingFieldStyle}" Margin="0,0,0,11"/>
+                    <WrapPanel HorizontalAlignment="Left">
+                        <Button x:Name="AddReadingButton" Content="Save to library"
+                                Style="{StaticResource BrowserQuickLaunchButtonStyle}" Padding="12,6" Margin="0,0,6,0"
+                                Background="{StaticResource ShellAccentSoftBrush}"/>
+                        <Button x:Name="CancelReadingButton" Content="Cancel"
+                                Style="{StaticResource BrowserQuickLaunchButtonStyle}" Padding="12,6" Margin="0"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <Border x:Name="ReadingContinuePanel" Visibility="Collapsed" Margin="0,0,0,16"
+                    Background="{StaticResource ShellAccentSoftBrush}" CornerRadius="11" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="PICK UP WHERE YOU LEFT OFF" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{StaticResource ShellAccentBrush}" Margin="0,0,0,5"/>
+                    <TextBlock x:Name="ReadingContinueTitle" FontSize="17" FontWeight="SemiBold"
+                               Foreground="{StaticResource ShellTextBrush}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="ReadingContinueMeta" Foreground="{StaticResource ShellMutedBrush}"
+                               TextTrimming="CharacterEllipsis" FontSize="11" Margin="0,3,0,9"/>
+                    <ProgressBar x:Name="ReadingContinueProgress" Minimum="0" Maximum="100" Value="0"
+                                 Style="{StaticResource ReadingProgressBarStyle}" Margin="0,0,0,11"/>
+                    <Button x:Name="ContinueReadingButton" Content="Continue reading  ›"
+                            Style="{StaticResource BrowserQuickLaunchButtonStyle}" HorizontalAlignment="Left"
+                            Height="34" Padding="12,6" Margin="0"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="Your shelf" Foreground="{StaticResource ShellTextBrush}"
+                               FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="ReadingCountTextInner" Foreground="{StaticResource ShellMutedBrush}"
+                               FontSize="11" VerticalAlignment="Center" Margin="9,1,0,0"/>
+                </StackPanel>
+                <TextBox x:Name="ReadingSearchInputInner" Style="{StaticResource ReadingFieldStyle}"
+                         ToolTip="Search title or source" Margin="0,0,0,8"
+                         AutomationProperties.Name="Search reading library"/>
+                <WrapPanel Orientation="Horizontal">
+                    <Button x:Name="ReadingFilterAll" Tag="All" Content="All" Style="{StaticResource ReadingFilterStyle}" Margin="0,0,5,5"/>
+                    <Button x:Name="ReadingFilterCurrent" Tag="Reading" Content="Reading" Style="{StaticResource ReadingFilterStyle}" Margin="0,0,5,5"/>
+                    <Button x:Name="ReadingFilterWaiting" Tag="Waiting" Content="Waiting" Style="{StaticResource ReadingFilterStyle}" Margin="0,0,5,5"/>
+                    <Button x:Name="ReadingFilterFavorites" Tag="Favorites" Content="Favorites" Style="{StaticResource ReadingFilterStyle}" Margin="0,0,0,5"/>
+                </WrapPanel>
+            </StackPanel>
+
+            <StackPanel>
+                    <TextBlock x:Name="ReadingMessageTextInner" Foreground="#D9BE8F" TextWrapping="Wrap"
                                FontSize="11" Margin="4,3,4,8"/>
                     <StackPanel x:Name="ReadingShelfInner"/>
                     <Button x:Name="ReadingShowMoreButton" Content="Show more books"
                             Visibility="Collapsed" Height="34" HorizontalAlignment="Center"
-                            Margin="0,14,0,18" Padding="15,6"
+                            Margin="0,12,0,18" Padding="15,6"
                             Style="{StaticResource BrowserQuickLaunchButtonStyle}"/>
-                </StackPanel>
-            </ScrollViewer>
-        </Grid>
+            </StackPanel>
+        </StackPanel>
+        </ScrollViewer>
     </Border>
 </UserControl>

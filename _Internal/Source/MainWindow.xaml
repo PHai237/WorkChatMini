@@ -42,7 +42,7 @@
         <Style x:Key="DropdownButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
             <Setter Property="Background" Value="{StaticResource ShellElevatedBrush}"/>
-            <Setter Property="BorderBrush" Value="#34415C"/>
+            <Setter Property="BorderBrush" Value="#394A4B"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontSize" Value="12.5"/>
@@ -56,16 +56,16 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="13">
+                                CornerRadius="10">
                             <ContentPresenter Margin="10,0" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Root" Property="Background" Value="{StaticResource ShellHoverBrush}"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#6E7F9F"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#809C93"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#26314A"/>
+                                <Setter TargetName="Root" Property="Background" Value="#263A35"/>
                                 <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource ShellAccentBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -75,8 +75,8 @@
         </Style>
         <Style x:Key="PanelActionButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
-            <Setter Property="Background" Value="#202738"/>
-            <Setter Property="BorderBrush" Value="#37435C"/>
+            <Setter Property="Background" Value="#202A2C"/>
+            <Setter Property="BorderBrush" Value="#405351"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="12,7"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -89,16 +89,16 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="14">
+                                CornerRadius="11">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#273149"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#6E7F9F"/>
+                                <Setter TargetName="Root" Property="Background" Value="#293B37"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#809C93"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#313D5B"/>
+                                <Setter TargetName="Root" Property="Background" Value="#344841"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.45"/>
@@ -111,7 +111,7 @@
         <Style x:Key="DarkContextMenuStyle" TargetType="ContextMenu">
             <Setter Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
-            <Setter Property="BorderBrush" Value="#3B4863"/>
+            <Setter Property="BorderBrush" Value="#475B58"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="5"/>
             <Setter Property="MinWidth" Value="216"/>
@@ -122,7 +122,7 @@
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="13"
+                                CornerRadius="10"
                                 Padding="{TemplateBinding Padding}"
                                 SnapsToDevicePixels="True">
                             <ScrollViewer CanContentScroll="True"
@@ -135,8 +135,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Parent menu items must retain the native MenuItem submenu presenter / PART_Popup.
-             DarkMenuItemStyle below is ONLY for leaf commands, never submenus. -->
         <Style x:Key="DarkSubmenuItemStyle" TargetType="MenuItem">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
             <Setter Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
@@ -169,7 +167,7 @@
                                                   ContentSource="Header"
                                                   RecognizesAccessKey="True"/>
                                 <TextBlock x:Name="CheckGlyph" Text="✓"
-                                           Foreground="#8EAAFF" FontSize="15"
+                                           Foreground="#A5DDC8" FontSize="15"
                                            VerticalAlignment="Center" HorizontalAlignment="Right"
                                            Margin="0,0,10,0" Visibility="Collapsed"/>
                             </Grid>
@@ -180,7 +178,7 @@
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="CheckGlyph" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="ItemRoot" Property="Background" Value="#202A42"/>
+                                <Setter TargetName="ItemRoot" Property="Background" Value="#263B36"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -189,8 +187,8 @@
         </Style>
         <Style TargetType="ToolTip">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
-            <Setter Property="Background" Value="#20252E"/>
-            <Setter Property="BorderBrush" Value="#3A424F"/>
+            <Setter Property="Background" Value="#1B2426"/>
+            <Setter Property="BorderBrush" Value="#364946"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8,5"/>
             <Setter Property="FontSize" Value="11.5"/>
@@ -200,7 +198,7 @@
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="11" Padding="{TemplateBinding Padding}">
+                                CornerRadius="9" Padding="{TemplateBinding Padding}">
                             <ContentPresenter ContentSource="Content"/>
                         </Border>
                     </ControlTemplate>
@@ -209,8 +207,8 @@
         </Style>
         <Style x:Key="UtilityIconButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource ShellMutedBrush}"/>
-            <Setter Property="Background" Value="#161B28"/>
-            <Setter Property="BorderBrush" Value="#34415C"/>
+            <Setter Property="Background" Value="#192124"/>
+            <Setter Property="BorderBrush" Value="#394A4B"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Width" Value="34"/>
             <Setter Property="Height" Value="34"/>
@@ -225,18 +223,18 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="13">
+                                CornerRadius="10">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Root" Property="Background" Value="{StaticResource ShellHoverBrush}"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#6E7F9F"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#809C93"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="Tag" Value="Active">
-                                <Setter TargetName="Root" Property="Background" Value="#294B99"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#7EA0FF"/>
+                                <Setter TargetName="Root" Property="Background" Value="#2B5148"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#A5DDC8"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -246,8 +244,8 @@
         </Style>
         <Style x:Key="ToolbarToggleButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource ShellMutedBrush}"/>
-            <Setter Property="Background" Value="#12151B"/>
-            <Setter Property="BorderBrush" Value="#34415C"/>
+            <Setter Property="Background" Value="#172022"/>
+            <Setter Property="BorderBrush" Value="#394A4B"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontSize" Value="12"/>
@@ -261,13 +259,13 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="0,0,8,8">
+                                CornerRadius="0,0,9,9">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Root" Property="Background" Value="{StaticResource ShellHoverBrush}"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#6E7F9F"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#809C93"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -288,8 +286,8 @@
                             <Border x:Name="Box"
                                     Width="17" Height="17"
                                     CornerRadius="5"
-                                    Background="#11151F"
-                                    BorderBrush="#4C5A78"
+                                    Background="#182225"
+                                    BorderBrush="#60746D"
                                     BorderThickness="1"
                                     VerticalAlignment="Center">
                                 <Path x:Name="Tick"
@@ -304,13 +302,13 @@
                         </StackPanel>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Box" Property="Background" Value="#4F7DFF"/>
-                                <Setter TargetName="Box" Property="BorderBrush" Value="#86A4FF"/>
+                                <Setter TargetName="Box" Property="Background" Value="#498675"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#A5DDC8"/>
                                 <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Box" Property="BorderBrush" Value="#86A4FF"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#A5DDC8"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -332,7 +330,6 @@
             <RowDefinition Height="4" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <!-- Pixel-art app rail: always present; Split and Settings pinned to the bottom. -->
         <Border x:Name="SidebarRail" Grid.Row="0" Grid.RowSpan="5" Grid.Column="0"
                 Background="{StaticResource ShellChromeGradientBrush}" BorderBrush="{StaticResource ShellLineBrush}"
                 BorderThickness="0,0,1,0" Panel.ZIndex="21">
@@ -341,6 +338,13 @@
             <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden"
                           CanContentScroll="True" Focusable="False">
                     <StackPanel x:Name="AppSwitcherExpandedPanel" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0">
+                        <Border Width="38" Height="38" Margin="0,2,0,11"
+                                Background="{StaticResource ShellAccentSoftBrush}" CornerRadius="11"
+                                ToolTip="WorkChat Mini · apps">
+                            <TextBlock Text="w." FontFamily="Georgia" FontSize="24" FontWeight="Bold"
+                                       Foreground="{StaticResource ShellAccentBrush}" VerticalAlignment="Center"
+                                       HorizontalAlignment="Center" Margin="0,-3,0,0"/>
+                        </Border>
                         <Button x:Name="MessengerButton"
                                 Margin="0,0,0,3"
                                 Style="{StaticResource AppIconButtonStyle}"
@@ -592,7 +596,6 @@
             </Grid>
         </Border>
 
-        <!-- Compact ad-blocker settings. Technical diagnostics stay in the log instead of occupying UI. -->
         <Border x:Name="DiagnosticsPanel"
                 Grid.Column="1" Grid.Row="1"
                 Panel.ZIndex="20"
@@ -601,7 +604,7 @@
                 Background="{StaticResource ShellSurfaceBrush}"
                 BorderBrush="{StaticResource ShellLineBrush}"
                 BorderThickness="1"
-                CornerRadius="14"
+                CornerRadius="11"
                 Padding="12,10">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                           CanContentScroll="True" Focusable="False">
@@ -664,7 +667,7 @@
                               Data="M11,3 A5,5 0 1 0 13,9 M11,3 H15 V7"/>
                     </Button>
 
-                    <Border x:Name="DiagnosticsStatusBorder" Grid.Column="2" Margin="8,0,0,0" Background="#14251F" BorderBrush="#315F50" BorderThickness="1" CornerRadius="13" Padding="9,0">
+                    <Border x:Name="DiagnosticsStatusBorder" Grid.Column="2" Margin="8,0,0,0" Background="#14251F" BorderBrush="#315F50" BorderThickness="1" CornerRadius="10" Padding="9,0">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <Ellipse x:Name="DiagnosticsStatusDot" Width="7" Height="7" Fill="#54D39A" VerticalAlignment="Center" Margin="0,0,7,0"/>
                             <TextBlock x:Name="DiagnosticsMetaText" Text="Ready" Foreground="#CFEBDD" FontSize="10.8" VerticalAlignment="Center" MaxWidth="220" TextTrimming="CharacterEllipsis"/>
@@ -689,7 +692,7 @@
                 Background="{StaticResource ShellSurfaceBrush}"
                 BorderBrush="{StaticResource ShellLineBrush}"
                 BorderThickness="1"
-                CornerRadius="14"
+                CornerRadius="11"
                 Padding="14,12">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                           CanContentScroll="True" Focusable="False">
@@ -704,7 +707,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Border Width="34" Height="34" CornerRadius="13" Background="#242A35" BorderBrush="#54606F" BorderThickness="1">
+                    <Border Width="34" Height="34" CornerRadius="10" Background="#242A35" BorderBrush="#54606F" BorderThickness="1">
                         <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <Path Stroke="#F3A846" Fill="Transparent" StrokeThickness="1.8" StrokeLineJoin="Round" Data="M12,2 L20,5 V11 C20,16 16.7,20.2 12,22 C7.3,20.2 4,16 4,11 V5 Z M8.5,12 L11,14.5 L16,9.5"/>
                         </Viewbox>
@@ -740,7 +743,7 @@
                 Background="{StaticResource ShellSurfaceBrush}"
                 BorderBrush="{StaticResource ShellLineBrush}"
                 BorderThickness="1"
-                CornerRadius="14"
+                CornerRadius="11"
                 Padding="14,12">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                           CanContentScroll="True" Focusable="False">
@@ -757,7 +760,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Border Width="34" Height="34" CornerRadius="13" Background="#1E3140" BorderBrush="#3E6A7A" BorderThickness="1" VerticalAlignment="Center">
+                    <Border Width="34" Height="34" CornerRadius="10" Background="#1E3140" BorderBrush="#3E6A7A" BorderThickness="1" VerticalAlignment="Center">
                         <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <Path Stroke="#7BD9D0" Fill="Transparent" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Data="M2,12 H6 L8.5,7 L12,17 L15,10 L18,12 H22"/>
                         </Viewbox>
@@ -832,9 +835,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Compact modern tab strip. Tabs sit above the address bar like a browser,
-                     while the + action stays with the tab group instead of in navigation. -->
-                <Border Grid.Row="0" Background="{StaticResource ShellCanvasBrush}" BorderBrush="#292F39" BorderThickness="0,0,0,1" Padding="7,3,7,2">
+                <Border Grid.Row="0" Background="{StaticResource ShellCanvasBrush}" BorderBrush="#303B3E" BorderThickness="0,0,0,1" Padding="7,3,7,2">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -858,9 +859,7 @@
                     </Grid>
                 </Border>
 
-                <!-- Navigation bar: subtle icon buttons, one dominant rounded address field,
-                     and a compact app launcher. -->
-                <Border Grid.Row="1" Background="#151920" BorderBrush="#2B323D" BorderThickness="0,0,0,1" Padding="8,6">
+                <Border Grid.Row="1" Background="#171D20" BorderBrush="#303B3E" BorderThickness="0,0,0,1" Padding="8,6">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -879,11 +878,11 @@
                             <TextBlock Text="↻" FontSize="15"/>
                         </Button>
 
-                        <Border Grid.Column="3" Height="32" BorderThickness="1" CornerRadius="14" Margin="0,0,5,0" Style="{StaticResource BrowserAddressBorderStyle}">
+                        <Border Grid.Column="3" Height="32" BorderThickness="1" CornerRadius="11" Margin="0,0,5,0" Style="{StaticResource BrowserAddressBorderStyle}">
                             <Grid>
                                 <TextBlock x:Name="BrowserAddressPlaceholder"
                                            Text="Search or enter an address"
-                                           Foreground="#7F899B"
+                                           Foreground="#9AABA6"
                                            FontSize="12.5"
                                            Margin="12,0"
                                            VerticalAlignment="Center"
@@ -891,8 +890,8 @@
                                 <TextBox x:Name="BrowserAddressBox"
                                          Background="Transparent"
                                          BorderThickness="0"
-                                         Foreground="#F7F8FA"
-                                         CaretBrush="#AFC2FF"
+                                         Foreground="#F1F3F0"
+                                         CaretBrush="#A5DDC8"
                                          FontSize="12.5"
                                          Padding="11,5"
                                          VerticalContentAlignment="Center"
@@ -912,10 +911,10 @@
                                 ToolTip="Web tools"
                                 Click="BrowserQuickButton_Click">
                             <Grid Width="14" Height="14">
-                                <Ellipse Width="4" Height="4" Fill="#B9C5D8" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                                <Ellipse Width="4" Height="4" Fill="#B9C5D8" HorizontalAlignment="Right" VerticalAlignment="Top"/>
-                                <Ellipse Width="4" Height="4" Fill="#B9C5D8" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
-                                <Ellipse Width="4" Height="4" Fill="#B9C5D8" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                                <Ellipse Width="4" Height="4" Fill="#A5B6B0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                                <Ellipse Width="4" Height="4" Fill="#A5B6B0" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                                <Ellipse Width="4" Height="4" Fill="#A5B6B0" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                                <Ellipse Width="4" Height="4" Fill="#A5B6B0" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
                             </Grid>
                             <Button.ContextMenu>
                                 <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Bottom">
@@ -940,23 +939,31 @@
 
                     <!-- Blank tabs do not initialize WebView2 at all. This lightweight WPF view
                          keeps a new tab instant and leaves the address field genuinely empty. -->
-                    <Border x:Name="BrowserNewTabOverlay" Background="{StaticResource ShellCanvasBrush}" Panel.ZIndex="30" Visibility="Collapsed">
+                    <Border x:Name="BrowserNewTabOverlay" Background="{StaticResource ShellCanvasBrush}"
+                            Panel.ZIndex="30" Visibility="Collapsed">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                       Focusable="False">
-                        <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Center" MaxWidth="620" Margin="12">
-                            <Border Width="48" Height="48" Background="#1D4F91" CornerRadius="14" HorizontalAlignment="Center" Margin="0,0,0,14">
-                                <TextBlock Text="W" Foreground="White" FontSize="21" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <TextBlock Text="WorkChat Web" Foreground="#F4F7FC" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Search above or open a shortcut" Foreground="#8994A7" FontSize="12.5" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,6,0,16"/>
-                            <WrapPanel HorizontalAlignment="Center">
-                                <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="ChatGPT" Tag="https://chatgpt.com/" Click="BrowserNewTabQuickLink_Click"/>
-                                <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Gemini" Tag="https://gemini.google.com/" Click="BrowserNewTabQuickLink_Click"/>
-                                <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Gmail" Tag="https://mail.google.com/" Click="BrowserNewTabQuickLink_Click"/>
-                                <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="GitHub" Tag="https://github.com/" Click="BrowserNewTabQuickLink_Click"/>
-                                <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Figma" Tag="https://www.figma.com/" Click="BrowserNewTabQuickLink_Click"/>
-                            </WrapPanel>
-                        </StackPanel>
+                            <StackPanel MaxWidth="590" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                        Margin="22,25,22,22">
+                                <TextBlock Text="WORKCHAT  /  WEB" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource ShellAccentBrush}"/>
+                                <TextBlock Text="A quieter place to browse." FontSize="27" FontWeight="SemiBold"
+                                           Foreground="{StaticResource ShellTextBrush}" Margin="0,9,0,0"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="Open a tool below, or use the address bar above."
+                                           FontSize="12" Foreground="{StaticResource ShellMutedBrush}"
+                                           Margin="0,7,0,19" TextWrapping="Wrap"/>
+                                <Border Height="1" Background="{StaticResource ShellLineBrush}" Margin="0,0,0,17"/>
+                                <TextBlock Text="QUICK ACCESS" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource ShellMutedBrush}" Margin="0,0,0,9"/>
+                                <WrapPanel HorizontalAlignment="Left">
+                                    <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="ChatGPT" Tag="https://chatgpt.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                    <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Gemini" Tag="https://gemini.google.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                    <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Gmail" Tag="https://mail.google.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                    <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="GitHub" Tag="https://github.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                    <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Figma" Tag="https://www.figma.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                </WrapPanel>
+                            </StackPanel>
                         </ScrollViewer>
                     </Border>
                 </Grid>
