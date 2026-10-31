@@ -1,17 +1,45 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Quiet Workbench / Impeccable-informed design pass: functional contrast, no decoration. -->
-    <SolidColorBrush x:Key="ShellCanvasBrush" Color="#0E1315"/>
-    <SolidColorBrush x:Key="ShellSurfaceBrush" Color="#171D20"/>
-    <SolidColorBrush x:Key="ShellElevatedBrush" Color="#20282B"/>
-    <SolidColorBrush x:Key="ShellHoverBrush" Color="#293337"/>
-    <SolidColorBrush x:Key="ShellLineBrush" Color="#303B3E"/>
-    <SolidColorBrush x:Key="ShellAccentBrush" Color="#A5DDC8"/>
-    <SolidColorBrush x:Key="ShellAccentSoftBrush" Color="#203D38"/>
-    <SolidColorBrush x:Key="ShellTextBrush" Color="#F1F3F0"/>
-    <SolidColorBrush x:Key="ShellMutedBrush" Color="#ADB8B6"/>
-    <SolidColorBrush x:Key="ShellPositiveBrush" Color="#89DAB6"/>
-    <SolidColorBrush x:Key="ShellDangerBrush" Color="#F2A0A0"/>
-    <!-- Flat rail keeps pixel icons crisp; gradients are intentionally absent. -->
-    <SolidColorBrush x:Key="ShellChromeGradientBrush" Color="#12191B"/>
+    <!-- 2.60.5: unified dark-indigo workspace. Indigo is the interactive accent; mint is success only. -->
+    <SolidColorBrush x:Key="ShellCanvasBrush" Color="#0E1120"/>
+    <SolidColorBrush x:Key="ShellSurfaceBrush" Color="#191D30"/>
+    <SolidColorBrush x:Key="ShellElevatedBrush" Color="#252B41"/>
+    <SolidColorBrush x:Key="ShellHoverBrush" Color="#303750"/>
+    <SolidColorBrush x:Key="ShellLineBrush" Color="#394057"/>
+    <SolidColorBrush x:Key="ShellAccentBrush" Color="#B8A9FF"/>
+    <SolidColorBrush x:Key="ShellAccentSoftBrush" Color="#342E59"/>
+    <SolidColorBrush x:Key="ShellTextBrush" Color="#F4F3FB"/>
+    <SolidColorBrush x:Key="ShellMutedBrush" Color="#BBC0D6"/>
+    <SolidColorBrush x:Key="ShellPositiveBrush" Color="#82DEB4"/>
+    <SolidColorBrush x:Key="ShellDangerBrush" Color="#FDA6B4"/>
+    <!-- Flat fallback is retained for legacy code and source tests. Depth gradients are static WPF brushes. -->
+    <SolidColorBrush x:Key="ShellChromeGradientBrush" Color="#13172A"/>
+    <!-- Static gradients: no animation loops, bitmap effects, WebViews or new dependencies. -->
+    <LinearGradientBrush x:Key="ShellRailDepthBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#201B3B" Offset="0"/>
+        <GradientStop Color="#14182D" Offset="0.45"/>
+        <GradientStop Color="#101427" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ShellHeroBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#332755" Offset="0"/>
+        <GradientStop Color="#23243F" Offset="0.58"/>
+        <GradientStop Color="#1A2136" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="ShellAccentOutlineBrush" Color="#64578F"/>
+    <!-- Control Center shares the same indigo language as the main shell. -->
+    <SolidColorBrush x:Key="SettingsPanelBrush" Color="#191B29"/>
+    <SolidColorBrush x:Key="SettingsNavBrush" Color="#141724"/>
+    <SolidColorBrush x:Key="SettingsCardBrush" Color="#26233E"/>
+    <SolidColorBrush x:Key="SettingsIconBrush" Color="#303144"/>
+    <SolidColorBrush x:Key="SettingsStrokeBrush" Color="#34364B"/>
+    <SolidColorBrush x:Key="SettingsSecondaryBrush" Color="#AEB3CC"/>
+    <SolidColorBrush x:Key="SettingsAccentBrush" Color="#B6A9FF"/>
+    <SolidColorBrush x:Key="SettingsAccentSoftBrush" Color="#343052"/>
+    <SolidColorBrush x:Key="SettingsAccentOutlineBrush" Color="#534B79"/>
+    <SolidColorBrush x:Key="SettingsLogoTextBrush" Color="#211B3D"/>
+    <LinearGradientBrush x:Key="SettingsHeaderBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#30244D" Offset="0"/>
+        <GradientStop Color="#242746" Offset="0.65"/>
+        <GradientStop Color="#1D2338" Offset="1"/>
+    </LinearGradientBrush>
 </ResourceDictionary>

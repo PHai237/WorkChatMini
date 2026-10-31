@@ -42,7 +42,7 @@
         <Style x:Key="DropdownButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
             <Setter Property="Background" Value="{StaticResource ShellElevatedBrush}"/>
-            <Setter Property="BorderBrush" Value="#394A4B"/>
+            <Setter Property="BorderBrush" Value="#424961"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontSize" Value="12.5"/>
@@ -62,7 +62,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Root" Property="Background" Value="{StaticResource ShellHoverBrush}"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#809C93"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#8275B1"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="Root" Property="Background" Value="#263A35"/>
@@ -95,7 +95,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Root" Property="Background" Value="#293B37"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#809C93"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#8275B1"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="Root" Property="Background" Value="#344841"/>
@@ -111,7 +111,7 @@
         <Style x:Key="DarkContextMenuStyle" TargetType="ContextMenu">
             <Setter Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
-            <Setter Property="BorderBrush" Value="#475B58"/>
+            <Setter Property="BorderBrush" Value="#4D526D"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="5"/>
             <Setter Property="MinWidth" Value="216"/>
@@ -167,7 +167,7 @@
                                                   ContentSource="Header"
                                                   RecognizesAccessKey="True"/>
                                 <TextBlock x:Name="CheckGlyph" Text="✓"
-                                           Foreground="#A5DDC8" FontSize="15"
+                                           Foreground="#B8A9FF" FontSize="15"
                                            VerticalAlignment="Center" HorizontalAlignment="Right"
                                            Margin="0,0,10,0" Visibility="Collapsed"/>
                             </Grid>
@@ -178,7 +178,7 @@
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="CheckGlyph" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="ItemRoot" Property="Background" Value="#263B36"/>
+                                <Setter TargetName="ItemRoot" Property="Background" Value="#383054"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -187,8 +187,8 @@
         </Style>
         <Style TargetType="ToolTip">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
-            <Setter Property="Background" Value="#1B2426"/>
-            <Setter Property="BorderBrush" Value="#364946"/>
+            <Setter Property="Background" Value="#20253A"/>
+            <Setter Property="BorderBrush" Value="#45445D"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8,5"/>
             <Setter Property="FontSize" Value="11.5"/>
@@ -207,8 +207,8 @@
         </Style>
         <Style x:Key="UtilityIconButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource ShellMutedBrush}"/>
-            <Setter Property="Background" Value="#192124"/>
-            <Setter Property="BorderBrush" Value="#394A4B"/>
+            <Setter Property="Background" Value="#20253A"/>
+            <Setter Property="BorderBrush" Value="#424961"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Width" Value="34"/>
             <Setter Property="Height" Value="34"/>
@@ -229,12 +229,12 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Root" Property="Background" Value="{StaticResource ShellHoverBrush}"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#809C93"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#8275B1"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="Tag" Value="Active">
-                                <Setter TargetName="Root" Property="Background" Value="#2B5148"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#A5DDC8"/>
+                                <Setter TargetName="Root" Property="Background" Value="#3D345D"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#B8A9FF"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -244,8 +244,8 @@
         </Style>
         <Style x:Key="ToolbarToggleButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource ShellMutedBrush}"/>
-            <Setter Property="Background" Value="#172022"/>
-            <Setter Property="BorderBrush" Value="#394A4B"/>
+            <Setter Property="Background" Value="#1B2034"/>
+            <Setter Property="BorderBrush" Value="#424961"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontSize" Value="12"/>
@@ -265,7 +265,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Root" Property="Background" Value="{StaticResource ShellHoverBrush}"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#809C93"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#8275B1"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -303,12 +303,12 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Box" Property="Background" Value="#498675"/>
-                                <Setter TargetName="Box" Property="BorderBrush" Value="#A5DDC8"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#B8A9FF"/>
                                 <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Box" Property="BorderBrush" Value="#A5DDC8"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#B8A9FF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -331,7 +331,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Border x:Name="SidebarRail" Grid.Row="0" Grid.RowSpan="5" Grid.Column="0"
-                Background="{StaticResource ShellChromeGradientBrush}" BorderBrush="{StaticResource ShellLineBrush}"
+                Background="{StaticResource ShellRailDepthBrush}" BorderBrush="{StaticResource ShellLineBrush}"
                 BorderThickness="0,0,1,0" Panel.ZIndex="21">
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
@@ -339,7 +339,7 @@
                           CanContentScroll="True" Focusable="False">
                     <StackPanel x:Name="AppSwitcherExpandedPanel" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0">
                         <Border Width="38" Height="38" Margin="0,2,0,11"
-                                Background="{StaticResource ShellAccentSoftBrush}" CornerRadius="11"
+                                Background="{StaticResource ShellAccentSoftBrush}" BorderBrush="{StaticResource ShellAccentOutlineBrush}" BorderThickness="1" CornerRadius="12"
                                 ToolTip="WorkChat Mini · apps">
                             <TextBlock Text="w." FontFamily="Georgia" FontSize="22" FontWeight="Bold"
                                        Foreground="{StaticResource ShellAccentBrush}" VerticalAlignment="Center"
@@ -420,14 +420,15 @@
             </ScrollViewer>
             <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,7,0,8">
                 <Separator Width="34" Background="{StaticResource ShellLineBrush}" Margin="0,0,0,8"/>
-                    <Button x:Name="SplitButton" Style="{StaticResource UtilityIconButtonStyle}" Width="40" Height="40" Margin="0,0,0,8" Click="SplitButton_Click" ToolTip="Split screen (Ctrl+Shift+2)"><TextBlock Text="◫" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center"/></Button>
+                    <Button x:Name="SplitButton" Style="{StaticResource UtilityIconButtonStyle}" Width="40" Height="40" Margin="0,0,0,8" Click="SplitButton_Click" ToolTip="Split screen (Ctrl+Shift+2)"><TextBlock Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" FontSize="17" VerticalAlignment="Center" HorizontalAlignment="Center"/></Button>
                     <Button x:Name="MoreMenuButton"
                             Style="{StaticResource UtilityIconButtonStyle}"
                             Width="40" Height="40" Margin="0"
                             ToolTip="Settings"
+                            AutomationProperties.Name="Open Settings"
                             ContextMenuService.IsEnabled="False"
                             Click="MoreMenuButton_Click">
-                        <TextBlock Text="⚙" FontFamily="Segoe UI Symbol" FontSize="22" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="17" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <Button.ContextMenu>
                             <ContextMenu Style="{StaticResource DarkContextMenuStyle}" Placement="Right">
                                 <MenuItem Header="Pop out" Style="{StaticResource DarkMenuItemStyle}" Click="OpenActiveCompanion_Click"/>
@@ -458,8 +459,6 @@
                                     <MenuItem x:Name="MoreVpnMenuItem" Header="VPN" Style="{StaticResource DarkMenuItemStyle}" Click="VpnMenuItem_Click"/>
                                     <MenuItem x:Name="MoreHealthMenuItem" Header="Health" Style="{StaticResource DarkMenuItemStyle}" Click="SessionHealthButton_Click"/>
                                 </MenuItem>
-                                <!-- Critical actions must be direct children of the gear menu.
-                                     Never bury Updates behind a custom submenu again. -->
                                 <MenuItem x:Name="MoreUpdatesMenuItem" Header="Updates" ToolTip="Check for updates (Ctrl+Shift+U)" Style="{StaticResource DarkMenuItemStyle}" Click="UpdatesMenuItem_Click"/>
                                 <MenuItem x:Name="MoreExitMenuItem" Header="Exit" Style="{StaticResource DarkMenuItemStyle}" Click="ExitMenuItem_Click"/>
                             </ContextMenu>
@@ -835,7 +834,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <Border Grid.Row="0" Background="{StaticResource ShellCanvasBrush}" BorderBrush="#303B3E" BorderThickness="0,0,0,1" Padding="7,3,7,2">
+                <Border Grid.Row="0" Background="{StaticResource ShellCanvasBrush}" BorderBrush="#394057" BorderThickness="0,0,0,1" Padding="7,3,7,2">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -859,7 +858,7 @@
                     </Grid>
                 </Border>
 
-                <Border Grid.Row="1" Background="#171D20" BorderBrush="#303B3E" BorderThickness="0,0,0,1" Padding="8,6">
+                <Border Grid.Row="1" Background="#191D30" BorderBrush="#394057" BorderThickness="0,0,0,1" Padding="8,6">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -890,8 +889,8 @@
                                 <TextBox x:Name="BrowserAddressBox"
                                          Background="Transparent"
                                          BorderThickness="0"
-                                         Foreground="#F1F3F0"
-                                         CaretBrush="#A5DDC8"
+                                         Foreground="#F4F3FB"
+                                         CaretBrush="#B8A9FF"
                                          FontSize="12.5"
                                          Padding="11,5"
                                          VerticalContentAlignment="Center"
@@ -937,39 +936,47 @@
                 <Grid x:Name="BrowserWebViewHost" Grid.Row="2" Background="{StaticResource ShellCanvasBrush}" ClipToBounds="True">
                     <wv2:WebView2 x:Name="BrowserFallbackWebView" Visibility="Collapsed"/>
 
-                    <!-- Blank tabs do not initialize WebView2 at all. This lightweight WPF view
-                         keeps a new tab instant and leaves the address field genuinely empty. -->
                     <Border x:Name="BrowserNewTabOverlay" Background="{StaticResource ShellCanvasBrush}"
                             Panel.ZIndex="30" Visibility="Collapsed">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                       Focusable="False">
-                            <StackPanel MaxWidth="590" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                                        Margin="22,25,22,22">
-                                <TextBlock Text="WORKCHAT  /  WEB" FontSize="10" FontWeight="SemiBold"
-                                           Foreground="{StaticResource ShellAccentBrush}"/>
-                                <TextBlock Text="A quieter place to browse." FontSize="27" FontWeight="SemiBold"
-                                           Foreground="{StaticResource ShellTextBrush}" Margin="0,9,0,0"
-                                           TextWrapping="Wrap"/>
-                                <TextBlock Text="Open a tool below, or use the address bar above."
-                                           FontSize="12" Foreground="{StaticResource ShellMutedBrush}"
-                                           Margin="0,7,0,19" TextWrapping="Wrap"/>
-                                <Border Height="1" Background="{StaticResource ShellLineBrush}" Margin="0,0,0,17"/>
-                                <TextBlock Text="QUICK ACCESS" FontSize="10" FontWeight="SemiBold"
-                                           Foreground="{StaticResource ShellMutedBrush}" Margin="0,0,0,9"/>
-                                <WrapPanel HorizontalAlignment="Left">
-                                    <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="ChatGPT" Tag="https://chatgpt.com/" Click="BrowserNewTabQuickLink_Click"/>
-                                    <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Gemini" Tag="https://gemini.google.com/" Click="BrowserNewTabQuickLink_Click"/>
-                                    <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Gmail" Tag="https://mail.google.com/" Click="BrowserNewTabQuickLink_Click"/>
-                                    <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="GitHub" Tag="https://github.com/" Click="BrowserNewTabQuickLink_Click"/>
-                                    <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Figma" Tag="https://www.figma.com/" Click="BrowserNewTabQuickLink_Click"/>
-                                </WrapPanel>
+                            <StackPanel MaxWidth="610" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                        Margin="20,20,20,24">
+
+                                <Border Background="{StaticResource ShellHeroBrush}"
+                                        BorderBrush="{StaticResource ShellAccentOutlineBrush}"
+                                        BorderThickness="1" CornerRadius="17" Padding="20,18" Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <TextBlock Text="WORKSPACE / BROWSER" FontSize="10" FontWeight="Bold"
+                                                   Foreground="{StaticResource ShellAccentBrush}"/>
+                                        <TextBlock Text="New tab" FontSize="28" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource ShellTextBrush}" Margin="0,7,0,0"
+                                                   TextWrapping="Wrap"/>
+                                        <TextBlock Text="Enter a URL above or jump to a shortcut below." FontSize="12"
+                                                   Foreground="{StaticResource ShellMutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{StaticResource ShellSurfaceBrush}"
+                                        BorderBrush="{StaticResource ShellLineBrush}" BorderThickness="1"
+                                        CornerRadius="15" Padding="13,13,12,12">
+                                    <StackPanel>
+                                        <TextBlock Text="QUICK LINKS" FontSize="10" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource ShellMutedBrush}" Margin="5,0,0,8"/>
+                                        <WrapPanel HorizontalAlignment="Left">
+                                            <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="ChatGPT" Tag="https://chatgpt.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                            <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Gemini" Tag="https://gemini.google.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                            <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Gmail" Tag="https://mail.google.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                            <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="GitHub" Tag="https://github.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                            <Button Style="{StaticResource BrowserQuickLaunchButtonStyle}" Content="Figma" Tag="https://www.figma.com/" Click="BrowserNewTabQuickLink_Click"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </Border>
                 </Grid>
             </Grid>
 
-            <!-- Library overlay lives in its own XAML UserControl to keep MainWindow lean. -->
             <local:ReadingHubView x:Name="ReadingHubOverlay" Visibility="Collapsed" Panel.ZIndex="16"/>
 
             <Border x:Name="LoadingOverlay" Background="{StaticResource ShellCanvasBrush}" Visibility="Visible">

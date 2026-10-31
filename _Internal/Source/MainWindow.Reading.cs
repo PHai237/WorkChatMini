@@ -342,19 +342,19 @@ public partial class MainWindow
                 () => _ = RunBrowserUiActionAsync(() => OpenReadingBookAsync(book.Id), "reading-virtual-tab"));
             tab.ToolTip = $"{book.Title} · {book.Source} (virtual tab)";
             tab.Margin = new Thickness(0, 0, 5, 0);
-            tab.Background = book.Id == _readingActiveBookId ? BrushFrom("#203D38") : BrushFrom("#20282B");
-            tab.BorderBrush = book.Id == _readingActiveBookId ? BrushFrom("#A5DDC8") : BrushFrom("#303B3E");
+            tab.Background = book.Id == _readingActiveBookId ? BrushFrom("#342E59") : BrushFrom("#252B41");
+            tab.BorderBrush = book.Id == _readingActiveBookId ? BrushFrom("#B8A9FF") : BrushFrom("#394057");
             ReadingOpenTabs.Children.Add(tab);
         }
         int hiddenReadingTabs = _readingLibrary.Books.Count(item => item.OpenTab) - 32;
         if (hiddenReadingTabs > 0)
             ReadingOpenTabs.Children.Add(new TextBlock
             {
-                Text = $"+{hiddenReadingTabs} on shelf", Foreground = BrushFrom("#ACBDB6"),
+                Text = $"+{hiddenReadingTabs} on shelf", Foreground = BrushFrom("#BBC0D6"),
                 FontSize = 11, Margin = new Thickness(7, 5, 0, 0)
             });
         if (ReadingOpenTabs.Children.Count == 0)
-            ReadingOpenTabs.Children.Add(new TextBlock { Text = "No open reading tabs yet", Foreground = BrushFrom("#ADB8B6"), FontSize = 11 });
+            ReadingOpenTabs.Children.Add(new TextBlock { Text = "No open reading tabs yet", Foreground = BrushFrom("#BBC0D6"), FontSize = 11 });
         int visibleCount = Math.Min(books.Count, _readingVisibleCount);
         foreach (ReadingBook book in books.Take(visibleCount))
             ReadingShelf.Children.Add(BuildReadingCard(book));
@@ -373,8 +373,8 @@ public partial class MainWindow
             Content = title, Height = 29, MinWidth = 54,
             Padding = new Thickness(9, 0, 9, 0),
             Margin = new Thickness(0, 0, 5, 5),
-            Background = BrushFrom("#263337"), Foreground = BrushFrom("#F1F3F0"),
-            BorderBrush = BrushFrom("#42544F"), BorderThickness = new Thickness(1),
+            Background = BrushFrom("#252B41"), Foreground = BrushFrom("#F4F3FB"),
+            BorderBrush = BrushFrom("#464E68"), BorderThickness = new Thickness(1),
             FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand
         };
         button.Click += (_, _) => action();
@@ -410,13 +410,13 @@ public partial class MainWindow
         description.Children.Add(new TextBlock
         {
             Text = (book.IsFavorite ? "★  " : "") + book.Title, FontSize = 13, FontWeight = FontWeights.SemiBold,
-            Foreground = BrushFrom("#F1F3F0"), TextTrimming = TextTrimming.CharacterEllipsis,
+            Foreground = BrushFrom("#F4F3FB"), TextTrimming = TextTrimming.CharacterEllipsis,
             ToolTip = book.Title
         });
         description.Children.Add(new TextBlock
         {
             Text = $"{book.Source}  ·  {book.Kind}", FontSize = 11,
-            Foreground = BrushFrom("#ADB8B6"), Margin = new Thickness(0, 3, 0, 3),
+            Foreground = BrushFrom("#BBC0D6"), Margin = new Thickness(0, 3, 0, 3),
             TextTrimming = TextTrimming.CharacterEllipsis
         });
         string status = book.HasNewChapter ? "● New chapter" :
@@ -424,8 +424,8 @@ public partial class MainWindow
         description.Children.Add(new TextBlock
         {
             Text = status, FontSize = 10.5,
-            Foreground = BrushFrom(book.HasNewChapter ? "#89DAB6" :
-                book.Status == "Waiting" ? "#D9B179" : "#A5DDC8")
+            Foreground = BrushFrom(book.HasNewChapter ? "#82DEB4" :
+                book.Status == "Waiting" ? "#D9B179" : "#B8A9FF")
         });
         if (book.ScrollFraction > 0)
         {
@@ -473,7 +473,7 @@ public partial class MainWindow
             wrapper.Children.Add(new TextBlock
             {
                 Text = $"MangaDex latest: {book.LatestKnownChapterLabel}",
-                FontSize = 10, Foreground = BrushFrom("#ADB8B6"),
+                FontSize = 10, Foreground = BrushFrom("#BBC0D6"),
                 Margin = new Thickness(57, 0, 5, 7), TextTrimming = TextTrimming.CharacterEllipsis,
                 ToolTip = book.LastChapterCheckUtc is { } checkedAt
                     ? $"Last checked: {checkedAt.ToLocalTime():g}" : "Last known chapter"
@@ -482,7 +482,7 @@ public partial class MainWindow
         noteRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(108) });
         noteRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var noteLabel = new TextBlock { Text = "Chapter / page", FontSize = 10.5,
-            Foreground = BrushFrom("#ADB8B6"), VerticalAlignment = VerticalAlignment.Center };
+            Foreground = BrushFrom("#BBC0D6"), VerticalAlignment = VerticalAlignment.Center };
         noteRow.Children.Add(noteLabel);
         var note = new WpfTextBox
         {

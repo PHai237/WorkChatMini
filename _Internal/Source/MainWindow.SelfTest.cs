@@ -392,8 +392,8 @@ public partial class MainWindow
                     !ReadingScrollScripts.Restore(0.75, "id:chapter-scroll").Contains("0.75", StringComparison.Ordinal))
                     throw new InvalidOperationException("Reading scroll target migration or scripts regressed.");
                 if (FindResource("ShellAccentBrush") is not System.Windows.Media.SolidColorBrush accent ||
-                    accent.Color != (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#A5DDC8")!)
-                    throw new InvalidOperationException("Quiet Workbench design tokens missing from WPF resources.");
+                    accent.Color != (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#B8A9FF")!)
+                    throw new InvalidOperationException("Unified WorkChat shell accent is missing from WPF resources.");
                 return Task.CompletedTask;
             });
 
@@ -566,7 +566,7 @@ public partial class MainWindow
                 EnsureSettingsFlyout();
                 ShowSettingsPage("root");
                 if (_settingsFlyout?.Child is not System.Windows.Controls.Border panel ||
-                    panel.Width != 310 || _settingsFlyoutRows is null)
+                    (panel.Width < 292 || panel.Width > 632) || _settingsFlyoutRows is null)
                     throw new InvalidOperationException("The new settings surface is missing or incorrectly sized.");
                 var rowStyle = FindResource("SettingsFlyoutRowStyle") as System.Windows.Style;
                 if (rowStyle is null || _settingsFlyoutRows.Children.OfType<System.Windows.Controls.Button>()
@@ -574,6 +574,8 @@ public partial class MainWindow
                     throw new InvalidOperationException("Settings rows do not share the same visual style.");
                 return Task.CompletedTask;
             });
+
+            await RunCase("Control Center dashboard navigation and surfaces", VerifySettingsDashboardSelfTest);
 
             await RunCase("Settings pages are reachable without native submenus", () =>
             {

@@ -52,6 +52,14 @@
                             <Setter TargetName="Root" Property="Background" Value="{StaticResource ShellAccentSoftBrush}"/>
                             <Setter TargetName="ActiveMarker" Property="Visibility" Value="Visible"/>
                         </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Tag" Value="Active"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource ShellAccentSoftBrush}"/>
+                            <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource ShellAccentOutlineBrush}"/>
+                        </MultiTrigger>
                         <Trigger Property="Tag" Value="Sleeping"><Setter Property="Opacity" Value="0.48"/></Trigger>
                         <Trigger Property="Tag" Value="Hibernated"><Setter Property="Opacity" Value="0.3"/></Trigger>
                     </ControlTemplate.Triggers>
@@ -60,87 +68,149 @@
         </Setter>
     </Style>
 
-    <!-- Settings: one visual system for every row/page; never use the OS MenuItem popup. -->
-    <Style x:Key="SettingsFlyoutRowStyle" TargetType="Button">
+    <!-- Premium Control Center: restrained layered surfaces, native focus feedback. -->
+    <Style x:Key="SettingsNavButtonStyle" TargetType="Button">
         <Setter Property="Height" Value="39"/>
-        <Setter Property="Margin" Value="0,0"/>
-        <Setter Property="Padding" Value="9,0"/>
-        <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
+        <Setter Property="Margin" Value="0,0,0,3"/>
+        <Setter Property="Padding" Value="11,0"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="FontSize" Value="12.5"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Surface" Background="{TemplateBinding Background}" CornerRadius="9"
-                            SnapsToDevicePixels="True">
-                        <ContentPresenter Margin="{TemplateBinding Padding}"
-                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="Center"/>
+                    <Border x:Name="Surface" Background="{TemplateBinding Background}"
+                            CornerRadius="10" BorderThickness="1" BorderBrush="Transparent">
+                        <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="Tag" Value="Selected">
+                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource SettingsAccentSoftBrush}"/>
+                            <Setter TargetName="Surface" Property="BorderBrush" Value="{StaticResource SettingsAccentOutlineBrush}"/>
+                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource ShellHoverBrush}"/>
+                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource SettingsIconBrush}"/>
                         </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource ShellAccentSoftBrush}"/>
-                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Tag" Value="Selected"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource SettingsAccentSoftBrush}"/>
+                            <Setter TargetName="Surface" Property="BorderBrush" Value="{StaticResource SettingsAccentBrush}"/>
+                        </MultiTrigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource ShellAccentSoftBrush}"/>
+                            <Setter TargetName="Surface" Property="BorderBrush" Value="{StaticResource SettingsAccentBrush}"/>
                         </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.45"/>
-                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-
-    <!-- Full-row toggle with a visible modern switch; no default WPF checkbox chrome. -->
-    <Style x:Key="SettingsFlyoutSwitchStyle" TargetType="ToggleButton">
-        <Setter Property="Height" Value="58"/>
-        <Setter Property="Margin" Value="0,0"/>
-        <Setter Property="Padding" Value="9,0"/>
+    <Style x:Key="SettingsFlyoutRowStyle" TargetType="Button">
+        <Setter Property="Height" Value="53"/>
+        <Setter Property="Margin" Value="0,0,0,5"/>
+        <Setter Property="Padding" Value="11,0"/>
         <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{StaticResource SettingsPanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource SettingsStrokeBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Surface" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="11">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Tag" Value="Selected">
+                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource SettingsAccentSoftBrush}"/>
+                            <Setter TargetName="Surface" Property="BorderBrush" Value="{StaticResource SettingsAccentOutlineBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource SettingsIconBrush}"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Tag" Value="Selected"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource SettingsAccentSoftBrush}"/>
+                            <Setter TargetName="Surface" Property="BorderBrush" Value="{StaticResource SettingsAccentBrush}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Surface" Property="BorderBrush" Value="{StaticResource SettingsAccentBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Surface" Property="Background" Value="{StaticResource SettingsAccentSoftBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="SettingsFlyoutSwitchStyle" TargetType="ToggleButton">
+        <Setter Property="Height" Value="57"/>
+        <Setter Property="Margin" Value="0,0,0,6"/>
+        <Setter Property="Padding" Value="14,0"/>
+        <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}"/>
+        <Setter Property="Background" Value="{StaticResource SettingsPanelBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="RowSurface" CornerRadius="9" Background="{TemplateBinding Background}">
+                    <Border x:Name="RowSurface" CornerRadius="11"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{StaticResource SettingsStrokeBrush}" BorderThickness="1">
                         <Grid Margin="{TemplateBinding Padding}">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="48"/></Grid.ColumnDefinitions>
-                            <ContentPresenter Grid.Column="0" VerticalAlignment="Center"/>
-                            <Border x:Name="Track" Grid.Column="1" Width="36" Height="20"
-                                    Background="#3B494A" BorderBrush="#3B494A" BorderThickness="1"
-                                    CornerRadius="10" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Ellipse x:Name="Thumb" Fill="#D7E3DE" Width="16" Height="16"
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="42"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="51"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Width="32" Height="32" CornerRadius="10"
+                                    Background="{StaticResource SettingsIconBrush}" HorizontalAlignment="Left">
+                                <TextBlock Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets"
+                                           Foreground="{StaticResource ShellTextBrush}" FontSize="15"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ContentPresenter Grid.Column="1" VerticalAlignment="Center"/>
+                            <Border x:Name="Track" Grid.Column="2" Width="41" Height="24"
+                                    Background="#43455B" BorderBrush="#666981" BorderThickness="1"
+                                    CornerRadius="12" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Ellipse x:Name="Thumb" Fill="#D5D9EE" Width="18" Height="18"
                                          HorizontalAlignment="Left" VerticalAlignment="Center" Margin="2"/>
                             </Border>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Track" Property="Background" Value="{StaticResource ShellAccentBrush}"/>
-                            <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource ShellAccentBrush}"/>
-                            <Setter TargetName="Thumb" Property="Fill" Value="White"/>
+                            <Setter TargetName="Track" Property="Background" Value="{StaticResource SettingsAccentBrush}"/>
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource SettingsAccentBrush}"/>
+                            <Setter TargetName="Thumb" Property="Fill" Value="#222039"/>
                             <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="RowSurface" Property="Background" Value="{StaticResource ShellHoverBrush}"/>
+                            <Setter TargetName="RowSurface" Property="Background" Value="{StaticResource SettingsIconBrush}"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="RowSurface" Property="Background" Value="{StaticResource ShellAccentSoftBrush}"/>
+                            <Setter TargetName="RowSurface" Property="BorderBrush" Value="{StaticResource SettingsAccentBrush}"/>
                         </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.45"/>
-                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

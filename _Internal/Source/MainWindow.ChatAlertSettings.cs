@@ -17,6 +17,7 @@ public partial class MainWindow
     {
         // Keep per-service preferences independent, and leave this page open
         // while background WebViews apply notification permissions asynchronously.
+        SettingsSection("CHAT NOTIFICATIONS");
         foreach (MiniSite site in AlertSites)
         {
             MiniSite selectedSite = site;

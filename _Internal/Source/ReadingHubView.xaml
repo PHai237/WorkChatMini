@@ -93,20 +93,25 @@
         <StackPanel Margin="16,15,16,12">
 
             <!-- Heading and actions stack instead of clipping on narrow windows. -->
-            <StackPanel Margin="0,0,0,12">
-                <TextBlock Text="THE READING DESK" Foreground="{StaticResource ShellAccentBrush}"
-                           FontSize="10" FontWeight="SemiBold"/>
-                <TextBlock Text="Reading library" Foreground="{StaticResource ShellTextBrush}"
-                           FontSize="24" FontWeight="SemiBold" Margin="0,4,0,10"/>
-                <WrapPanel Orientation="Horizontal">
-                    <Button x:Name="ToggleAddReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
-                            Content="+ Add book" Height="34" Margin="0,0,6,4" Padding="12,6"
-                            Background="{StaticResource ShellAccentSoftBrush}"/>
-                    <Button x:Name="CloseReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
-                            Height="34" Content="Back to web" Margin="0,0,6,4" Padding="12,6"
-                            ToolTip="Return to web browser"/>
-                </WrapPanel>
-            </StackPanel>
+            <Border Background="{StaticResource ShellHeroBrush}"
+                    BorderBrush="{StaticResource ShellAccentOutlineBrush}" BorderThickness="1"
+                    CornerRadius="16" Padding="15,14" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Text="YOUR LIBRARY" Foreground="{StaticResource ShellAccentBrush}"
+                               FontSize="10" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBlock Text="Reading library" Foreground="{StaticResource ShellTextBrush}"
+                               FontSize="24" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <WrapPanel Orientation="Horizontal">
+                        <Button x:Name="ToggleAddReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
+                                Content="+ Add book" Height="34" Margin="0,0,6,4" Padding="12,6"
+                                Background="{StaticResource ShellAccentSoftBrush}"
+                                AutomationProperties.Name="Add book to library"/>
+                        <Button x:Name="CloseReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
+                                Height="34" Content="Back to web" Margin="0,0,6,4" Padding="12,6"
+                                ToolTip="Return to web browser"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
 
             <!-- Reading tabs are metadata only; no extra WebView2 is started. -->
             <Border BorderBrush="{StaticResource ShellLineBrush}"
@@ -127,7 +132,7 @@
                     <Button x:Name="HakoReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
                             Content="Hako / DocLN ↗" Tag="https://docln.net/" Height="31" Margin="0,0,6,3" Padding="10,5"/>
                     <Button x:Name="SaveCurrentReadingButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
-                            Content="Save page" Height="31" Margin="0,0,6,3" Padding="10,5"/>
+                            Content="Save current page" Height="31" Margin="0,0,6,3" Padding="10,5"/>
                     <Button x:Name="CheckReadingUpdatesButton" Style="{StaticResource BrowserQuickLaunchButtonStyle}"
                             Content="Check chapters" Height="31" Margin="0,0,0,3" Padding="10,5"
                             ToolTip="Check up to eight MangaDex series; other websites are not scanned"/>
@@ -156,7 +161,8 @@
             </Border>
 
             <Border x:Name="ReadingContinuePanel" Visibility="Collapsed" Margin="0,0,0,16"
-                    Background="{StaticResource ShellAccentSoftBrush}" CornerRadius="11" Padding="12">
+                    Background="{StaticResource ShellHeroBrush}" BorderBrush="{StaticResource ShellAccentOutlineBrush}"
+                    BorderThickness="1" CornerRadius="14" Padding="15">
                 <StackPanel>
                     <TextBlock Text="PICK UP WHERE YOU LEFT OFF" FontSize="10" FontWeight="SemiBold"
                                Foreground="{StaticResource ShellAccentBrush}" Margin="0,0,0,5"/>
@@ -191,7 +197,7 @@
             </StackPanel>
 
             <StackPanel>
-                    <TextBlock x:Name="ReadingMessageTextInner" Foreground="#D9BE8F" TextWrapping="Wrap"
+                    <TextBlock x:Name="ReadingMessageTextInner" Foreground="#F0C58C" TextWrapping="Wrap"
                                FontSize="11" Margin="4,3,4,8"/>
                     <StackPanel x:Name="ReadingShelfInner"/>
                     <Button x:Name="ReadingShowMoreButton" Content="Show more books"

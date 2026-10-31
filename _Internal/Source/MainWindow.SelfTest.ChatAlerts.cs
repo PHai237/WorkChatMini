@@ -59,9 +59,34 @@ public partial class MainWindow
                 alertRows.Any(choice => choice.IsThreeState ||
                     !ReferenceEquals(choice.Style, FindResource("SettingsFlyoutSwitchStyle"))))
                 throw new InvalidOperationException("Chat alerts must be a navigable Settings subpage with three independent switches.");
+            // Single-choice Settings pages should expose the current choice.
+            ShowSettingsPage("zoom");
+            var zoomChoices = _settingsFlyoutRows?.Children
+                .OfType<System.Windows.Controls.Button>().ToArray();
+            if (zoomChoices is null || zoomChoices.Count(choice => Equals(choice.Tag, "Selected")) != 1)
+                throw new InvalidOperationException("Zoom Settings must identify exactly one selected value.");
+            ShowSettingsPage("size");
+            var sizeChoices = _settingsFlyoutRows?.Children
+                .OfType<System.Windows.Controls.Button>().ToArray();
+            if (sizeChoices is null || sizeChoices.Count(choice => Equals(choice.Tag, "Selected")) != 1)
+                throw new InvalidOperationException("Window size Settings must identify the current preset.");
+            ShowSettingsPage("position");
+            var positionChoices = _settingsFlyoutRows?.Children
+                .OfType<System.Windows.Controls.Button>().ToArray();
+            if (positionChoices is null || positionChoices.Count(choice => Equals(choice.Tag, "Selected")) != 1)
+                throw new InvalidOperationException("Window position Settings must identify the current preset.");
+            ShowSettingsPage("resource");
+            if (_activeSite is not MiniSite.YouTube and not MiniSite.Web and not MiniSite.Story)
+            {
+                var policyChoices = _settingsFlyoutRows?.Children
+                    .OfType<System.Windows.Controls.Button>().ToArray();
+                if (policyChoices is null || policyChoices.Count(choice => Equals(choice.Tag, "Selected")) != 1)
+                    throw new InvalidOperationException("Resource policy Settings must identify the effective policy.");
+            }
+            ShowSettingsPage("chat-alerts");
             _settingsFlyoutBack!.RaiseEvent(new System.Windows.RoutedEventArgs(
                 System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-            if (_settingsPage != "root" || _settingsFlyoutHeading?.Text != "Settings")
+            if (_settingsPage != "root" || _settingsFlyoutHeading?.Text != "Overview")
                 throw new InvalidOperationException("Chat alerts Back button did not return to Settings root.");
         }
         finally

@@ -1,3 +1,20 @@
+# WorkChat Core 2.60.5 — Unified Shell / Browser / Reading UI
+
+- Align WorkChat's shell, browser and Reading Hub with Control Center's dark indigo/violet palette; keep mint as a health/success status only.
+- Static native WPF gradients in rail and quick-access surfaces; no runtime dependency, continuous animation or extra WebView.
+- Refresh Browser New Tab shortcuts, Reading Hub header and Continue Reading card, and reduce oversized Split/Settings symbols.
+- Bound Settings popover to short window heights and hide decorative footer copy when space is limited. Keep the navigable Chat Alerts and all previous functionality.
+- Add design resource and height-bound checks to self-test and source preflight. Windows WPF build and UI QA still required.
+
+---
+
+# WorkChat Core 2.60.2 — Navigation and state clarity
+
+- Current Settings choices have a visible checkmark and automation state.
+- Escape navigates back to the parent page, or dismisses Settings on root.
+- Browser new tab and Reading Hub copy simplified; no runtime dependencies added.
+- Keep PUSH.bat workflow; Windows build remains the release gate.
+
 # WorkChat Core 2.60.1 — Settings navigation and compact icons
 
 - Chat alerts now opens inside the existing Settings flyout with a working Back control.

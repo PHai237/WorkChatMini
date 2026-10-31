@@ -1,3 +1,19 @@
+## WorkChat Mini 2.60.5 — Unified workspace polish
+
+Continue the 2.60.4 dashboard direction across the main rail, Browser New Tab and Reading Hub. Indigo/violet control states and static depth surfaces align the shell with Control Center; Settings now handles very short windows more safely. Keeps all WebView2/profile, data and memory-saver logic intact. Source-only candidate pending Windows CI and visual QA; use `PUSH.bat` as before. See `docs/UI_POLISH_2.60.5.md` for a targeted QA checklist.
+
+## UI skills applied to Settings (Core 2.60.4)
+
+Research-derived refinement using Impeccable, Taste Skill, Better Interface, GSAP Skills (motion principles only), UI Craft, Design Motion Principles and WPF UI references. The Control Center overview now shows the actual active service and count of enabled chat alerts; sidebar destinations are not duplicated in the desktop content pane, but are available in compact mode. Selected controls retain their active appearance on hover, icons and rows are slightly denser, and page changes use an optional one-shot 125 ms native WPF opacity transition. No npm packages, JS animation libraries, extra WebViews or background animation loops. Read `docs/UI_SKILLS_2.60.4.md` for scope and Windows validation. This is source for Windows CI, not a visually certified release. Run `PUSH.bat` as usual.
+
+## Control Center Settings redesign (Core 2.60.4)
+
+The previous 310-DIP row-only Settings flyout has been replaced with a more expressive **Control Center**: a gradient identity header, violet-dark semantic surfaces, persistent sidebar navigation at normal desktop widths, a dashboard overview, grouped settings, native Windows symbol icons, selected-value feedback and a compact mode for narrow WorkChat windows. Chat alerts still offer independent Messenger/Discord/Zalo toggles, and Back/Escape retain predictable navigation. No WebView or third-party UI framework is added; pixel-art application icons remain intact. Existing Settings actions, memory saver and `PUSH.bat` behavior are unchanged. The changes follow lessons from Discord's desktop settings refresh, Fluent design tokens and WPF UI navigation patterns. A source-code design pass is NOT a verified Windows screenshot; test the UI at 330/520/960 DIP and 100/150/200% DPI after CI. See `docs/CONTROL_CENTER_DESIGN_2.60.4.md`.
+
+## Settings state and UX consistency (Core 2.60.2)
+
+Settings now marks the selected zoom, size, position and resource policy. Escape returns to the parent Settings page, or closes Settings from root. Redundant branding was removed from the popup and browser new tab; Reading Hub labels are clearer. Keeps the existing pixel assets, WebViews, update pipeline and PUSH.bat. This is a source candidate pending Windows UI and build tests.
+
 ## Settings navigation and icon polish (Core 2.60.1)
 
 The Chat alerts controls now live inside the same navigable Settings flyout as Zoom/Playback/Window and return via the shared Back button. Messenger/Discord/Zalo remain independent. The sidebar artwork is slightly smaller (33 → 29 DIP) while the 46-DIP click targets remain unchanged. Also scales down the gear/split glyphs and Settings row glyphs. No new UI framework, background workers or WebViews. Keep using `PUSH.bat`; Windows preflight is the release gate. See `docs/SETTINGS_POLISH_2.60.1.md`.

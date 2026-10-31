@@ -462,11 +462,25 @@ if ((Test-Path $readerMatcher) -and (Test-Path $readerSafety)) {
     }
 }
 
+# 2.60.5: cohesive native indigo shell with short-window Settings safety.
+$designTokens = [IO.File]::ReadAllText((Join-Path $source 'WorkChatTheme.xaml'))
+$readingVisual = [IO.File]::ReadAllText((Join-Path $source 'ReadingHubView.xaml'))
+if ($designTokens -notmatch 'x:Key="ShellHeroBrush"' -or
+    $designTokens -notmatch 'x:Key="ShellRailDepthBrush"' -or
+    $designTokens -notmatch 'x:Key="ShellAccentOutlineBrush"' -or
+    $shellXaml -notmatch 'Background="\{StaticResource ShellRailDepthBrush\}"' -or
+    $shellXaml -notmatch 'Text="New tab"' -or
+    $readingVisual -notmatch 'Background="\{StaticResource ShellHeroBrush\}"' -or
+    $settingsFlyoutSource -notmatch '_settingsFlyoutFrame\.MaxHeight' -or
+    $settingsFlyoutSource -notmatch '_settingsFlyoutFooter\.Visibility') {
+    $errors.Add('2.60.5 premium shell tokens, Reading Hub or compact Settings safety regressed.')
+}
+
 # Core 2.60: Quiet Workbench tokens, original controls and real Reading Hub data.
 $themeTokens = [IO.File]::ReadAllText((Join-Path $source 'WorkChatTheme.xaml'))
 $readingViewCode = [IO.File]::ReadAllText((Join-Path $source 'ReadingHubView.xaml.cs'))
-foreach ($token in @('#0E1315', '#171D20', '#20282B', '#A5DDC8', '#303B3E')) {
-    if (-not $themeTokens.Contains($token)) { $errors.Add("Quiet Workbench theme token missing: $token") }
+foreach ($token in @('#0E1120', '#191D30', '#252B41', '#B8A9FF', '#394057')) {
+    if (-not $themeTokens.Contains($token)) { $errors.Add("Unified shell theme token missing: $token") }
 }
 # 2.60 native WPF hierarchy: minimum-height reader scrolls without an extra
 # WebView2, and the design-system rail remains the same tested width.
@@ -474,12 +488,12 @@ if ($readerMarkup -notmatch 'Whole page scrolls vertically' -or
     $readerMarkup -notmatch 'x:Name="ReadingSearchInputInner"' -or
     $readerMarkup -notmatch 'x:Name="ReadingShelfInner"' -or
     $shellXaml -notmatch 'x:Name="BrowserNewTabOverlay"' -or
-    $shellXaml -notmatch 'A quieter place to browse' -or
+    $shellXaml -notmatch 'Text="New tab"' -or
     ([IO.File]::ReadAllText((Join-Path $source 'MainWindow.SelfTest.cs'))) -match 'LinearGradientBrush' -or
     $themeTokens -notmatch 'SolidColorBrush x:Key="ShellChromeGradientBrush"') {
     $errors.Add('2.60 Quiet Workbench reader/shell layout or flat-color test contract regressed.')
 }
-if ($settingsFlyoutSource -notmatch 'Width = 310' -or
+if ($settingsFlyoutSource -match 'Width = 310' -or
     $alertSettingsSource -notmatch 'ShowSettingsPage\("chat-alerts"\)' -or
     $readerMarkup -notmatch 'x:Name="ReadingContinuePanel"' -or
     $readerMarkup -notmatch 'x:Name="ReadingFilterWaiting"' -or
