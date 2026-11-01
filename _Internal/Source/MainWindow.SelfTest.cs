@@ -90,26 +90,7 @@ public partial class MainWindow
                 return Task.CompletedTask;
             });
 
-            await RunCase("Settings root and critical commands", () =>
-            {
-                EnsureSettingsFlyout();
-                ShowSettingsPage("root");
-                if (_settingsFlyout is null || _settingsFlyoutRows is null ||
-                    _settingsFlyout.StaysOpen ||
-                    System.Windows.Controls.ContextMenuService.GetIsEnabled(MoreMenuButton))
-                    throw new InvalidOperationException("Gear must use the custom dismissible popup, not the native context menu.");
-                string[] labels = { "Pop out", "Chat alerts", "New window", "Zoom", "Playback", "Window", "Tools", "Updates", "Exit" };
-                var buttons = _settingsFlyoutRows.Children.OfType<System.Windows.Controls.Button>().ToArray();
-                if (buttons.Length != labels.Length)
-                    throw new InvalidOperationException("Settings root must expose all nine commands.");
-                foreach (string label in labels)
-                {
-                    if (!buttons.Any(button => button.Content is System.Windows.Controls.Grid grid &&
-                        grid.Children.OfType<System.Windows.Controls.TextBlock>().Any(text => text.Text == label)))
-                        throw new InvalidOperationException($"Settings command missing: {label}");
-                }
-                return Task.CompletedTask;
-            });
+            await RunCase("Settings root and critical commands", VerifySettingsRootCommandsSelfTest);
 
             await RunCase("Companion window launch policy (no eager WebView)", () =>
             {

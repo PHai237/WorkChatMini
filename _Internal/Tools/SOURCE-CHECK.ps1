@@ -462,6 +462,18 @@ if ((Test-Path $readerMatcher) -and (Test-Path $readerSafety)) {
     }
 }
 
+# 2.60.5 Settings: desktop sidebar plus compact Overview both expose all commands.
+# An older self-test counted nine content buttons even when the sidebar owned five.
+$dashboardTest = [IO.File]::ReadAllText((Join-Path $source 'MainWindow.SelfTest.SettingsDashboard.cs'))
+if ($testCaseSource -notmatch 'RunCase\("Settings root and critical commands", VerifySettingsRootCommandsSelfTest\)' -or
+    $testCaseSource -match 'Settings root must expose all nine commands' -or
+    $dashboardTest -notmatch 'private Task VerifySettingsRootCommandsSelfTest\(' -or
+    $dashboardTest -notmatch 'desktopActions' -or
+    $dashboardTest -notmatch 'sidebarRoutes' -or
+    $dashboardTest -notmatch 'compactActions') {
+    $errors.Add('Settings command self-test must verify desktop/sidebar AND compact Overview layouts.')
+}
+
 # 2.60.5: cohesive native indigo shell with short-window Settings safety.
 $designTokens = [IO.File]::ReadAllText((Join-Path $source 'WorkChatTheme.xaml'))
 $readingVisual = [IO.File]::ReadAllText((Join-Path $source 'ReadingHubView.xaml'))

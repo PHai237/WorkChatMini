@@ -10,6 +10,56 @@ namespace WorkChatMini;
 
 public partial class MainWindow
 {
+    // Settings routes commands through a sidebar on desktop; the compact view
+    // exposes those same destinations in Overview. Verify both layouts rather
+    // than requiring nine buttons inside the desktop content column.
+    private Task VerifySettingsRootCommandsSelfTest()
+    {
+        EnsureSettingsFlyout();
+        if (_settingsFlyout is null || _settingsFlyoutRows is null || _settingsNavigation is null ||
+            _settingsFlyout.StaysOpen ||
+            System.Windows.Controls.ContextMenuService.GetIsEnabled(MoreMenuButton))
+            throw new InvalidOperationException("Gear must use the custom dismissible Settings popup.");
+
+        string[] desktopActions = { "Pop out", "New window", "Updates", "Exit" };
+        string[] sidebarRoutes = { "Overview", "New window", "Chat alerts", "Zoom",
+            "Playback", "Window", "Tools" };
+        string[] compactActions = { "Pop out", "New window", "Chat alerts", "Zoom",
+            "Playback", "Window", "Tools", "Updates", "Exit" };
+        bool originalCompact = _settingsCompact;
+        try
+        {
+            _settingsCompact = false;
+            ShowSettingsPage("root");
+            var desktop = _settingsFlyoutRows.Children.OfType<WpfButton>()
+                .Select(button => System.Windows.Automation.AutomationProperties.GetName(button)).ToArray();
+            var sidebar = _settingsNavigation.Children.OfType<WpfButton>()
+                .Select(button => System.Windows.Automation.AutomationProperties.GetName(button)).ToArray();
+            if (!desktop.SequenceEqual(desktopActions) || !sidebar.SequenceEqual(sidebarRoutes))
+                throw new InvalidOperationException(
+                    $"Desktop Settings commands changed. Content: {string.Join(", ", desktop)}; sidebar: {string.Join(", ", sidebar)}.");
+            var available = desktop.Concat(sidebar).ToHashSet(StringComparer.Ordinal);
+            if (compactActions.Any(label => !available.Contains(label)))
+                throw new InvalidOperationException("A Settings command is missing from desktop content and sidebar.");
+
+            _settingsCompact = true;
+            ShowSettingsPage("root");
+            var compact = _settingsFlyoutRows.Children.OfType<WpfButton>()
+                .Select(button => System.Windows.Automation.AutomationProperties.GetName(button)).ToArray();
+            if (!compact.SequenceEqual(compactActions))
+                throw new InvalidOperationException(
+                    $"Compact Settings commands changed: {string.Join(", ", compact)}.");
+        }
+        finally
+        {
+            // Self-tests must not leave Settings in a fabricated window mode.
+            _settingsCompact = originalCompact;
+            UpdateSettingsFlyoutSize();
+            ShowSettingsPage("root");
+        }
+        return Task.CompletedTask;
+    }
+
     private Task VerifySettingsDashboardSelfTest()
     {
         EnsureSettingsFlyout();
