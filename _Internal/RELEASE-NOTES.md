@@ -5,6 +5,8 @@
 - Refresh Browser New Tab shortcuts, Reading Hub header and Continue Reading card, and reduce oversized Split/Settings symbols.
 - Bound Settings popover to short window heights and hide decorative footer copy when space is limited. Keep the navigable Chat Alerts and all previous functionality.
 - Add design resource and height-bound checks to self-test and source preflight. Windows WPF build and UI QA still required.
+- Follow-up fixes: Settings keeps keyboard focus so Esc works after opening and after page changes; MangaDex batch counts only newly detected chapters, stops on rate limits (honours Retry-After) and no longer says "first check" every time; version text comes from the assembly; Settings accent tokens now equal the Shell tokens; unique Settings glyphs; disabled Settings items explain why; narrow popups may shrink to 240 DIP.
+- Housekeeping: MainWindow.xaml styles moved to MainWindowStyles.xaml and browser address/navigation helpers to MainWindow.Browser.Navigation.cs (both files were within 3 lines of the 1000-line limit); rolling `library.json.last-good.bak`; `.gitattributes` keeps .bat files CRLF; GitHub Actions pinned to commit SHAs.
 
 ---
 

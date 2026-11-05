@@ -141,7 +141,7 @@ public partial class MainWindow
         {
             BorderBrush = SettingsBrush("SettingsStrokeBrush"), BorderThickness = new Thickness(0, 1, 0, 0),
             Padding = new Thickness(20, 11, 20, 11),
-            Child = SettingsText("Changes save automatically  ·  2.60.5", 11,
+            Child = SettingsText($"Changes save automatically  ·  {AppRuntime.VersionText}", 11,
                 FontWeights.Normal, SettingsBrush("SettingsSecondaryBrush"))
         };
         _settingsFlyoutFooter = footer;
@@ -168,6 +168,9 @@ public partial class MainWindow
             BorderBrush = SettingsBrush("SettingsStrokeBrush"),
             BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(17),
             ClipToBounds = true, Child = surface,
+            // Focus anchor: a Popup never takes keyboard focus on its own, and every page
+            // change rebuilds all buttons, so Esc needs a stable focused element.
+            Focusable = true, FocusVisualStyle = null,
             Effect = new DropShadowEffect { Color = Colors.Black, BlurRadius = 32,
                 Opacity = 0.48, ShadowDepth = 8 }
         };
@@ -181,7 +184,6 @@ public partial class MainWindow
             else
             {
                 ShowSettingsPage(ParentSettingsPage(_settingsPage));
-                _settingsFlyoutBack?.Focus();
             }
             e.Handled = true;
         };
@@ -192,10 +194,22 @@ public partial class MainWindow
             Child = _settingsFlyoutFrame, StaysOpen = false,
             AllowsTransparency = true, PopupAnimation = PopupAnimation.Fade
         };
-        _settingsFlyout.Opened += (_, _) => UpdateSettingsFlyoutSize();
+        _settingsFlyout.Opened += (_, _) => { UpdateSettingsFlyoutSize(); FocusSettingsFlyout(); };
         _settingsFlyout.Closed += (_, _) => _settingsPage = "root";
         SizeChanged += (_, _) => { if (_settingsFlyout?.IsOpen == true) UpdateSettingsFlyoutSize(); };
         UpdateSettingsFlyoutSize();
+    }
+
+    // Park keyboard focus on the flyout frame so Escape keeps working after the popup opens
+    // and after a page change has cleared (and therefore unfocused) the previous buttons.
+    private void FocusSettingsFlyout()
+    {
+        if (_settingsFlyout?.IsOpen != true || _settingsFlyoutFrame is null) return;
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (_settingsFlyout?.IsOpen == true && _settingsFlyoutFrame is not null)
+                Keyboard.Focus(_settingsFlyoutFrame);
+        }), System.Windows.Threading.DispatcherPriority.Input);
     }
 
     private void UpdateSettingsFlyoutSize()
@@ -206,7 +220,7 @@ public partial class MainWindow
         bool compact = ActualWidth < 720 || ActualHeight < 430;
         bool layoutChanged = _settingsCompact != compact;
         _settingsCompact = compact;
-        _settingsFlyoutFrame.Width = compact ? Math.Clamp(ActualWidth - 26, 292, 410) : 632;
+        _settingsFlyoutFrame.Width = compact ? Math.Clamp(ActualWidth - 26, 240, 410) : 632;
         // Prevent Settings from extending beyond WorkChat's tiny 220-DIP window.
         // Hide nonessential footer copy first; preserve the page content scroller.
         bool shortWindow = ActualHeight < 410;
@@ -269,7 +283,8 @@ public partial class MainWindow
                 SettingsOverviewCard();
                 SettingsSection("QUICK ACTIONS");
                 SettingsAction("Pop out", () => OpenCompanionWindow(_activeSite),
-                    subtitle: "Open the current app separately",
+                    subtitle: _activeSite is MiniSite.Web or MiniSite.Story
+                        ? "Not available for Web or Reading Hub" : "Open the current app separately",
                     enabled: _activeSite is not MiniSite.Web and not MiniSite.Story);
                 SettingsAction("New window", () => ShowSettingsPage("new-window"), next: true,
                     subtitle: "Launch a companion app");
@@ -281,7 +296,8 @@ public partial class MainWindow
                     SettingsAction("Chat alerts", () => ShowSettingsPage("chat-alerts"), next: true,
                         subtitle: "Notifications per service");
                     SettingsAction("Zoom", () => ShowSettingsPage("zoom"), next: true,
-                        subtitle: "Display scale", enabled: _activeSite != MiniSite.Story);
+                        subtitle: _activeSite == MiniSite.Story ? "Not available in Reading Hub" : "Display scale",
+                        enabled: _activeSite != MiniSite.Story);
                     SettingsAction("Playback", () => ShowSettingsPage("playback"), next: true,
                         subtitle: "Audio and resource use");
                     SettingsAction("Window", () => ShowSettingsPage("window"), next: true,
@@ -388,19 +404,20 @@ public partial class MainWindow
                 new DoubleAnimation(0.86, 1.0, new Duration(TimeSpan.FromMilliseconds(125)))
                 { FillBehavior = FillBehavior.Stop });
         }
+        FocusSettingsFlyout();
     }
 
     // Native Windows symbol icons keep Settings crisp at 100–200% DPI without added packages.
     private static string SettingsGlyph(string text) => text switch
     {
         "Overview" => "\uE80F", "Pop out" => "\uE8A7", "New window" => "\uE78B",
-        "Chat alerts" => "\uE7F4", "Zoom" => "\uE71E", "Playback" => "\uE714",
-        "Window" => "\uE8A7", "Tools" => "\uE90F", "Updates" => "\uE896",
-        "Exit" => "\uE8BB", "Size" => "\uE8A7", "Position" => "\uE81D",
+        "Chat alerts" => "\uE7F4", "Zoom" => "\uE71E", "Playback" => "\uE768",
+        "Window" => "\uE73F", "Tools" => "\uE90F", "Updates" => "\uE896",
+        "Exit" => "\uE7E8", "Size" => "\uE740", "Position" => "\uE81D",
         "Background audio" => "\uE8D6", "Always on top" => "\uE840",
         "Resource policy" => "\uE9CE", "VPN" => "\uE774", "Health" => "\uE9D9",
-        "Ad blocker" => "\uE7BA", "Messenger" => "\uE8F2", "Discord" => "\uE8F2",
-        "Zalo" => "\uE8F2", "Facebook" => "\uE8F2", "YouTube" => "\uE714",
+        "Ad blocker" => "\uE7BA", "Messenger" => "\uE8BD", "Discord" => "\uE7FC",
+        "Zalo" => "\uE717", "Facebook" => "\uE716", "YouTube" => "\uE714",
         _ => "\uE8B7"
     };
 
@@ -448,7 +465,8 @@ public partial class MainWindow
         var button = new WpfButton
         {
             Content = row, Tag = selected ? "Selected" : null,
-            Style = (Style)FindResource("SettingsNavButtonStyle"), IsEnabled = enabled
+            Style = (Style)FindResource("SettingsNavButtonStyle"), IsEnabled = enabled,
+            ToolTip = enabled ? null : "Not available in Reading Hub"
         };
         AutomationProperties.SetName(button, label);
         if (selected) AutomationProperties.SetItemStatus(button, "Current page");

@@ -33,9 +33,9 @@
     <SolidColorBrush x:Key="SettingsIconBrush" Color="#303144"/>
     <SolidColorBrush x:Key="SettingsStrokeBrush" Color="#34364B"/>
     <SolidColorBrush x:Key="SettingsSecondaryBrush" Color="#AEB3CC"/>
-    <SolidColorBrush x:Key="SettingsAccentBrush" Color="#B6A9FF"/>
-    <SolidColorBrush x:Key="SettingsAccentSoftBrush" Color="#343052"/>
-    <SolidColorBrush x:Key="SettingsAccentOutlineBrush" Color="#534B79"/>
+    <SolidColorBrush x:Key="SettingsAccentBrush" Color="#B8A9FF"/> <!-- same value as ShellAccentBrush -->
+    <SolidColorBrush x:Key="SettingsAccentSoftBrush" Color="#342E59"/> <!-- same value as ShellAccentSoftBrush -->
+    <SolidColorBrush x:Key="SettingsAccentOutlineBrush" Color="#64578F"/> <!-- same value as ShellAccentOutlineBrush -->
     <SolidColorBrush x:Key="SettingsLogoTextBrush" Color="#211B3D"/>
     <LinearGradientBrush x:Key="SettingsHeaderBrush" StartPoint="0,0" EndPoint="1,1">
         <GradientStop Color="#30244D" Offset="0"/>

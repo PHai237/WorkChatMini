@@ -31,27 +31,36 @@ public partial class MainWindow
         }
         _readingUpdatesBusy = true;
         ReadingHubOverlay.CheckUpdatesButton.IsEnabled = false;
-        int updated = 0, failed = 0;
+        int updated = 0, failed = 0, attempted = 0;
+        string? rateLimited = null;
         try
         {
             for (int index = 0; index < eligible.Length; index++)
             {
+                attempted = index + 1;
                 ReadingMessageText.Text = $"MangaDex: checking {index + 1}/{eligible.Length}…";
                 if (index > 0) await Task.Delay(550); // Polite spacing between read-only API requests.
                 try
                 {
-                    await FetchMangaDexBookUpdateAsync(eligible[index]);
-                    if (eligible[index].HasNewChapter) updated++;
+                    ReadingBook book = eligible[index];
+                    bool hadNew = book.HasNewChapter; // flagged by an earlier check, not by this run
+                    await FetchMangaDexBookUpdateAsync(book);
+                    if (!hadNew && book.HasNewChapter) updated++;
                 }
                 catch (Exception ex) when (ex is HttpRequestException or FormatException or
                                            System.Text.Json.JsonException or TaskCanceledException or ArgumentException)
                 {
                     failed++;
                     AppLogger.Warn("READING", $"MangaDex check skipped: {ex.Message}");
+                    if (ex is HttpRequestException && ex.Message.StartsWith(MangaDexChapterTracker.RateLimitPrefix, StringComparison.Ordinal))
+                    {
+                        rateLimited = ex.Message; // Stop instead of hammering the API with the remaining books.
+                        break;
+                    }
                 }
             }
-            ReadingMessageText.Text = $"Checked {eligible.Length} MangaDex books. {updated} marked new; {failed} unavailable. " +
-                "Checks are manual and limited to eight books per run.";
+            ReadingMessageText.Text = $"Checked {attempted} of {eligible.Length} MangaDex books. {updated} marked new; {failed} unavailable. " +
+                (rateLimited ?? "Checks are manual and limited to eight books per run.");
             RefreshReadingHub();
         }
         finally
@@ -95,17 +104,23 @@ public partial class MainWindow
         try
         {
             ReadingMessageText.Text = $"Checking MangaDex: {book.Title}…";
+            bool hadBaseline = !string.IsNullOrEmpty(book.LatestKnownChapterId);
             await FetchMangaDexBookUpdateAsync(book);
             ReadingMessageText.Text = book.HasNewChapter
                 ? $"New chapter or translation detected for {book.Title}."
-                : $"MangaDex checked: {book.Title}. First check creates a baseline.";
+                : hadBaseline
+                    ? $"MangaDex checked: {book.Title}. No new chapter."
+                    : $"MangaDex checked: {book.Title}. Baseline saved; later checks will flag new chapters.";
             RefreshReadingHub();
         }
         catch (Exception ex) when (ex is HttpRequestException or FormatException or
                                    System.Text.Json.JsonException or TaskCanceledException or ArgumentException)
         {
             AppLogger.Warn("READING", $"MangaDex check failed: {ex.Message}");
-            ReadingMessageText.Text = "Could not check MangaDex. Check your connection, saved link or try later.";
+            ReadingMessageText.Text = ex is HttpRequestException &&
+                ex.Message.StartsWith(MangaDexChapterTracker.RateLimitPrefix, StringComparison.Ordinal)
+                ? ex.Message
+                : "Could not check MangaDex. Check your connection, saved link or try later.";
         }
         finally
         {

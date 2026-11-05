@@ -124,6 +124,18 @@ public sealed class ReadingLibraryStore
                 string backup = _filePath + ".pre-migration.bak";
                 if (!File.Exists(backup)) File.Copy(_filePath, backup);
             }
+            try
+            {
+                // Rolling "last good" copy (at most every 6 hours) in case a write or manual edit goes wrong.
+                string lastGood = _filePath + ".last-good.bak";
+                if (File.Exists(_filePath) && (!File.Exists(lastGood) ||
+                    DateTime.UtcNow - File.GetLastWriteTimeUtc(lastGood) > TimeSpan.FromHours(6)))
+                    File.Copy(_filePath, lastGood, overwrite: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                AppLogger.Warn("READING", $"Library backup skipped: {ex.Message}");
+            }
             string json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(temp, json);
             File.Move(temp, _filePath, overwrite: true);

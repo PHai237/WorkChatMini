@@ -16,7 +16,7 @@ public static class MangaDexChapterTracker
     private static HttpClient CreateClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(12) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("WorkChatMini/2.60.5 (+https://github.com/PHai237/WorkChatMini)");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd($"WorkChatMini/{AppRuntime.VersionText} (+https://github.com/PHai237/WorkChatMini)");
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         return client;
     }
@@ -106,11 +106,30 @@ public static class MangaDexChapterTracker
         return ParseFeed(mangaId, feed);
     }
 
+    // MangaDex reports the wait either as Retry-After or as a unix-time X-RateLimit-Retry-After.
+    internal const string RateLimitPrefix = "MangaDex rate limit reached.";
+
+    private static string RateLimitMessage(HttpResponseMessage response)
+    {
+        TimeSpan? wait = response.Headers.RetryAfter?.Delta;
+        if (wait is null && response.Headers.RetryAfter?.Date is DateTimeOffset retryAt)
+            wait = retryAt - DateTimeOffset.UtcNow;
+        if (wait is null && response.Headers.TryGetValues("X-RateLimit-Retry-After", out var values) &&
+            long.TryParse(values.FirstOrDefault(), out long unix) && unix is > 0 and < 4102444800L)
+            wait = DateTimeOffset.FromUnixTimeSeconds(unix) - DateTimeOffset.UtcNow;
+        if (wait is { } span && span > TimeSpan.Zero)
+        {
+            int seconds = (int)Math.Min(Math.Ceiling(span.TotalSeconds), 3600);
+            return $"{RateLimitPrefix} Try again in about {Math.Max(1, seconds)} seconds.";
+        }
+        return $"{RateLimitPrefix} Try again later.";
+    }
+
     private static async Task<string> FetchJsonAsync(string url, CancellationToken cancellationToken)
     {
         using HttpResponseMessage response = await Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         if (response.StatusCode == HttpStatusCode.TooManyRequests)
-            throw new HttpRequestException("MangaDex rate limit reached. Try again later.");
+            throw new HttpRequestException(RateLimitMessage(response));
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
