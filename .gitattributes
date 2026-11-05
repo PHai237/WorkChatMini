@@ -1,0 +1,8 @@
+# Windows batch files must keep CRLF even when committed or checked out on another platform.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Never touch binary assets.
+*.png binary
+*.ico binary
+*.zip binary

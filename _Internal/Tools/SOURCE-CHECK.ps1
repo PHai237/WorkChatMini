@@ -2,6 +2,25 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $source = Join-Path $root '_Internal\Source'
 $errors = [System.Collections.Generic.List[string]]::new()
+# These files belong to the publish contract, not just the source ZIP. An
+# older Ship-GitHub filter silently skipped root dotfiles and agent guidance.
+foreach ($requiredFile in @('AGENTS.md', '.gitattributes', '.gitignore')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $root $requiredFile) -PathType Leaf)) {
+        $errors.Add("Missing GitHub publish metadata: $requiredFile")
+    }
+}
+$attributesPath = Join-Path $root '.gitattributes'
+if (Test-Path -LiteralPath $attributesPath -PathType Leaf) {
+    # ReadAllLines removes line terminators. A multiline regex against raw
+    # ReadAllText incorrectly rejects valid *.bat rules on CRLF checkouts.
+    $attributesLines = [IO.File]::ReadAllLines($attributesPath)
+    $batchCrLfRules = @($attributesLines | Where-Object {
+        $_ -match '^[ \t]*\*\.bat[ \t]+text[ \t]+eol=crlf[ \t]*$'
+    })
+    if ($batchCrLfRules.Count -eq 0) {
+        $errors.Add('.gitattributes must enforce CRLF on *.bat files.')
+    }
+}
 $checked = 0
 $xmlCount = 0
 $largest = 0

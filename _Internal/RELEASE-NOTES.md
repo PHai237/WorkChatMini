@@ -1,3 +1,12 @@
+# WorkChat Core 2.60.6 — Claude patch rollup / update version bump
+
+- Promote the reviewed 2.60.5 patched source to a new version so the installed 2.60.5 app can discover an update.
+- Keep the supplied UI, Settings, reading backup, MangaDex rate-limit handling, CRLF attributes and pinned release actions unchanged.
+- Authenticode / signed update manifests are not implemented; SHA-256 validation alone is not publisher authentication.
+- Build and Windows Quick/Stress CI are required before publishing.
+
+---
+
 # WorkChat Core 2.60.5 — Unified Shell / Browser / Reading UI
 
 - Align WorkChat's shell, browser and Reading Hub with Control Center's dark indigo/violet palette; keep mint as a health/success status only.

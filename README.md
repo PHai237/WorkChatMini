@@ -1,3 +1,7 @@
+## WorkChat Mini 2.60.6 — Claude patch rollup
+
+This release candidate promotes the supplied patched 2.60.5 source to 2.60.6, updating all build, assembly and package versions for the in-app updater. No runtime behavior was changed beyond version metadata. No publisher signature has been added. Run `PUSH.bat` and verify Windows CI before installing.
+
 ## WorkChat Mini 2.60.5 — Unified workspace polish
 
 Continue the 2.60.4 dashboard direction across the main rail, Browser New Tab and Reading Hub. Indigo/violet control states and static depth surfaces align the shell with Control Center; Settings now handles very short windows more safely. Keeps all WebView2/profile, data and memory-saver logic intact. Source-only candidate pending Windows CI and visual QA; use `PUSH.bat` as before. See `docs/UI_POLISH_2.60.5.md` for a targeted QA checklist.
