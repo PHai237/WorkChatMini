@@ -16,17 +16,30 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishSingleFile>false</PublishSingleFile>
-    <Version>2.60.6</Version>
-    <FileVersion>2.60.6.0</FileVersion>
-    <AssemblyVersion>2.60.6.0</AssemblyVersion>
-    <InformationalVersion>2.60.6</InformationalVersion>
+    <Version>2.60.7</Version>
+    <FileVersion>2.60.7.0</FileVersion>
+    <AssemblyVersion>2.60.7.0</AssemblyVersion>
+    <InformationalVersion>2.60.7</InformationalVersion>
+    <!-- Memory: no background-GC thread or tiered-PGO instrumentation; keep the heap compact. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>false</TieredPGO>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="3" />
+  </ItemGroup>
 
   <!-- When built by GitHub Actions this becomes the stable GitHub Pages feed. -->
   <ItemGroup>
     <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
       <_Parameter1>WorkChatUpdateFeedUrl</_Parameter1>
       <_Parameter2>$(WorkChatUpdateFeedUrl)</_Parameter2>
+    </AssemblyAttribute>
+    <!-- Optional ECDSA P-256 public key (base64 SPKI). When present the feed must be signed. -->
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>WorkChatUpdatePublicKey</_Parameter1>
+      <_Parameter2>$(WorkChatUpdatePublicKey)</_Parameter2>
     </AssemblyAttribute>
   </ItemGroup>
   <!-- Updater bundled into every single-file EXE. New releases can repair or replace

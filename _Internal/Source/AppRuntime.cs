@@ -30,6 +30,11 @@ internal static class AppRuntime
         .GetCustomAttributes<AssemblyMetadataAttribute>()
         .FirstOrDefault(attribute => attribute.Key == "WorkChatUpdateFeedUrl")?.Value ?? string.Empty;
 
+    // Base64 SubjectPublicKeyInfo of the release signing key; empty = unsigned feeds are accepted.
+    internal static string UpdatePublicKey => Assembly.GetExecutingAssembly()
+        .GetCustomAttributes<AssemblyMetadataAttribute>()
+        .FirstOrDefault(attribute => attribute.Key == "WorkChatUpdatePublicKey")?.Value?.Trim() ?? string.Empty;
+
     internal static void Configure(string[] args)
     {
         IsSelfTest = args.Any(a => string.Equals(a, "--selftest", StringComparison.OrdinalIgnoreCase));

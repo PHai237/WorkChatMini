@@ -23,6 +23,34 @@ internal static class AppUpdateSelfTest
         Require(!AppUpdateFeed.IsHttps("https://user:secret@example.com/latest.json"), "user-info feed accepted");
         Require(AppUpdateFeed.IsHttps("https://example.com/latest.json"), "HTTPS feed rejected");
         Require(AppUpdatePackage.HasBundledUpdater(), "single-file EXE must embed updater helper");
+        // Feed signature: valid, tampered, unsigned and wrong-key cases.
+        using (ECDsa signer = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+        using (ECDsa otherKey = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+        {
+            string publicKey = Convert.ToBase64String(signer.ExportSubjectPublicKeyInfo());
+            var signed = new AppUpdateFeedInfo
+            {
+                Version = "9.9.9", PackageUrl = "https://example.com/WorkChat-Update.zip",
+                PackageSha256 = new string('A', 64)
+            };
+            signed.Signature = Convert.ToBase64String(signer.SignData(AppUpdateFeed.SignaturePayload(signed), HashAlgorithmName.SHA256));
+            Require(AppUpdateFeed.VerifySignature(signed, publicKey), "valid feed signature rejected");
+            Require(AppUpdateFeed.VerifySignature(new AppUpdateFeedInfo
+                { Version = signed.Version, PackageUrl = signed.PackageUrl, PackageSha256 = new string('a', 64), Signature = signed.Signature },
+                publicKey), "signature must not depend on checksum letter case");
+            Require(!AppUpdateFeed.VerifySignature(new AppUpdateFeedInfo
+                { Version = "9.9.10", PackageUrl = signed.PackageUrl, PackageSha256 = signed.PackageSha256, Signature = signed.Signature },
+                publicKey), "tampered feed version accepted");
+            Require(!AppUpdateFeed.VerifySignature(new AppUpdateFeedInfo
+                { Version = signed.Version, PackageUrl = "https://evil.example/WorkChat-Update.zip", PackageSha256 = signed.PackageSha256, Signature = signed.Signature },
+                publicKey), "tampered package URL accepted");
+            Require(!AppUpdateFeed.VerifySignature(new AppUpdateFeedInfo
+                { Version = signed.Version, PackageUrl = signed.PackageUrl, PackageSha256 = signed.PackageSha256 },
+                publicKey), "unsigned feed accepted when a key is configured");
+            Require(!AppUpdateFeed.VerifySignature(signed, Convert.ToBase64String(otherKey.ExportSubjectPublicKeyInfo())),
+                "feed accepted under the wrong key");
+            Require(!AppUpdateFeed.VerifySignature(signed, "not base64!"), "malformed key accepted");
+        }
         Require(string.IsNullOrWhiteSpace(AppRuntime.DefaultUpdateFeedUrl) ||
                 AppUpdateFeed.IsHttps(AppRuntime.DefaultUpdateFeedUrl),
                 "embedded publisher update feed must use HTTPS");

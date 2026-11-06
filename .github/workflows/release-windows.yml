@@ -27,6 +27,8 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Validate version and configure embedded update feed
         shell: pwsh
+        env:
+          UPDATE_SIGNING_PUBLIC_KEY: ${{ vars.UPDATE_SIGNING_PUBLIC_KEY }}
         run: |
           $version = (Get-Content '_Internal/VERSION.txt' -Raw).Trim()
           if ($version -notmatch '^\d+\.\d+\.\d+(?:-preview\d+(?:\.\d+)?)?$') { throw 'Invalid VERSION.txt' }
@@ -45,6 +47,15 @@ jobs:
           $path = if ($repo -ieq "$owner.github.io") { '' } else { "/$repo" }
           $feedUrl = "https://$owner.github.io$path/latest.json"
           "WorkChatUpdateFeedUrl=$feedUrl" >> $env:GITHUB_ENV
+          # Optional signed-feed mode: the public key is compiled into the EXE, the private key stays a secret.
+          $publicKey = "$env:UPDATE_SIGNING_PUBLIC_KEY".Trim()
+          if ($publicKey) {
+            if ($publicKey -notmatch '^[A-Za-z0-9+/=]{80,200}$') { throw 'UPDATE_SIGNING_PUBLIC_KEY is not a base64 public key.' }
+            "WorkChatUpdatePublicKey=$publicKey" >> $env:GITHUB_ENV
+            Write-Host 'Update signing: enabled (public key embedded).'
+          } else {
+            Write-Host 'Update signing: disabled (set repository variable UPDATE_SIGNING_PUBLIC_KEY to enable).'
+          }
           "RELEASE_VERSION=$version" >> $env:GITHUB_ENV
           "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
           Write-Host "Embedding feed: $feedUrl"
@@ -155,6 +166,8 @@ jobs:
           if-no-files-found: ignore
       - name: Generate HTTPS feed and release checksums
         shell: pwsh
+        env:
+          UPDATE_SIGNING_PRIVATE_KEY: ${{ secrets.UPDATE_SIGNING_PRIVATE_KEY }}
         run: |
           $version = $env:RELEASE_VERSION
           $tag = $env:RELEASE_TAG
@@ -171,6 +184,26 @@ jobs:
             version = $version
             packageUrl = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$tag/$update"
             packageSha256 = $updateHash
+          }
+          if ($env:WorkChatUpdatePublicKey) {
+            # Clients built with a public key reject unsigned feeds, so never publish one by accident.
+            if (-not $env:UPDATE_SIGNING_PRIVATE_KEY) {
+              throw 'UPDATE_SIGNING_PUBLIC_KEY is set but secret UPDATE_SIGNING_PRIVATE_KEY is missing.'
+            }
+            $key = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($env:UPDATE_SIGNING_PRIVATE_KEY)) | ConvertFrom-Json
+            $parameters = New-Object System.Security.Cryptography.ECParameters
+            $parameters.Curve = [System.Security.Cryptography.ECCurve]::NamedCurves.nistP256
+            $parameters.D = [Convert]::FromBase64String($key.d)
+            $point = New-Object System.Security.Cryptography.ECPoint
+            $point.X = [Convert]::FromBase64String($key.x)
+            $point.Y = [Convert]::FromBase64String($key.y)
+            $parameters.Q = $point
+            $ecdsa = [System.Security.Cryptography.ECDsa]::Create()
+            $ecdsa.ImportParameters($parameters)
+            $payload = [Text.Encoding]::UTF8.GetBytes("$($feed.version)|$($feed.packageUrl)|$($updateHash.ToLowerInvariant())")
+            $feed['signature'] = [Convert]::ToBase64String($ecdsa.SignData($payload, [System.Security.Cryptography.HashAlgorithmName]::SHA256))
+            $ecdsa.Dispose()
+            Write-Host 'Feed signed.'
           }
           New-Item -ItemType Directory -Force -Path 'release-feed' | Out-Null
           [IO.File]::WriteAllText('release-feed/latest.json', ($feed | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))

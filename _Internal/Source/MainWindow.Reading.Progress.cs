@@ -19,7 +19,7 @@ public partial class MainWindow
     // renderer or site content extraction. Only URL and scroll percentage are stored.
     private async Task CaptureReadingProgressAsync()
     {
-        if (_readingProgressSaving || _readingActiveBookId is null || _readingHubVisible ||
+        if (_readingProgressSaving || _readingActiveBookId is null || _readingHubVisible || !IsWindowPresented ||
             DateTimeOffset.UtcNow < _readingNoCaptureUntil ||
             !_readingLibraryLoaded || _readingLibrary.LoadError is not null) return;
         BrowserTabState? tab = _browserTabs.FirstOrDefault(item => item.Id == _readingHostTabId && !item.Closing);

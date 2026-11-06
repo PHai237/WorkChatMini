@@ -45,6 +45,8 @@ public partial class MainWindow
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
             if (!_isExiting)
                 await RunBrowserTabMemorySweepAsync(DateTimeOffset.UtcNow);
+            if (!_isExiting)
+                await TrimOwnMemoryWhenHiddenAsync();
         }
         catch (Exception ex)
         {

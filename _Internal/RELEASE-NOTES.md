@@ -1,9 +1,12 @@
-# WorkChat Core 2.60.6 — Claude patch rollup / update version bump
+# WorkChat Core 2.60.7 — Performance, Settings polish, safer updates
 
-- Promote the reviewed 2.60.5 patched source to a new version so the installed 2.60.5 app can discover an update.
-- Keep the supplied UI, Settings, reading backup, MangaDex rate-limit handling, CRLF attributes and pinned release actions unchanged.
-- Authenticode / signed update manifests are not implemented; SHA-256 validation alone is not publisher authentication.
-- Build and Windows Quick/Stress CI are required before publishing.
+- Memory: hidden/minimised window (45 s) triggers a compacting GC plus working-set trim, at most every 5 minutes and never while visible. Concurrent GC and tiered PGO are disabled; `System.GC.ConserveMemory=3`.
+- CPU: UI-stall heartbeat and reading-progress capture are skipped while the window is hidden or minimised.
+- Settings: centred, evenly spaced close (X) and back buttons (the shared row style had stretched the glyph left and added a 5 px bottom margin); close tooltip lists Esc.
+- Follow-up fixes: Settings keeps keyboard focus so Esc works after opening and after page changes; MangaDex batch counts only newly detected chapters, stops on rate limits (honours Retry-After) and no longer says "first check" every time; version text comes from the assembly; Settings accent tokens now equal the Shell tokens; unique Settings glyphs; disabled Settings items explain why; narrow popups may shrink to 240 DIP.
+- Housekeeping: MainWindow.xaml styles moved to MainWindowStyles.xaml and browser address/navigation helpers to MainWindow.Browser.Navigation.cs (both files were within 3 lines of the 1000-line limit); rolling `library.json.last-good.bak`; `.gitattributes` keeps .bat files CRLF; GitHub Actions pinned to commit SHAs.
+- Updater: optional ECDSA-signed `latest.json` (embed key via repo variable UPDATE_SIGNING_PUBLIC_KEY, secret UPDATE_SIGNING_PRIVATE_KEY); see docs/UPDATE-SIGNING.md. Without a key nothing changes.
+- Version moves 2.60.5 -> 2.60.7 (2.60.6 already exists as a GitHub release). Windows WPF build and UI QA still required.
 
 ---
 
@@ -14,8 +17,6 @@
 - Refresh Browser New Tab shortcuts, Reading Hub header and Continue Reading card, and reduce oversized Split/Settings symbols.
 - Bound Settings popover to short window heights and hide decorative footer copy when space is limited. Keep the navigable Chat Alerts and all previous functionality.
 - Add design resource and height-bound checks to self-test and source preflight. Windows WPF build and UI QA still required.
-- Follow-up fixes: Settings keeps keyboard focus so Esc works after opening and after page changes; MangaDex batch counts only newly detected chapters, stops on rate limits (honours Retry-After) and no longer says "first check" every time; version text comes from the assembly; Settings accent tokens now equal the Shell tokens; unique Settings glyphs; disabled Settings items explain why; narrow popups may shrink to 240 DIP.
-- Housekeeping: MainWindow.xaml styles moved to MainWindowStyles.xaml and browser address/navigation helpers to MainWindow.Browser.Navigation.cs (both files were within 3 lines of the 1000-line limit); rolling `library.json.last-good.bak`; `.gitattributes` keeps .bat files CRLF; GitHub Actions pinned to commit SHAs.
 
 ---
 

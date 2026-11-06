@@ -12,6 +12,8 @@ public partial class MainWindow
     private readonly Dictionary<int, CpuProcessBaseline> _cpuBaselines = new();
     private System.Threading.Timer? _uiHeartbeatTimer;
     private int _uiHeartbeatPending;
+    // Cached on the UI thread; the heartbeat timer runs on a pool thread and must not touch DependencyObjects.
+    private volatile bool _heartbeatWindowPresented = true;
     private long _uiHeartbeatPostedTimestamp;
     private string _performanceAction = "idle";
     private string _lastRecordedPerformanceAction = "idle";
@@ -26,6 +28,9 @@ public partial class MainWindow
 
     private void InitializePerformanceDiagnostics()
     {
+        _heartbeatWindowPresented = IsWindowPresented;
+        IsVisibleChanged += (_, _) => _heartbeatWindowPresented = IsWindowPresented;
+        StateChanged += (_, _) => _heartbeatWindowPresented = IsWindowPresented;
         _uiHeartbeatTimer = new System.Threading.Timer(
             static state => ((MainWindow)state!).QueueUiHeartbeatProbe(),
             this,
@@ -54,7 +59,8 @@ public partial class MainWindow
 
     private void QueueUiHeartbeatProbe()
     {
-        if (_isExiting || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+        // A hidden or minimised window has no interactive stalls to detect: skip the dispatcher post.
+        if (_isExiting || !_heartbeatWindowPresented || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
             return;
         if (Interlocked.Exchange(ref _uiHeartbeatPending, 1) != 0)
             return;

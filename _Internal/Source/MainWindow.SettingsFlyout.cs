@@ -69,7 +69,9 @@ public partial class MainWindow
             FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
             Foreground = SettingsBrush("ShellTextBrush"), Padding = new Thickness(0),
             Style = (Style)FindResource("SettingsFlyoutRowStyle"), Margin = new Thickness(0, 0, 10, 0),
-            ToolTip = "Back to Settings"
+            ToolTip = "Back to Settings", VerticalAlignment = System.Windows.VerticalAlignment.Center,
+            HorizontalContentAlignment = System.Windows.HorizontalAlignment.Center,
+            VerticalContentAlignment = System.Windows.VerticalAlignment.Center
         };
         AutomationProperties.SetName(_settingsFlyoutBack, "Back to Settings");
         _settingsFlyoutBack.Click += (_, _) => ShowSettingsPage(ParentSettingsPage(_settingsPage));
@@ -79,7 +81,13 @@ public partial class MainWindow
             Content = "\uE8BB", Width = 32, Height = 32, FontSize = 12,
             FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
             Foreground = SettingsBrush("ShellTextBrush"), Padding = new Thickness(0),
-            Style = (Style)FindResource("SettingsFlyoutRowStyle"), ToolTip = "Close Settings"
+            // The shared row style stretches content left and adds a 5px bottom margin, which
+            // pushed the X off-centre: centre the glyph and drop the margin for icon buttons.
+            Style = (Style)FindResource("SettingsFlyoutRowStyle"), ToolTip = "Close Settings  (Esc)",
+            Margin = new Thickness(0), VerticalAlignment = System.Windows.VerticalAlignment.Center,
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Right,
+            HorizontalContentAlignment = System.Windows.HorizontalAlignment.Center,
+            VerticalContentAlignment = System.Windows.VerticalAlignment.Center
         };
         AutomationProperties.SetName(close, "Close Settings");
         close.Click += (_, _) => { if (_settingsFlyout is not null) _settingsFlyout.IsOpen = false; };
@@ -96,7 +104,7 @@ public partial class MainWindow
         var headerTitle = new StackPanel { VerticalAlignment = System.Windows.VerticalAlignment.Center };
         headerTitle.Children.Add(SettingsText("WORKCHAT", 11, FontWeights.Bold, SettingsBrush("SettingsAccentBrush")));
         headerTitle.Children.Add(SettingsText("Control Center", 18, FontWeights.SemiBold, SettingsBrush("ShellTextBrush")));
-        var header = new Grid { Margin = new Thickness(20, 15, 17, 15) };
+        var header = new Grid { Margin = new Thickness(20, 15, 16, 15) };
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });

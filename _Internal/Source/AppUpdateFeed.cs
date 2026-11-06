@@ -1,6 +1,8 @@
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace WorkChatMini;
@@ -10,6 +12,8 @@ internal sealed class AppUpdateFeedInfo
     public string Version { get; set; } = string.Empty;
     public string PackageUrl { get; set; } = string.Empty;
     public string PackageSha256 { get; set; } = string.Empty;
+    // Base64 ECDSA P-256 (IEEE P1363) signature over version|packageUrl|sha256 (see SignaturePayload).
+    public string Signature { get; set; } = string.Empty;
 }
 
 internal static class AppUpdateFeed
@@ -34,7 +38,30 @@ internal static class AppUpdateFeed
         if (feed is null || !AppUpdatePackage.IsValidSha256(feed.PackageSha256) ||
             !IsHttps(feed.PackageUrl) || !AppUpdatePackage.IsNewerVersion(feed.Version, "0.0.0-preview0"))
             throw new InvalidDataException("Update feed has invalid fields.");
+        // The checksum only proves the download matches the feed. When the build embeds a signing
+        // key, the feed itself must also be signed, so a hijacked feed host cannot ship a package.
+        string publicKey = AppRuntime.UpdatePublicKey;
+        if (!string.IsNullOrWhiteSpace(publicKey) && !VerifySignature(feed, publicKey))
+            throw new InvalidDataException("Update feed signature is missing or invalid.");
         return feed;
+    }
+
+    internal static byte[] SignaturePayload(AppUpdateFeedInfo feed) =>
+        Encoding.UTF8.GetBytes($"{feed.Version}|{feed.PackageUrl}|{feed.PackageSha256.ToLowerInvariant()}");
+
+    internal static bool VerifySignature(AppUpdateFeedInfo feed, string publicKeyBase64)
+    {
+        if (string.IsNullOrWhiteSpace(feed.Signature)) return false;
+        try
+        {
+            using ECDsa key = ECDsa.Create();
+            key.ImportSubjectPublicKeyInfo(Convert.FromBase64String(publicKeyBase64), out _);
+            return key.VerifyData(SignaturePayload(feed), Convert.FromBase64String(feed.Signature), HashAlgorithmName.SHA256);
+        }
+        catch (Exception ex) when (ex is FormatException or CryptographicException or ArgumentException)
+        {
+            return false;
+        }
     }
 
     internal static async Task<string> DownloadAsync(AppUpdateFeedInfo feed, CancellationToken token)

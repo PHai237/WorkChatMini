@@ -1,6 +1,11 @@
-## WorkChat Mini 2.60.6 — Claude patch rollup
+## WorkChat Mini 2.60.7 — Performance, Settings polish, safer updates
 
-This release candidate promotes the supplied patched 2.60.5 source to 2.60.6, updating all build, assembly and package versions for the in-app updater. No runtime behavior was changed beyond version metadata. No publisher signature has been added. Run `PUSH.bat` and verify Windows CI before installing.
+- **Memory:** while the window is hidden or minimised for 45 s the app now compacts its managed heap and returns working-set pages to Windows (at most every 5 min, never while the window is visible). Background GC thread and tiered-PGO instrumentation are off, `GCConserveMemory=3`.
+- **CPU:** the UI-stall heartbeat and the reading-progress capture no longer wake the app while it is hidden or minimised.
+- **Settings:** the close (X) and back buttons are now centred and evenly spaced; tooltip shows the Esc shortcut; Esc keeps working after opening or changing pages.
+- **Reading:** MangaDex checks honour `Retry-After`, stop on rate limits and report accurate counts; the library keeps a rolling `.last-good.bak`.
+- **Updates:** optional ECDSA-signed `latest.json` (see `docs/UPDATE-SIGNING.md`); off until you add the key.
+- **Housekeeping:** big XAML/C# files split under the 1000-line limit, GitHub Actions pinned to commit SHAs, `.gitattributes` keeps `.bat` files CRLF, version comes from the assembly.
 
 ## WorkChat Mini 2.60.5 — Unified workspace polish
 
