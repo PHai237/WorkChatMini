@@ -1,3 +1,9 @@
+## WorkChat Mini 2.60.8 — Keyboard-first and smarter search
+
+- **Shortcuts:** `Alt + 1–6` jumps straight to Messenger, Facebook, YouTube, Discord, Zalo or Web from any app; `Ctrl + ,` opens or closes Settings.
+- **Settings → Tools → Keyboard shortcuts:** a read-only cheat sheet of every shortcut (apps, Settings, Web tabs).
+- **Reading Hub search:** accent-insensitive (`dau pha` finds *Đấu Phá Thương Khung*) and debounced, so typing no longer rebuilds the shelf on every keystroke.
+
 ## WorkChat Mini 2.60.7 — Performance, Settings polish, safer updates
 
 - **Memory:** while the window is hidden or minimised for 45 s the app now compacts its managed heap and returns working-set pages to Windows (at most every 5 min, never while the window is visible). Background GC thread and tiered-PGO instrumentation are off, `GCConserveMemory=3`.

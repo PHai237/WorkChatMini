@@ -4,6 +4,10 @@ public partial class MainWindow
 {
     private static Task RunReadingSafetySelfTest()
     {
+        if (SearchTextFolding.Fold("\u0110\u1EA5u Ph\u00E1 Th\u01B0\u01A1ng Khung") != "Dau Pha Thuong Khung" ||
+            !SearchTextFolding.Matches("\u0110\u1EA5u Ph\u00E1 Th\u01B0\u01A1ng Khung", "dau pha") ||
+            SearchTextFolding.Matches("One Piece", "dau pha"))
+            throw new InvalidOperationException("Accent-insensitive search folding is broken.");
         ReadingSafetySelfTest.VerifyPersistence();
         ReadingSafetySelfTest.VerifyUrlIsolation();
         BrowserHistoryStore.VerifyCorruptFileProtection();

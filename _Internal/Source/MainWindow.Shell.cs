@@ -479,6 +479,37 @@ public partial class MainWindow
             e.Handled = true;
             return;
         }
+        // Ctrl+, is the common "open settings" shortcut (VS Code, Chrome, Slack, Discord...).
+        if (modifiers == ModifierKeys.Control && e.Key == Key.OemComma)
+        {
+            ToggleSettingsFlyout();
+            e.Handled = true;
+            return;
+        }
+        // Alt+1..6 jumps straight to an app in rail order, from any app (Ctrl+1..5 stays Web tabs).
+        if (modifiers == ModifierKeys.Alt)
+        {
+            Key altKey = e.Key == Key.System ? e.SystemKey : e.Key;
+            MiniSite[] appSites = Enum.GetValues<MiniSite>().Where(site => site != MiniSite.Story).ToArray();
+            int appIndex = altKey - Key.D1;
+            if (altKey >= Key.D1 && altKey <= Key.D9 && appIndex < appSites.Length)
+            {
+                e.Handled = true;
+                MiniSite target = appSites[appIndex];
+                if (target != _activeSite)
+                {
+                    try
+                    {
+                        await SwitchToSiteAsync(target);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Error("UI", $"Alt+number app switch failed | target={target}", ex);
+                    }
+                }
+                return;
+            }
+        }
         // Secondary update entry point if a submenu or custom menu template fails.
         // Tray -> Check for updates remains available even when the window is hidden.
         if (modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.U)

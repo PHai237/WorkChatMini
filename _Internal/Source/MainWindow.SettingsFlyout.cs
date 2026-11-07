@@ -31,7 +31,7 @@ public partial class MainWindow
     private bool _settingsCompact;
 
     private static readonly string[] SettingsPages =
-        { "root", "chat-alerts", "new-window", "zoom", "playback", "resource", "window", "size", "position", "tools" };
+        { "root", "chat-alerts", "new-window", "zoom", "playback", "resource", "window", "size", "position", "tools", "shortcuts" };
 
     private void ToggleSettingsFlyout()
     {
@@ -248,7 +248,7 @@ public partial class MainWindow
 
     private static string ParentSettingsPage(string page) => page switch
     {
-        "resource" => "playback", "size" or "position" => "window", _ => "root"
+        "resource" => "playback", "size" or "position" => "window", "shortcuts" => "tools", _ => "root"
     };
 
     private void ShowSettingsPage(string page)
@@ -262,14 +262,15 @@ public partial class MainWindow
         _settingsFlyoutBack.Visibility = page == "root" ? Visibility.Collapsed : Visibility.Visible;
         _settingsFlyoutBack.ToolTip = ParentSettingsPage(page) switch
         {
-            "playback" => "Back to Playback", "window" => "Back to Window", _ => "Back to Settings"
+            "playback" => "Back to Playback", "window" => "Back to Window", "tools" => "Back to Tools", _ => "Back to Settings"
         };
         AutomationProperties.SetName(_settingsFlyoutBack, (string)_settingsFlyoutBack.ToolTip);
         _settingsFlyoutHeading.Text = page switch
         {
             "root" => "Overview", "chat-alerts" => "Chat alerts", "new-window" => "New window", "zoom" => "Zoom",
             "playback" => "Playback", "resource" => "Resource policy", "window" => "Window",
-            "size" => "Window size", "position" => "Position", "tools" => "Tools", _ => "Settings"
+            "size" => "Window size", "position" => "Position", "tools" => "Tools",
+            "shortcuts" => "Keyboard shortcuts", _ => "Settings"
         };
         _settingsFlyoutDescription.Text = page switch
         {
@@ -282,7 +283,8 @@ public partial class MainWindow
             "window" => "Make the workspace fit your screen.",
             "size" => "Pick a window footprint.",
             "position" => "Choose where WorkChat lives on screen.",
-            "tools" => "Privacy and maintenance utilities.", _ => ""
+            "tools" => "Privacy and maintenance utilities.",
+            "shortcuts" => "Move around without leaving the keyboard.", _ => ""
         };
         PopulateSettingsNavigation();
         switch (page)
@@ -401,6 +403,29 @@ public partial class MainWindow
                     subtitle: "Connection options");
                 SettingsAction("Health", () => SessionHealthButton_Click(this, new RoutedEventArgs()),
                     subtitle: "View session diagnostics");
+                SettingsSection("HELP");
+                SettingsAction("Keyboard shortcuts", () => ShowSettingsPage("shortcuts"), next: true,
+                    subtitle: "Switch apps, tabs and Settings faster");
+                break;
+            case "shortcuts":
+                SettingsSection("APPS");
+                SettingsShortcutRow("Alt + 1–6", "Messenger, Facebook, YouTube, Discord, Zalo, Web");
+                SettingsShortcutRow("Ctrl + Tab", "Next app (tabs while on Web)");
+                SettingsShortcutRow("Ctrl + Shift + O", "Pop out current app");
+                SettingsShortcutRow("Ctrl + Shift + 2", "Split screen");
+                SettingsSection("SETTINGS");
+                SettingsShortcutRow("Ctrl + ,", "Open or close Settings");
+                SettingsShortcutRow("Esc", "Back, then close Settings");
+                SettingsShortcutRow("Ctrl + Shift + U", "Check for updates");
+                SettingsSection("WEB TABS");
+                SettingsShortcutRow("Ctrl + T", "New tab");
+                SettingsShortcutRow("Ctrl + W", "Close tab");
+                SettingsShortcutRow("Ctrl + Shift + T", "Reopen closed tab");
+                SettingsShortcutRow("Ctrl + 1–5", "Jump to tab");
+                SettingsShortcutRow("Ctrl + L", "Address bar");
+                SettingsShortcutRow("Ctrl + F", "Find on page");
+                SettingsShortcutRow("Alt + ← / →", "Back / forward");
+                SettingsShortcutRow("F5 or Ctrl + R", "Reload");
                 break;
         }
         if (_settingsFlyoutScroll is not null) _settingsFlyoutScroll.ScrollToTop();
@@ -424,7 +449,7 @@ public partial class MainWindow
         "Exit" => "\uE7E8", "Size" => "\uE740", "Position" => "\uE81D",
         "Background audio" => "\uE8D6", "Always on top" => "\uE840",
         "Resource policy" => "\uE9CE", "VPN" => "\uE774", "Health" => "\uE9D9",
-        "Ad blocker" => "\uE7BA", "Messenger" => "\uE8BD", "Discord" => "\uE7FC",
+        "Ad blocker" => "\uE7BA", "Keyboard shortcuts" => "\uE765", "Messenger" => "\uE8BD", "Discord" => "\uE7FC",
         "Zalo" => "\uE717", "Facebook" => "\uE716", "YouTube" => "\uE714",
         _ => "\uE8B7"
     };
@@ -460,7 +485,8 @@ public partial class MainWindow
         if (_settingsNavigation is null) return;
         bool selected = _settingsPage == page ||
             (_settingsPage is "resource" && page == "playback") ||
-            (_settingsPage is "size" or "position" && page == "window");
+            (_settingsPage is "size" or "position" && page == "window") ||
+            (_settingsPage is "shortcuts" && page == "tools");
         var row = new StackPanel { Orientation = WpfOrientation.Horizontal };
         row.Children.Add(new TextBlock
         {
@@ -605,6 +631,31 @@ public partial class MainWindow
         AutomationProperties.SetName(toggle, text);
         toggle.Click += (_, _) => onChanged(toggle.IsChecked == true);
         _settingsFlyoutRows.Children.Add(toggle);
+    }
+
+    // Read-only row: description on the left, key combination as a small keycap on the right.
+    private void SettingsShortcutRow(string keys, string description)
+    {
+        if (_settingsFlyoutRows is null) return;
+        var grid = new Grid { Margin = new Thickness(11, 4, 11, 4) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        TextBlock label = SettingsText(description, 12.5, FontWeights.Normal, SettingsBrush("SettingsSecondaryBrush"));
+        label.TextWrapping = TextWrapping.Wrap;
+        label.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+        label.Margin = new Thickness(0, 0, 12, 0);
+        var keyCap = new Border
+        {
+            Background = SettingsBrush("SettingsCardBrush"), BorderBrush = SettingsBrush("SettingsStrokeBrush"),
+            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6),
+            Padding = new Thickness(8, 3, 8, 3), VerticalAlignment = System.Windows.VerticalAlignment.Center,
+            Child = SettingsText(keys, 11.5, FontWeights.SemiBold, SettingsBrush("ShellTextBrush"))
+        };
+        Grid.SetColumn(keyCap, 1);
+        grid.Children.Add(label);
+        grid.Children.Add(keyCap);
+        AutomationProperties.SetName(grid, $"{description}: {keys}");
+        _settingsFlyoutRows.Children.Add(grid);
     }
 
     private void SettingsRule()

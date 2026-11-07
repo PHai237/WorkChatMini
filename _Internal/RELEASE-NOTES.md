@@ -1,3 +1,12 @@
+# WorkChat Core 2.60.8 — Keyboard-first and smarter search
+
+- UX: `Alt+1..6` switches app from anywhere (rail order: Messenger, Facebook, YouTube, Discord, Zalo, Web); `Ctrl+,` toggles Settings.
+- UX: new Settings > Tools > Keyboard shortcuts page (read-only keycap list). Not part of the sidebar, so the 7-section dashboard contract is unchanged.
+- Reading Hub: Vietnamese-friendly accent-insensitive search (title, source, note) and 180 ms debounce; self-test covers the folding.
+- Windows WPF build and UI QA still required.
+
+---
+
 # WorkChat Core 2.60.7 — Performance, Settings polish, safer updates
 
 - Memory: hidden/minimised window (45 s) triggers a compacting GC plus working-set trim, at most every 5 minutes and never while visible. Concurrent GC and tiered PGO are disabled; `System.GC.ConserveMemory=3`.

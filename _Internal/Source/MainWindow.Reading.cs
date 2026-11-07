@@ -272,13 +272,26 @@ public partial class MainWindow
         return false;
     }
 
+    private System.Windows.Threading.DispatcherTimer? _readingSearchDebounce;
+
+    // Rebuilding up to 40 cards per keystroke made typing feel sticky; wait for a short pause instead.
     private void ReadingSearch_Changed(object sender, TextChangedEventArgs e)
     {
-        if (_readingLibraryLoaded)
+        if (!_readingLibraryLoaded) return;
+        if (_readingSearchDebounce is null)
         {
-            _readingVisibleCount = ReadingShelfPageSize;
-            RefreshReadingHub();
+            var timer = new System.Windows.Threading.DispatcherTimer(
+                System.Windows.Threading.DispatcherPriority.Input) { Interval = TimeSpan.FromMilliseconds(180) };
+            timer.Tick += (_, _) =>
+            {
+                timer.Stop();
+                _readingVisibleCount = ReadingShelfPageSize;
+                RefreshReadingHub();
+            };
+            _readingSearchDebounce = timer;
         }
+        _readingSearchDebounce.Stop();
+        _readingSearchDebounce.Start();
     }
 
     private void RefreshReadingHub()
@@ -287,12 +300,13 @@ public partial class MainWindow
         ReadingShelf.Children.Clear();
         ReadingOpenTabs.Children.Clear();
         string filter = ReadingSearchInput.Text.Trim();
+        string foldedFilter = SearchTextFolding.Fold(filter);
         var books = _readingLibrary.Books
             .Where(book => (_readingStatusFilter == "All" ||
                             (_readingStatusFilter == "Favorites" ? book.IsFavorite : book.Status == _readingStatusFilter)) &&
-                           (filter.Length == 0 || book.Title.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                            book.Source.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                            book.ProgressNote.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                           (filter.Length == 0 || SearchTextFolding.Matches(book.Title, foldedFilter) ||
+                            SearchTextFolding.Matches(book.Source, foldedFilter) ||
+                            SearchTextFolding.Matches(book.ProgressNote, foldedFilter)))
             .OrderByDescending(book => book.IsFavorite)
             .ThenByDescending(book => book.HasNewChapter)
             .ThenByDescending(book => book.OpenTab)
