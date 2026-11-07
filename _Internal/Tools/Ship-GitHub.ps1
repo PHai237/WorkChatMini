@@ -21,15 +21,33 @@ if (-not (Test-Path -LiteralPath (Join-Path $root '.github/workflows/release-win
     throw 'Run PUSH.bat only from the extracted WorkChat.zip source root.'
 }
 # Explicit allowlist. Never publish local .git or user data, even if placed in this folder.
-$allowedRoots = @('.github','_Internal','docs','.gitignore','README.md','BUILD.bat','AUTO-TEST.bat','SOURCE-CHECK.bat','PUSH.bat')
+$allowedRoots = @('.github','_Internal','docs','.gitattributes','.gitignore','AGENTS.md',
+                  'README.md','BUILD.bat','AUTO-TEST.bat','SOURCE-CHECK.bat','PUSH.bat')
+# Root metadata must be present, rather than silently disappearing at publish.
+$requiredMetadata = @('AGENTS.md', '.gitattributes', '.gitignore')
+foreach ($name in $requiredMetadata) {
+    if (-not (Test-Path -LiteralPath (Join-Path $root $name) -PathType Leaf)) {
+        throw "Required publish metadata missing from source: $name"
+    }
+}
 $unexpected = @(Get-ChildItem -LiteralPath $root -Force | Where-Object { $_.Name -notin $allowedRoots })
 if ($unexpected.Count -gt 0) { throw ('Unexpected files at source root: ' + (($unexpected | ForEach-Object Name) -join ', ')) }
-$allowedExts = @('.cs','.xaml','.csproj','.md','.ps1','.bat','.txt','.json','.yml','.yaml','.ico','.png','.iss','.manifest','.gitignore')
+$allowedExts = @('.cs','.xaml','.csproj','.md','.ps1','.bat','.txt','.json','.yml','.yaml','.ico','.png','.iss','.manifest')
+# .NET may return an empty Extension for dotfiles. Explicitly admit only
+# the two known root dotfiles, rather than allowing arbitrary dotfiles.
+$allowedRootDotfiles = @((Join-Path $root '.gitattributes'), (Join-Path $root '.gitignore'))
 $files = @(Get-ChildItem -LiteralPath $root -File -Force -Recurse | Where-Object {
     $_.FullName -notmatch '[\\/](bin|obj|Build|Releases|Logs|CrashReports)[\\/]' -and
-    $_.Extension -in $allowedExts -and $_.Name -notin @('desktop.ini','Thumbs.db')
+    ($_.Extension -in $allowedExts -or $_.FullName -in $allowedRootDotfiles) -and
+    $_.Name -notin @('desktop.ini','Thumbs.db')
 })
 if ($files.Count -lt 120) { throw 'Source package looks incomplete. Publishing stopped.' }
+$inventoryPaths = @($files | ForEach-Object { $_.FullName })
+foreach ($name in $requiredMetadata) {
+    if ($inventoryPaths -notcontains (Join-Path $root $name)) {
+        throw "Required publish metadata excluded from source inventory: $name"
+    }
+}
 $repoWork = Join-Path ([IO.Path]::GetTempPath()) ('WorkChatShip-' + [Guid]::NewGuid().ToString('N'))
 $preflightBranch = ''
 $preflightPushed = $false
@@ -155,6 +173,15 @@ try {
     }
     & git -C $repoWork add -A
     if ($LASTEXITCODE -ne 0) { throw 'git add failed' }
+    # Validate the actual index before preflight: copied != staged.
+    $metadataInGit = @(& git -C $repoWork ls-files --cached -- 'AGENTS.md' '.gitattributes' '.gitignore')
+    if ($LASTEXITCODE -ne 0) { throw 'Unable to verify staged source metadata.' }
+    foreach ($name in $requiredMetadata) {
+        if ($metadataInGit -notcontains $name) {
+            throw "Required metadata missing from staged Git index: $name"
+        }
+    }
+    Write-Host 'GIT METADATA VERIFIED: AGENTS.md, .gitattributes, .gitignore' -ForegroundColor Green
     $staged = @(& git -C $repoWork diff --cached --name-only)
     $stagedSource = @(& git -C $repoWork ls-files -- '_Internal/Source')
     if ($LASTEXITCODE -ne 0) { throw 'Cannot verify staged source inventory.' }

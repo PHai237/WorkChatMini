@@ -2,6 +2,24 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $source = Join-Path $root '_Internal\Source'
 $errors = [System.Collections.Generic.List[string]]::new()
+# Fail before GitHub upload if required source metadata is absent.
+foreach ($requiredFile in @('AGENTS.md', '.gitattributes', '.gitignore')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $root $requiredFile) -PathType Leaf)) {
+        $errors.Add("Missing GitHub publish metadata: $requiredFile")
+    }
+}
+$attributesPath = Join-Path $root '.gitattributes'
+if (Test-Path -LiteralPath $attributesPath -PathType Leaf) {
+    # ReadAllLines removes line endings. The old raw-text regex rejected
+    # valid CRLF checkouts because it saw a trailing carriage return.
+    $attributeLines = [IO.File]::ReadAllLines($attributesPath)
+    $batchCrlfRules = @($attributeLines | Where-Object {
+        $_ -match '^[ \t]*\*\.bat[ \t]+text[ \t]+eol=crlf[ \t]*$'
+    })
+    if ($batchCrlfRules.Count -eq 0) {
+        $errors.Add('.gitattributes must enforce CRLF on *.bat files.')
+    }
+}
 $checked = 0
 $xmlCount = 0
 $largest = 0

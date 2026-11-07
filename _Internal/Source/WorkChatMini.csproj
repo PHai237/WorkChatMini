@@ -16,10 +16,10 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishSingleFile>false</PublishSingleFile>
-    <Version>2.60.8</Version>
-    <FileVersion>2.60.8.0</FileVersion>
-    <AssemblyVersion>2.60.8.0</AssemblyVersion>
-    <InformationalVersion>2.60.8</InformationalVersion>
+    <Version>2.60.9</Version>
+    <FileVersion>2.60.9.0</FileVersion>
+    <AssemblyVersion>2.60.9.0</AssemblyVersion>
+    <InformationalVersion>2.60.9</InformationalVersion>
     <!-- Memory: no background-GC thread or tiered-PGO instrumentation; keep the heap compact. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     <TieredPGO>false</TieredPGO>

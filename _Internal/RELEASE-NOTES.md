@@ -1,3 +1,13 @@
+# WorkChat Core 2.60.9 — Back, Reload and recent YouTube videos
+
+- UX: rail context menu for every app: Back, Forward, Reload, Home, Copy page link (+ Open in another window). Rebuilt on each open (`ContextMenuOpening`), so enabled states are current; existing drag-out and click behaviour is unchanged.
+- UX: YouTube "Recently watched" (20 entries, newest first, persisted in settings as `YouTubeRecentVideos`). Tracks `SourceChanged`/`DocumentTitleChanged` because m.youtube.com navigates without new documents. Only https YouTube links with a plausible id are stored or reopened; the list is sanitised on load.
+- UX: Alt+Left/Right/Home and F5/Ctrl+R for apps. Shortcuts page updated.
+- Self-test: `YouTubeLinks.VerifySelfTest()` covers link parsing, title cleaning and rejection of non-YouTube/http/path-traversal inputs.
+- Windows WPF build and UI QA still required.
+
+---
+
 # WorkChat Core 2.60.8 — Keyboard-first and smarter search
 
 - UX: `Alt+1..6` switches app from anywhere (rail order: Messenger, Facebook, YouTube, Discord, Zalo, Web); `Ctrl+,` toggles Settings.

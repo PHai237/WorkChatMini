@@ -65,9 +65,11 @@ public partial class MainWindow
             menu.Items.Add(open);
             var button = GetSiteButton(site);
             button.ContextMenu = menu;
+            // Back / Forward / Reload / Home (and YouTube's recent videos) are rebuilt on every open.
+            button.ContextMenuOpening += (_, _) => RebuildSiteContextMenu(menu, site);
             button.PreviewMouseLeftButtonDown += (_, e) => CompanionIcon_MouseDown(site, e);
             button.PreviewMouseLeftButtonUp += (_, e) => CompanionIcon_MouseUp(site, e);
-            button.ToolTip = $"{site} · drag outside to open a window · right-click for options";
+            button.ToolTip = $"{site} · right-click: back, reload, home · drag outside to open a window";
         }
     }
 

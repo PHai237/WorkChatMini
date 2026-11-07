@@ -111,6 +111,7 @@ public partial class MainWindow
         ConfigureWebView(YouTubeWebView, MiniSite.YouTube);
         await ConfigureYouTubePlaybackGuardAsync(YouTubeWebView.CoreWebView2);
         YouTubeWebView.NavigationCompleted += YouTubeWebView_NavigationCompleted;
+        AttachYouTubeHistoryTracking(YouTubeWebView.CoreWebView2);
 
         // Mobile YouTube remains much more useful than the desktop layout in the tiny presets.
         YouTubeWebView.Source = new Uri("https://m.youtube.com/");

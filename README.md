@@ -1,3 +1,9 @@
+## WorkChat Mini 2.60.9 — Back, Reload and recent YouTube videos
+
+- **Right-click any app icon** on the rail (Messenger, Facebook, YouTube, Discord, Zalo): **Back, Forward, Reload, Home, Copy page link**, plus *Open in another window*. Items are enabled only when they can work.
+- **YouTube — Recently watched:** the last 20 videos (title + link) are remembered, even across restarts. Right-click the YouTube icon to reopen one in a single click; *Clear recently watched* wipes the list. Copy page link gives a clean `youtube.com/watch?v=` URL.
+- **Keyboard for apps:** `Alt + ← / →` back/forward, `Alt + Home` app home, `F5` / `Ctrl + R` reload (Web tabs keep their own shortcuts). Listed in Settings → Tools → Keyboard shortcuts.
+
 ## WorkChat Mini 2.60.8 — Keyboard-first and smarter search
 
 - **Shortcuts:** `Alt + 1–6` jumps straight to Messenger, Facebook, YouTube, Discord, Zalo or Web from any app; `Ctrl + ,` opens or closes Settings.

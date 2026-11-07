@@ -8,6 +8,7 @@ public partial class MainWindow
             !SearchTextFolding.Matches("\u0110\u1EA5u Ph\u00E1 Th\u01B0\u01A1ng Khung", "dau pha") ||
             SearchTextFolding.Matches("One Piece", "dau pha"))
             throw new InvalidOperationException("Accent-insensitive search folding is broken.");
+        YouTubeLinks.VerifySelfTest();
         ReadingSafetySelfTest.VerifyPersistence();
         ReadingSafetySelfTest.VerifyUrlIsolation();
         BrowserHistoryStore.VerifyCorruptFileProtection();

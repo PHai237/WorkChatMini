@@ -4,6 +4,14 @@ using System.Text.Json;
 
 namespace WorkChatMini;
 
+public sealed class RecentVideoEntry
+{
+    public string Id { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public DateTimeOffset LastSeenUtc { get; set; }
+}
+
 public sealed class AppSettings
 {
     // Width/Height are kept for compatibility/debugging; window size is driven by a preset.
@@ -19,6 +27,8 @@ public sealed class AppSettings
     // Persistent monitor memory. WorkChat learns the actual frame Windows chooses when a
     // monitor is maximized, then recognizes the same/similar resolution + DPI in later runs.
     public List<MonitorMemoryEntry> MonitorMemory { get; set; } = new();
+    // Last watched YouTube videos (newest first, max 20) so one can be reopened after a reload or restart.
+    public List<RecentVideoEntry> YouTubeRecentVideos { get; set; } = new();
     public bool AlwaysOnTop { get; set; } = false;
     public bool ToolbarCollapsed { get; set; } = false;
     public bool BackgroundAudioEnabled { get; set; } = false;
@@ -100,6 +110,11 @@ public sealed class AppSettings
             else if (settings.LastNormalWindowSizePreset is not ("1/8" or "1/4" or "1/2"))
                 settings.LastNormalWindowSizePreset = "1/4";
 
+            settings.YouTubeRecentVideos ??= new List<RecentVideoEntry>();
+            settings.YouTubeRecentVideos = settings.YouTubeRecentVideos
+                .Where(entry => entry is not null && YouTubeLinks.TryGetVideo(entry.Url, out string recentId, out _) && recentId == entry.Id)
+                .Select(entry => { entry.Title ??= string.Empty; return entry; })
+                .Take(20).ToList();
             settings.MonitorMemory ??= new List<MonitorMemoryEntry>();
             settings.MonitorMemory = settings.MonitorMemory
                 .Where(entry => entry.MonitorWidthPx > 0 && entry.MonitorHeightPx > 0 && entry.DpiX > 0 && entry.DpiY > 0)

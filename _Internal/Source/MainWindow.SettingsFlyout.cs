@@ -411,6 +411,10 @@ public partial class MainWindow
                 SettingsSection("APPS");
                 SettingsShortcutRow("Alt + 1–6", "Messenger, Facebook, YouTube, Discord, Zalo, Web");
                 SettingsShortcutRow("Ctrl + Tab", "Next app (tabs while on Web)");
+                SettingsShortcutRow("Alt + ← / →", "Back / forward (apps and Web)");
+                SettingsShortcutRow("Alt + Home", "App home page");
+                SettingsShortcutRow("F5 or Ctrl + R", "Reload");
+                SettingsShortcutRow("Right-click icon", "Back, reload, home, recent videos");
                 SettingsShortcutRow("Ctrl + Shift + O", "Pop out current app");
                 SettingsShortcutRow("Ctrl + Shift + 2", "Split screen");
                 SettingsSection("SETTINGS");
@@ -424,8 +428,6 @@ public partial class MainWindow
                 SettingsShortcutRow("Ctrl + 1–5", "Jump to tab");
                 SettingsShortcutRow("Ctrl + L", "Address bar");
                 SettingsShortcutRow("Ctrl + F", "Find on page");
-                SettingsShortcutRow("Alt + ← / →", "Back / forward");
-                SettingsShortcutRow("F5 or Ctrl + R", "Reload");
                 break;
         }
         if (_settingsFlyoutScroll is not null) _settingsFlyoutScroll.ScrollToTop();

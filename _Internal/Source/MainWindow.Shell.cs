@@ -521,6 +521,13 @@ public partial class MainWindow
         bool control = modifiers.HasFlag(ModifierKeys.Control);
         bool shift = modifiers.HasFlag(ModifierKeys.Shift);
 
+        // Apps get the same Back/Forward/Home/Reload keys as browser tabs.
+        if (TryHandleAppNavigationKey(e.Key == Key.System ? e.SystemKey : e.Key, modifiers))
+        {
+            e.Handled = true;
+            return;
+        }
+
         // When Web is active, use familiar browser shortcuts instead of stealing Ctrl+Tab
         // for app switching. Other surfaces keep the original WorkChat app-cycle behavior.
         if (_activeSite == MiniSite.Web)
