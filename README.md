@@ -1,3 +1,12 @@
+## WorkChat Mini 2.60.10 — Vencord inside the existing Discord slot
+
+- Keep the same **Discord icon**, `discord.com/app`, existing WebView2 and signed-in profile. **No extra Discord app, tab or WebView**.
+- Open **Settings → Tools → Discord + Vencord** to install the official Chromium extension on demand, enable/disable it, or repair it from a local `extension-chrome.zip`. Original Discord always remains available.
+- Official one-click install downloads Vendicated's **2026-11-04 devbuild** from GitHub and checks a pinned SHA-256 digest. If the upstream rolling build changes, installation stops safely; download the new `extension-chrome.zip` from [the official Vencord release](https://github.com/Vendicated/Vencord/releases/tag/devbuild) and use the local-ZIP option. A manually selected ZIP is **not** automatically publisher-authenticated; only use a trusted official download.
+- ZIP extraction rejects directory traversal and oversized archives; manifest validation requires Vencord Web scripts to target Discord. Extension files remain in immutable, hash-named per-user storage so WebView2 can reopen the extension after restart.
+- Toggle Vencord off to revert to original Discord **without deleting the Discord login**. Changes are blocked during active Discord calls. The user's decision is persisted; no download starts automatically on launch.
+- Discord does not officially support client mods; Vencord is third-party software. WebView2 extension compatibility must be checked on Windows. `PUSH.bat` and Windows CI remain the release gate.
+
 ## WorkChat Mini 2.60.9 — Back, Reload and recent YouTube videos
 
 - **Right-click any app icon** on the rail (Messenger, Facebook, YouTube, Discord, Zalo): **Back, Forward, Reload, Home, Copy page link**, plus *Open in another window*. Items are enabled only when they can work.

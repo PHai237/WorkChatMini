@@ -34,6 +34,11 @@ public partial class MainWindow
         menu.Items.Add(SiteMenuItem("Copy page link", hasPage, () => CopySitePageLink(site)));
         if (site == MiniSite.YouTube)
             AddYouTubeRecentItems(menu);
+        if (site == MiniSite.Discord)
+        {
+            menu.Items.Add(new Separator());
+            menu.Items.Add(SiteMenuItem("Discord + Vencord settings", true, OpenVencordSettings));
+        }
         menu.Items.Add(new Separator());
         menu.Items.Add(SiteMenuItem($"Open {site} in another window", true, () => OpenCompanionWindow(site)));
     }

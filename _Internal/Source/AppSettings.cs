@@ -38,6 +38,9 @@ public sealed class AppSettings
     // compatibility and migration from 2.52.0 (not used for live policy).
     public bool MessengerNotificationsEnabled { get; set; } = true;
     public bool DiscordNotificationsEnabled { get; set; } = true;
+    // User opt-in. Extension files live in a stable cache; no separate Discord login.
+    public bool VencordWebEnabled { get; set; } = false;
+    public string? VencordWebPackageSha256 { get; set; }
     public bool ZaloNotificationsEnabled { get; set; } = true;
     // Optional trusted HTTPS update feed; never silently installs updates.
     public string UpdateFeedUrl { get; set; } = string.Empty;

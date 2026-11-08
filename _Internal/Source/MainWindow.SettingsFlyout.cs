@@ -31,7 +31,7 @@ public partial class MainWindow
     private bool _settingsCompact;
 
     private static readonly string[] SettingsPages =
-        { "root", "chat-alerts", "new-window", "zoom", "playback", "resource", "window", "size", "position", "tools", "shortcuts" };
+        { "root", "chat-alerts", "new-window", "zoom", "playback", "resource", "window", "size", "position", "tools", "shortcuts", "vencord" };
 
     private void ToggleSettingsFlyout()
     {
@@ -248,7 +248,7 @@ public partial class MainWindow
 
     private static string ParentSettingsPage(string page) => page switch
     {
-        "resource" => "playback", "size" or "position" => "window", "shortcuts" => "tools", _ => "root"
+        "resource" => "playback", "size" or "position" => "window", "shortcuts" or "vencord" => "tools", _ => "root"
     };
 
     private void ShowSettingsPage(string page)
@@ -270,7 +270,7 @@ public partial class MainWindow
             "root" => "Overview", "chat-alerts" => "Chat alerts", "new-window" => "New window", "zoom" => "Zoom",
             "playback" => "Playback", "resource" => "Resource policy", "window" => "Window",
             "size" => "Window size", "position" => "Position", "tools" => "Tools",
-            "shortcuts" => "Keyboard shortcuts", _ => "Settings"
+            "shortcuts" => "Keyboard shortcuts", "vencord" => "Discord + Vencord", _ => "Settings"
         };
         _settingsFlyoutDescription.Text = page switch
         {
@@ -284,7 +284,8 @@ public partial class MainWindow
             "size" => "Pick a window footprint.",
             "position" => "Choose where WorkChat lives on screen.",
             "tools" => "Privacy and maintenance utilities.",
-            "shortcuts" => "Move around without leaving the keyboard.", _ => ""
+            "shortcuts" => "Move around without leaving the keyboard.",
+            "vencord" => "Use Vencord inside your existing Discord window.", _ => ""
         };
         PopulateSettingsNavigation();
         switch (page)
@@ -403,9 +404,40 @@ public partial class MainWindow
                     subtitle: "Connection options");
                 SettingsAction("Health", () => SessionHealthButton_Click(this, new RoutedEventArgs()),
                     subtitle: "View session diagnostics");
+                SettingsSection("DISCORD");
+                SettingsAction("Discord + Vencord", () => ShowSettingsPage("vencord"), next: true,
+                    subtitle: "Official Vencord Web extension · same Discord icon and login");
                 SettingsSection("HELP");
                 SettingsAction("Keyboard shortcuts", () => ShowSettingsPage("shortcuts"), next: true,
                     subtitle: "Switch apps, tabs and Settings faster");
+                break;
+            case "vencord":
+                SettingsSection("DISCORD MOD");
+                SettingsHint($"Vencord Web: {_vencordStatus}");
+                SettingsHint("Works inside the existing Discord WebView2. No extra Discord tab or login. " +
+                    "The official extension only injects scripts into discord.com.");
+                SettingsHint("Discord does not officially support client modifications. " +
+                    "Install only if you accept that risk.");
+                SettingsSection("CONTROL");
+                SettingsAction("Enable Vencord", () => _ = ToggleVencordAsync(true), next: true,
+                    enabled: !_vencordBusy && !_settings.VencordWebEnabled,
+                    selected: _settings.VencordWebEnabled,
+                    subtitle: "Use Vencord in the existing Discord slot");
+                SettingsAction("Disable Vencord", () => _ = ToggleVencordAsync(false), next: true,
+                    enabled: !_vencordBusy && _settings.VencordWebEnabled,
+                    subtitle: "Return to original Discord without deleting your login");
+                SettingsSection("INSTALL / REPAIR");
+                SettingsAction("Install official Vencord Web", () => _ = InstallVencordAsync(true), next: true,
+                    enabled: !_vencordBusy,
+                    subtitle: "Downloads a SHA-256 verified official build (Nov 2026)");
+                SettingsAction("Install from Vencord ZIP", () => _ = InstallVencordAsync(false), next: true,
+                    enabled: !_vencordBusy,
+                    subtitle: "Choose extension-chrome.zip from Vencord's official GitHub");
+                SettingsAction("Get latest Vencord ZIP", OpenOfficialVencordDownloads, next: true,
+                    enabled: !_vencordBusy,
+                    subtitle: "Open the official GitHub release in your regular browser");
+                SettingsHint("If the pinned official build changes, use 'Install from Vencord ZIP' " +
+                    "after downloading the latest release from github.com/Vendicated/Vencord.");
                 break;
             case "shortcuts":
                 SettingsSection("APPS");
@@ -451,7 +483,10 @@ public partial class MainWindow
         "Exit" => "\uE7E8", "Size" => "\uE740", "Position" => "\uE81D",
         "Background audio" => "\uE8D6", "Always on top" => "\uE840",
         "Resource policy" => "\uE9CE", "VPN" => "\uE774", "Health" => "\uE9D9",
-        "Ad blocker" => "\uE7BA", "Keyboard shortcuts" => "\uE765", "Messenger" => "\uE8BD", "Discord" => "\uE7FC",
+        "Ad blocker" => "\uE7BA", "Keyboard shortcuts" => "\uE765",
+        "Discord + Vencord" or "Enable Vencord" or "Disable Vencord" => "\uE7FC",
+        "Install official Vencord Web" or "Install from Vencord ZIP" => "\uE8B7",
+        "Get latest Vencord ZIP" => "\uE774", "Messenger" => "\uE8BD", "Discord" => "\uE7FC",
         "Zalo" => "\uE717", "Facebook" => "\uE716", "YouTube" => "\uE714",
         _ => "\uE8B7"
     };
@@ -488,7 +523,7 @@ public partial class MainWindow
         bool selected = _settingsPage == page ||
             (_settingsPage is "resource" && page == "playback") ||
             (_settingsPage is "size" or "position" && page == "window") ||
-            (_settingsPage is "shortcuts" && page == "tools");
+            (_settingsPage is "shortcuts" or "vencord" && page == "tools");
         var row = new StackPanel { Orientation = WpfOrientation.Horizontal };
         row.Children.Add(new TextBlock
         {

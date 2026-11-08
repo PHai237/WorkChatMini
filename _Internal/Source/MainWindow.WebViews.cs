@@ -131,6 +131,7 @@ public partial class MainWindow
 
         await DiscordWebView.EnsureCoreWebView2Async(_webEnvironment);
         ConfigureWebView(DiscordWebView, MiniSite.Discord);
+        await PrepareVencordForDiscordAsync();
         await ConfigureDiscordCallGuardAsync(DiscordWebView.CoreWebView2);
         DiscordWebView.NavigationCompleted += DiscordWebView_NavigationCompleted;
         DiscordWebView.Source = new Uri("https://discord.com/app");

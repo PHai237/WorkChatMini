@@ -186,6 +186,7 @@ public partial class MainWindow : Window
         ConfigureCompanionButtons();
 
         _settings = AppSettings.Load();
+        _vencordStatus = _settings.VencordWebEnabled ? "Enabled on next Discord open" : "Not installed";
         if (AppRuntime.IsSelfTest)
         {
             // Self-test is deterministic and isolated from the user's real profile/session.

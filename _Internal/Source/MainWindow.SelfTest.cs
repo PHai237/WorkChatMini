@@ -91,6 +91,7 @@ public partial class MainWindow
             });
 
             await RunCase("Settings root and critical commands", VerifySettingsRootCommandsSelfTest);
+            await RunCase("Vencord Web manifest safety and Settings entry", VerifyVencordSettingsSelfTest);
 
             await RunCase("Companion window launch policy (no eager WebView)", () =>
             {

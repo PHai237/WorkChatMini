@@ -1,3 +1,13 @@
+# WorkChat Core 2.60.10 — Discord + Vencord Web
+
+- Add a Vencord Web extension installer and enable/disable controls to **Settings → Tools**; retain the existing Discord WebView2, icon and login.
+- Pin the official extension download to a verified digest; provide an opt-in local ZIP import fallback with manifest/origin checks.
+- Persist extension enablement and stable package identity, protect active calls, avoid creating new WebViews or background timers.
+- Extend Quick self-tests with offline manifest and Settings routing checks.
+- Upstream extension behavior depends on WebView2/Discord updates; this source is not Windows-compiled in the Linux authoring environment.
+
+---
+
 # WorkChat Core 2.60.9 — Back, Reload and recent YouTube videos
 
 - UX: rail context menu for every app: Back, Forward, Reload, Home, Copy page link (+ Open in another window). Rebuilt on each open (`ContextMenuOpening`), so enabled states are current; existing drag-out and click behaviour is unchanged.
