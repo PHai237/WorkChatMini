@@ -1,3 +1,14 @@
+# WorkChat Core 2.60.11 — Resource benchmark, safer CPU measurement
+
+- Add opt-in 45-minute RAM/CPU recording from Settings > Playback, with per-process private and resident memory, CPU, notification/audio states, suspend/hibernate event markers and a local CSV export. No browsing history, titles or messages enter the benchmark CSVs.
+- Add RESOURCE-REPORT.bat (offline PowerShell analyzer) and RESOURCE-BENCHMARK.md. Preserve 2.60.10 sleep thresholds and call/alert/audio protections for an honest before/after benchmark.
+- Throttle YouTube document mutation observations (250 ms coalescing); playback event hooks still respond immediately.
+- Track host working-set trimming as its own `TRIM` event so it is not misattributed to WebView2 suspend or hibernation.
+- Extend Quick self-tests with the resource recorder's CSV schema/privacy test; keep all C#/XAML files below 1,000 lines and all `.bat` files CRLF.
+- Source-only candidate: Windows .NET 8 WPF compile and runtime validation still required before publishing or replacing the installed 2.60.10 app.
+
+---
+
 # WorkChat Core 2.60.10 — Discord + Vencord Web
 
 - Add a Vencord Web extension installer and enable/disable controls to **Settings → Tools**; retain the existing Discord WebView2, icon and login.

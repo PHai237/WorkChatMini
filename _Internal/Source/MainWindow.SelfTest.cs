@@ -57,6 +57,7 @@ public partial class MainWindow
         try
         {
             await RunCase("Environment", AppUpdateSelfTest.RunAsync);
+            await RunCase("Resource benchmark CSV privacy and schema", ResourceBenchmarkSelfTest.VerifyAsync);
 
             await RunCase("Core navigation rail", () =>
             {

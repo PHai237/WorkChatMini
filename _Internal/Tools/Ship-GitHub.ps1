@@ -22,7 +22,8 @@ if (-not (Test-Path -LiteralPath (Join-Path $root '.github/workflows/release-win
 }
 # Explicit allowlist. Never publish local .git or user data, even if placed in this folder.
 $allowedRoots = @('.github','_Internal','docs','.gitattributes','.gitignore','AGENTS.md',
-                  'README.md','BUILD.bat','AUTO-TEST.bat','SOURCE-CHECK.bat','PUSH.bat')
+                  'README.md','BUILD.bat','AUTO-TEST.bat','SOURCE-CHECK.bat','PUSH.bat',
+                  'RESOURCE-BENCHMARK.md','RESOURCE-REPORT.bat')
 # Root metadata must be present, rather than silently disappearing at publish.
 $requiredMetadata = @('AGENTS.md', '.gitattributes', '.gitignore')
 foreach ($name in $requiredMetadata) {

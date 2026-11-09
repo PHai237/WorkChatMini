@@ -8,6 +8,10 @@ internal sealed class ResourceSnapshot
 {
     public long CapturedTimestamp { get; init; }
     public long AppPrivateBytes { get; init; }
+    public long AppWorkingSetBytes { get; init; }
+    public long HostPrivateBytes { get; init; }
+    public long HostWorkingSetBytes { get; init; }
+    public long HostProcessorTimeTicks { get; init; }
     public long SystemTotalBytes { get; init; }
     public long SystemAvailableBytes { get; init; }
     public int WebViewProcessCount { get; init; }
@@ -15,6 +19,7 @@ internal sealed class ResourceSnapshot
     public IReadOnlyList<ResourceProcessSample> ProcessSamples { get; init; } = Array.Empty<ResourceProcessSample>();
 
     public double AppPrivateMiB => AppPrivateBytes / 1024.0 / 1024.0;
+    public double AppWorkingSetMiB => AppWorkingSetBytes / 1024.0 / 1024.0;
     public double SystemAvailableGiB => SystemAvailableBytes / 1024.0 / 1024.0 / 1024.0;
     public double SystemAvailablePercent => SystemTotalBytes <= 0 ? 0 : 100.0 * SystemAvailableBytes / SystemTotalBytes;
 
@@ -30,7 +35,8 @@ internal sealed class ResourceSnapshot
 }
 
 internal sealed record ResourceProcessDescriptor(int ProcessId, string Kind);
-internal sealed record ResourceProcessSample(int ProcessId, string Kind, long PrivateBytes, long TotalProcessorTimeTicks);
+internal sealed record ResourceProcessSample(
+    int ProcessId, string Kind, long PrivateBytes, long TotalProcessorTimeTicks, long WorkingSetBytes);
 
 internal sealed class ResourceCapturePlan
 {
@@ -92,6 +98,10 @@ internal static class ResourceTelemetry
     public static ResourceSnapshot Capture(ResourceCapturePlan plan)
     {
         long appPrivate = 0;
+        long appWorkingSet = 0;
+        long hostPrivate = 0;
+        long hostWorkingSet = 0;
+        long hostProcessorTicks = 0;
         var seen = new HashSet<int>();
         var byKind = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
         var processSamples = new List<ResourceProcessSample>();
@@ -106,12 +116,15 @@ internal static class ResourceTelemetry
                 using Process process = Process.GetProcessById(descriptor.ProcessId);
                 long bytes = Math.Max(0, process.PrivateMemorySize64);
                 appPrivate += bytes;
+                long workingSet = Math.Max(0, process.WorkingSet64);
+                appWorkingSet += workingSet;
                 byKind[descriptor.Kind] = byKind.TryGetValue(descriptor.Kind, out long existing) ? existing + bytes : bytes;
                 processSamples.Add(new ResourceProcessSample(
                     descriptor.ProcessId,
                     descriptor.Kind,
                     bytes,
-                    process.TotalProcessorTime.Ticks));
+                    process.TotalProcessorTime.Ticks,
+                    workingSet));
             }
             catch
             {
@@ -124,7 +137,11 @@ internal static class ResourceTelemetry
             if (seen.Add(plan.HostProcessId))
             {
                 using Process host = Process.GetProcessById(plan.HostProcessId);
-                appPrivate += Math.Max(0, host.PrivateMemorySize64);
+                hostPrivate = Math.Max(0, host.PrivateMemorySize64);
+                hostWorkingSet = Math.Max(0, host.WorkingSet64);
+                hostProcessorTicks = host.TotalProcessorTime.Ticks;
+                appPrivate += hostPrivate;
+                appWorkingSet += hostWorkingSet;
             }
         }
         catch
@@ -137,6 +154,10 @@ internal static class ResourceTelemetry
         {
             CapturedTimestamp = Stopwatch.GetTimestamp(),
             AppPrivateBytes = appPrivate,
+            AppWorkingSetBytes = appWorkingSet,
+            HostPrivateBytes = hostPrivate,
+            HostWorkingSetBytes = hostWorkingSet,
+            HostProcessorTimeTicks = hostProcessorTicks,
             SystemTotalBytes = total,
             SystemAvailableBytes = available,
             WebViewProcessCount = processSamples.Count,

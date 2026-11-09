@@ -22,6 +22,9 @@ public partial class MainWindow
         MarkPerformanceAction("memory-trim");
         ProcessMemoryTrimmer.TrimResult? result = await Task.Run(ProcessMemoryTrimmer.Trim);
         if (result is { } trimmed)
+        {
             AppLogger.Info("RESOURCE", $"Hidden-window trim | workingSetMiB={trimmed.BeforeMiB:0}->{trimmed.AfterMiB:0}");
+            RecordPerformanceEvent("TRIM", "host-working-set-trim");
+        }
     }
 }

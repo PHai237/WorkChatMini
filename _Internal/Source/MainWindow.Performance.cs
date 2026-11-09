@@ -111,8 +111,16 @@ public partial class MainWindow
             PerformanceFlightRecorder.Record("ACTION", _performanceAction);
     }
 
-    private void RecordPerformanceEvent(string category, string message) =>
+    private void RecordPerformanceEvent(string category, string message)
+    {
         PerformanceFlightRecorder.Record(category, message);
+        // Labels are deliberately categorical; never forward raw messages (which may contain
+        // a page hostname or other private browsing context) into benchmark CSVs.
+        string benchmarkCategory = category == "TAB"
+            ? (message.StartsWith("hibernate ", StringComparison.Ordinal) ? "TAB-HIBERNATE" : "TAB-SUSPEND")
+            : category;
+        _resourceBenchmark.RecordEvent(benchmarkCategory);
+    }
 
     private void AnalyzeProcessCpu(ResourceSnapshot snapshot)
     {

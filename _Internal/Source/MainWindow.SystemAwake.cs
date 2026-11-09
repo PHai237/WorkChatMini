@@ -176,8 +176,16 @@ public partial class MainWindow
     document.addEventListener(eventName, post, true);
   }
 
+  // YouTube updates its DOM continuously. Coalesce mutation bursts instead of scanning
+  // every <video> on every single mutation; native playback events remain immediate.
+  let mutationCheckPending = false;
+  const scheduleMutationCheck = () => {
+    if (mutationCheckPending) return;
+    mutationCheckPending = true;
+    setTimeout(() => { mutationCheckPending = false; post(); }, 250);
+  };
   try {
-    const observer = new MutationObserver(post);
+    const observer = new MutationObserver(scheduleMutationCheck);
     observer.observe(document.documentElement || document, { childList: true, subtree: true });
   } catch (_) { }
 

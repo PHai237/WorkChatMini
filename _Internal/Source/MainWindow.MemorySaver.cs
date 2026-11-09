@@ -34,7 +34,7 @@ public partial class MainWindow
         {
             ResourceSnapshot snapshot = await CaptureResourceSnapshotOffUiAsync();
             AnalyzeProcessCpu(snapshot);
-            UpdateMemoryPressureState(snapshot);
+            UpdateMemoryPressureState(snapshot, "sweep");
             UpdateUserAwayState();
             ApplyKeepAliveMemoryTargets();
             await RunMemorySaverSweepAsync();
@@ -352,12 +352,13 @@ public partial class MainWindow
             $"Adaptive thresholds | physicalGiB={(total > 0 ? total / (double)gib : 0):0.0} | appElevatedEnterMiB={_memoryPressureEnterBytes / mib} | appElevatedExitMiB={_memoryPressureExitBytes / mib} | systemElevatedEnterMiB={_systemElevatedMemoryEnterBytes / mib} | systemElevatedExitMiB={_systemElevatedMemoryExitBytes / mib} | systemCriticalEnterMiB={_systemLowMemoryEnterBytes / mib} | systemCriticalExitMiB={_systemLowMemoryExitBytes / mib}");
     }
 
-    private bool UpdateMemoryPressureState(ResourceSnapshot snapshot)
+    private bool UpdateMemoryPressureState(ResourceSnapshot snapshot, string reason)
     {
         if (snapshot.AppPrivateBytes <= 0)
             return false;
 
         _lastResourceSnapshot = snapshot;
+        CaptureResourceBenchmarkSample(snapshot, reason);
         _lastMeasuredResourceBytes = snapshot.AppPrivateBytes;
         MemoryPressureLevel previous = _memoryPressureLevel;
 
@@ -401,10 +402,10 @@ public partial class MainWindow
         DateTimeOffset now = DateTimeOffset.UtcNow;
         if (changed)
         {
-            string reason = systemCriticalEnter ? "system-critical" : appPressureRelevant && systemElevatedEnter ? "app+system" : appPressureRelevant ? "app" : systemElevatedEnter ? "system" : "recovered";
+            string pressureReason = systemCriticalEnter ? "system-critical" : appPressureRelevant && systemElevatedEnter ? "app+system" : appPressureRelevant ? "app" : systemElevatedEnter ? "system" : "recovered";
             AppLogger.Warn(
                 "RESOURCE",
-                $"Memory mode changed | from={previous} | to={_memoryPressureLevel} | reason={reason} | privateMemoryMiB={snapshot.AppPrivateMiB:0} | systemFreeGiB={snapshot.SystemAvailableGiB:0.00} | systemFreePct={snapshot.SystemAvailablePercent:0.0} | processes={snapshot.WebViewProcessCount} | breakdown={snapshot.ProcessBreakdownText()} | sweepSeconds={_memorySaverTimer.Interval.TotalSeconds:0}");
+                $"Memory mode changed | from={previous} | to={_memoryPressureLevel} | reason={pressureReason} | privateMemoryMiB={snapshot.AppPrivateMiB:0} | systemFreeGiB={snapshot.SystemAvailableGiB:0.00} | systemFreePct={snapshot.SystemAvailablePercent:0.0} | processes={snapshot.WebViewProcessCount} | breakdown={snapshot.ProcessBreakdownText()} | sweepSeconds={_memorySaverTimer.Interval.TotalSeconds:0}");
             _lastResourceLogAt = now;
         }
         else if (now - _lastResourceLogAt >= ResourceLogInterval)
@@ -441,7 +442,7 @@ public partial class MainWindow
             if (snapshot.AppPrivateBytes <= 0 || epoch != _resourceSnapshotEpoch)
                 return;
 
-            bool pressureChanged = UpdateMemoryPressureState(snapshot);
+            bool pressureChanged = UpdateMemoryPressureState(snapshot, $"checkpoint-{reason}");
             AppLogger.Info(
                 "RESOURCE",
                 $"Memory checkpoint | reason={reason} | privateMemoryMiB={snapshot.AppPrivateMiB:0} | systemFreeGiB={snapshot.SystemAvailableGiB:0.00} | processes={snapshot.WebViewProcessCount} | memoryMode={_memoryPressureLevel} | breakdown={snapshot.ProcessBreakdownText()}");
@@ -506,7 +507,8 @@ public partial class MainWindow
             : string.Empty;
         int pinnedTabs = _browserTabs.Count(tab => tab.Pinned && !tab.Closing);
 
-        HealthResourceText.Text = $"Memory: {snapshot.AppPrivateMiB:0} MB · {mode}{systemFree}{warm} · WV {snapshot.WebViewProcessCount} · web tabs {BrowserLoadedTabCount}/{_browserTabs.Count} · pinned {pinnedTabs} · active {active} · sleeping {sleeping} · hibernated {hibernated} · not loaded {notLoaded}";
+        string recording = _resourceBenchmark.IsActive ? " · recording" : string.Empty;
+        HealthResourceText.Text = $"Memory: private {snapshot.AppPrivateMiB:0} MB · resident sum {snapshot.AppWorkingSetMiB:0} MB · {mode}{recording}{systemFree}{warm} · WV {snapshot.WebViewProcessCount} · web tabs {BrowserLoadedTabCount}/{_browserTabs.Count} · pinned {pinnedTabs} · active {active} · sleeping {sleeping} · hibernated {hibernated} · not loaded {notLoaded}";
         HealthResourceText.Foreground = _memoryPressureLevel switch
         {
             MemoryPressureLevel.Critical => ResourceCriticalBrush,
@@ -688,6 +690,7 @@ public partial class MainWindow
             health.UpdatedAt = DateTimeOffset.Now;
 
             AppLogger.Info("RESOURCE", $"Facebook hibernated | reason={reason} | restoreHost={SafeHost(restoreUrl)} | rendererRelease=scheduled");
+            RecordPerformanceEvent("HIBERNATE", "site=Facebook");
             _ = DisposeDetachedPinnedWebViewAsync(oldWebView, site);
             UpdateHealthPanel();
             UpdateToolbarState();

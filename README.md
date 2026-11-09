@@ -1,3 +1,10 @@
+## WorkChat Mini 2.60.11 — Resource benchmark and YouTube CPU guard
+
+- **Settings → Playback → Resource Benchmark:** record up to 45 minutes of aggregated WebView2/host RAM and per-PID CPU, including suspend/hibernate/trim event timestamps; all opt-in, local-only CSV, no visited URLs or private chat content.
+- **RESOURCE-REPORT.bat** summarizes the latest local capture; see [RESOURCE-BENCHMARK.md](RESOURCE-BENCHMARK.md) for a safe apples-to-apples test procedure.
+- **YouTube playback monitoring:** batch rapid DOM mutations into 250 ms checks while preserving immediate play/pause events.
+- Existing chat notifications, Discord call guard, Vencord, shared login profile, Reading Hub, browser tab sleep thresholds, and PUSH.bat are unchanged. Windows compilation required before installing.
+
 ## WorkChat Mini 2.60.10 — Vencord inside the existing Discord slot
 
 - Keep the same **Discord icon**, `discord.com/app`, existing WebView2 and signed-in profile. **No extra Discord app, tab or WebView**.

@@ -350,6 +350,13 @@ public partial class MainWindow
                     SettingsHint("Resource policy is managed automatically for this app.");
                 else SettingsAction("Resource policy", () => ShowSettingsPage("resource"), next: true,
                     subtitle: "Choose how aggressively idle apps sleep");
+                SettingsSection("RESOURCE BENCHMARK");
+                SettingsAction(_resourceBenchmark.IsActive ? "Stop resource recording" : "Record RAM / CPU (up to 45 min)",
+                    () => { _ = ToggleResourceBenchmarkAsync(); },
+                    subtitle: _resourceBenchmark.IsActive
+                        ? "Recording memory, CPU, tab sleep and hibernation"
+                        : "Private + resident RAM by WebView2 process; no browsing data");
+                SettingsAction("Open resource reports folder", OpenResourceBenchmarkFolder);
                 break;
             case "resource":
                 SettingsSection("BACKGROUND ACTIVITY");
